@@ -22,7 +22,7 @@ Videoxogo 3D de mundo aberto ambientado en **Monforte de Lemos** (Lugo), feito p
 Tamén funciona con mando e con controis táctiles no móbil (en horizontal).
 
 ## Contido
-Castelo de San Vicente e Torre da Homenaxe, Ponte Vella, Rúa do Cardeal, Colexio da Compañía, Parque dos Condes coa gran fonte, Paseo do Malecón coa Feira do Viño, estación de tren, Campo da Pinguela, quiosco Anchoa e barrio da Estación. Viaxe rápida co Yepes en patinete. Misións con Pacho, Jusé e o Spasic, taxi, obras diarias e coleccionables.
+Castelo de San Vicente e Torre da Homenaxe, Ponte Vella, Rúa do Cardeal, Colexio da Compañía, Parque dos Condes coa gran fonte, Paseo do Malecón coa Feira do Viño, estación de tren, Campo da Pinguela, Campo da Compañía, Parque Antonio Carballo, quiosco Anchoa e barrio da Estación. Viaxe rápida co Yepes en patinete. Misións con Pacho, Jusé e o Spasic, taxi, obras diarias e coleccionables.
 
 ## Tecnoloxía
 HTML + JavaScript con [three.js](https://threejs.org) r128 (licenza MIT, incluída en `vendor/`). Sen dependencias externas nin servidor.

@@ -27,10 +27,11 @@ const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI;
 const MAP = { minX: -330, maxX: 340, minZ: -320, maxZ: 340 };
 const HILL = { x: 100, z: -81, top: 36, r0: 38, r1: 78 };
 const RIVER_HW = 12;
-/* o Cabe: chega do nordés (Ribas Altas), baixa de norte a sur polo oeste do centro e
-   pasado o Parque dos Condes xira cara ao suroeste (A Pinguela, Ourense) */
+/* o Cabe: chega do nordés (Ribas Altas), baixa de norte a sur polo oeste do centro,
+   pasa entre o Parque dos Condes (beira oeste) e o colexio da Compañía (beira leste)
+   e despois xira cara ao suroeste (A Pinguela, Ourense) — segundo as vistas aéreas */
 const RIVER = (() => {
-  const ctrl = [[200, -760], [140, -600], [97, -526], [-78, -461], [-130, -390], [-65, -292], [-26, -221], [-32, -130], [-36, -32], [-39, 65], [-58, 124], [-130, 195], [-247, 240], [-377, 325], [-520, 403], [-700, 520], [-900, 640]];
+  const ctrl = [[200, -760], [140, -600], [97, -526], [-78, -461], [-130, -390], [-65, -292], [-26, -221], [-32, -130], [-36, -32], [-39, 65], [-45, 124], [-50, 182], [-66, 238], [-96, 280], [-132, 322], [-190, 370], [-300, 430], [-450, 500], [-650, 590], [-900, 700]];
   const out = [];
   for (let i = 0; i < ctrl.length - 1; i++) {
     const p0 = ctrl[Math.max(0, i - 1)], p1 = ctrl[i], p2 = ctrl[i + 1], p3 = ctrl[Math.min(ctrl.length - 1, i + 2)];
@@ -45,14 +46,17 @@ function riverDistRaw(x, z) { let bd = 1e12; for (let i = 0; i < RIVER.length - 
 function riverCross(dir, k, a0, a1) { let best = 1e9, bt = a0; for (let t = a0; t <= a1; t += 0.5) { const d = dir === 'ns' ? riverDistRaw(k, t) : riverDistRaw(t, k); if (d < best) { best = d; bt = t; } } return bt; }
 const RAIL = { x0: 228, x1: 326, platformX: 237.5 };
 const ZONES = {
-  park: { x0: -150, x1: 80, z0: 175, z1: 268 },
+  park: { x0: -172, x1: -50, z0: 88, z1: 250 },          // beira oeste, ao suroeste do colexio
+  campoComp: { x0: -32, x1: 52, z0: 176, z1: 228 },      // campo de fútbol ao sur do colexio
+  carballo: { x0: 109, x1: 180, z0: 88, z1: 150 },       // Parque de Antonio Carballo (leste)
   cardeal: { x0: 7.5, x1: 16.5, z0: 14, z1: 76 },
   companhia: { x0: -20, x1: 92, z0: 84, z1: 172 },
   station: { x0: 200, x1: 340 },
   pinguela: { x0: -230, x1: -160, z0: 254, z1: 310 },
   clara: { x0: -112, x1: -55, z0: -28, z1: 3 },
-  malecon: { x0: -84, x1: -48, z0: 19, z1: 70 },
+  malecon: { x0: -22, x1: -1, z0: -55, z1: -4 },        // beira leste, río arriba da Ponte Vella, ao pé do monte
 };
+const PARKC = { x: -112, z: 168 }; // gran fonte do Parque dos Condes
 function inPark(x, z) { const P = ZONES.park; return x > P.x0 && x < P.x1 && z > P.z0 && z < P.z1 && riverDistRaw(x, z) > RIVER_HW + 2.5; }
 
 /* ---------- Rúas (nomes do plano) ---------- */
@@ -67,7 +71,7 @@ NS(12, 10, 78, 9, 'ped', 'Rúa do Cardeal');
 EW(78, -330, 190, 12, 'car', 'Avenida de Galicia');
 EW(318, -260, 190, 12, 'car', 'Estrada da Pinguela');
 NS(-220, -320, 200, 12, 'car', 'Avenida de Ourense');
-NS(-120, -320, 120, 11, 'car', 'Rúa Chantada');
+NS(-120, -320, 78, 11, 'car', 'Rúa Chantada');
 NS(100, 7, 78, 8, 'car', 'Subida ao Castelo');
 NS(100, 78, 318, 11, 'car', 'Rúa Roberto Baamonde');
 NS(190, -300, 318, 12, 'car', 'Rúa Leopoldo Calvo Sotelo');
@@ -90,7 +94,7 @@ const BRIDGES = [];
     const hw = r.type === 'ped' ? 5.2 : r.hw + SIDEWALK + 0.2, type = r.type === 'ped' ? 'vella' : 'road';
     BRIDGES.push(r.dir === 'ns' ? { dir: 'ns', x: r.x, c: bt, hw, type } : { dir: 'ew', z: r.z, c: bt, hw, type });
   }
-  BRIDGES.push({ dir: 'ns', x: -140, c: riverCross('ns', -140, 150, 260), hw: 2.6, type: 'park', half: RIVER_HW + 4.5 });
+  BRIDGES.push({ dir: 'ew', z: 150, c: riverCross('ew', 150, -90, -10), hw: 2.2, type: 'wood', park: true }); // pasarela parque–colexio
   BRIDGES.push({ dir: 'ew', z: -110, c: riverCross('ew', -110, -80, 10), hw: 1.9, type: 'wood' });
 })();
 /* Estrada en espiral ao castelo */
@@ -424,7 +428,7 @@ function pathTo(a, b, carOnly = true) {
 function zoneName(x, z) {
   const dh = Math.hypot(x - HILL.x, z - HILL.z), inZ = (Z, m = 0) => x > Z.x0 - m && x < Z.x1 + m && z > Z.z0 - m && z < Z.z1 + m;
   if (dh < HILL.r0 + 4) return 'Castelo de San Vicente';
-  if (dh < HILL.r1) return 'Monte de San Vicente';
+  if (dh < HILL.r1) { let bi = 0, bd = 1e9; SPIRAL.forEach((p, i) => { const d = Math.hypot(p[0] - x, p[1] - z); if (d < bd) { bd = d; bi = i; } }); if (bd < 8) return bi < SPIRAL.length * 0.45 ? 'Rúa Santo Domingo' : bi < SPIRAL.length * 0.8 ? 'Rúa Falagueira' : 'Baixada de San Vicente'; return 'Monte de San Vicente'; }
   const vb = BRIDGES.find(b => b.type === 'vella'); if (vb && Math.abs(z - vb.z) < 8 && Math.abs(x - vb.c) < RIVER_HW + 6) return 'Ponte Vella';
   if (inZ(ZONES.cardeal, 2)) return 'Rúa do Cardeal';
   if (inZ(ZONES.clara, 3)) return 'Mosteiro de Santa Clara';
@@ -433,12 +437,15 @@ function zoneName(x, z) {
   if (inZ(ZONES.pinguela)) return 'Campo da Pinguela';
   if (inPark(x, z)) return 'Parque dos Condes';
   if (inZ(ZONES.companhia)) return 'Praza da Compañía';
+  if (inZ(ZONES.campoComp)) return 'Campo da Compañía';
+  if (inZ(ZONES.carballo)) return 'Parque Antonio Carballo';
   if (x > 200) return z < -320 ? 'Museo do Ferrocarril' : 'Estación de Monforte';
   if (riverDistRaw(x, z) < RIVER_HW + 8) return 'Paseo do río Cabe';
   if (x > 197 && x < 211 && Math.abs(z + 228) < 56) return 'Praza da Estación';
   if ((x > 130 && z < -60) || (x > 40 && z < -185)) return 'Barrio da Estación';
   if (x > -20 && z < 0) return 'Casco Vello';
-  if (z > 180) return 'A Pinguela';
+  if (z > 240) return 'A Pinguela';
+  if (x < -40 && z > 78) return 'Rúa Cobas';
   if (x < -150) return 'Avenida de Ourense';
   if (x < -40) return 'Concello';
   return 'Centro';

@@ -247,7 +247,7 @@ const SPASIC_KEY = 'lemos27400_spasic';
 G.quest2 = { state: 'none' };
 try { const s = JSON.parse(localStorage.getItem(SPASIC_KEY)); if (s && s.state) G.quest2.state = s.state; } catch (e) { }
 function saveQuest2() { try { localStorage.setItem(SPASIC_KEY, JSON.stringify({ state: G.quest2.state })); } catch (e) { } }
-const SP_LOOP = { x: -25, z: 222, rx: 22, rz: 16 };
+const SP_LOOP = { x: PARKC.x, z: PARKC.z, rx: 22, rz: 16 };
 const S = (text, extra) => ({ who: 'El Spasic', text, ...extra });
 
 function stripeTex() {

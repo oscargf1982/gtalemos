@@ -503,7 +503,7 @@ const TOUR = [
   { p: [150, 46, -21], l: [85, 48, -86], n: 'Castelo de San Vicente' },
   { p: [-12, 6, 40], l: [-40, 3, 10], n: 'Ponte Vella sobre o Cabe' },
   { p: [14, 9, 18], l: [12, 4, 72], n: 'Rúa do Cardeal' },
-  { p: [15, 14, 192], l: [-25, 4, 222], n: 'Parque dos Condes' },
+  { p: [PARKC.x + 38, 14, PARKC.z - 32], l: [PARKC.x, 4, PARKC.z], n: 'Parque dos Condes' },
   { p: [35, 12, 71], l: [35, 14, 134], n: 'Colexio da Compañía' },
   { p: [179, 14, -288], l: [229, 3, -218], n: 'Estación de Monforte' },
 ];
@@ -524,7 +524,7 @@ function updateMenuCam(dt) {
 const MISSIONS = [
   { id: 'ruta', name: 'Ruta do Patrimonio', at: [-127, 30], reward: 600, time: 240, needCar: true,
     intro: 'A oficina de turismo quere un vídeo da cidade. Pasa en coche polos catro monumentos antes de 4 minutos.',
-    steps: [{ x: -37, z: 10, r: 9, t: 'Cruza a Ponte Vella' }, { x: 12, z: 45, r: 7, t: 'Baixa pola Rúa do Cardeal' }, { x: 100, z: 222, r: 10, t: 'Bordea o Parque dos Condes' }, { x: 196, z: -228, r: 10, t: 'Chega á Estación' }, { x: HILL.x - 10, z: HILL.z + 21, r: 12, t: 'Sube ao Castelo de San Vicente' }] },
+    steps: [{ x: -37, z: 10, r: 9, t: 'Cruza a Ponte Vella' }, { x: 12, z: 45, r: 7, t: 'Baixa pola Rúa do Cardeal' }, { x: PARKC.x, z: 84, r: 10, t: 'Pasa polo Parque dos Condes' }, { x: 196, z: -228, r: 10, t: 'Chega á Estación' }, { x: HILL.x - 10, z: HILL.z + 21, r: 12, t: 'Sube ao Castelo de San Vicente' }] },
   { id: 'tren', name: 'O último tren', at: [HILL.x - 6, HILL.z + 15], reward: 450, time: 100, needCar: true,
     intro: 'Unha peregrina vai perder o tren rexional. Levala á estación antes de que saia: o tren non espera!',
     steps: [{ x: 196, z: -228, r: 10, t: 'Leva a peregrina á Estación' }] },
@@ -534,7 +534,7 @@ const MISSIONS = [
     intro: 'Sube a un dos taxis da parada e preme T para comezar a quenda: leva tres clientes ao seu destino.', steps: 'taxi' },
 ];
 const DESTS = [
-  { n: 'Ponte Vella', x: -120, z: 14 }, { n: 'Castelo de San Vicente', x: HILL.x - 10, z: HILL.z + 21 }, { n: 'Parque dos Condes', x: 100, z: 222 }, { n: 'Estación', x: 196, z: -228 },
+  { n: 'Ponte Vella', x: -120, z: 14 }, { n: 'Castelo de San Vicente', x: HILL.x - 10, z: HILL.z + 21 }, { n: 'Parque dos Condes', x: PARKC.x, z: 84 }, { n: 'Estación', x: 196, z: -228 },
   { n: 'Praza da Compañía', x: 35, z: 82 }, { n: 'Rúa do Cardeal', x: 16, z: 82 }, { n: 'A Pinguela', x: -195, z: 318 }, { n: 'Concello', x: -120, z: -30 }, { n: 'Avenida de Ourense', x: -220, z: 150 },
 ];
 G.missionMarkers = [];
@@ -671,6 +671,7 @@ function buildMinimapBase() {
   // monte
   const [hx, hz] = P(HILL.x, HILL.z); const g = x.createRadialGradient(hx, hz, 10, hx, hz, HILL.r1 * MAPS); g.addColorStop(0, '#3a4a2c'); g.addColorStop(1, '#26301f'); x.fillStyle = g; x.beginPath(); x.arc(hx, hz, HILL.r1 * MAPS, 0, 7); x.fill();
   // parque
+  for (const Q of [ZONES.carballo, ZONES.campoComp]) { x.fillStyle = Q === ZONES.campoComp ? '#3f7a34' : '#35552c'; x.fillRect(...P(Q.x0, Q.z0), (Q.x1 - Q.x0) * MAPS, (Q.z1 - Q.z0) * MAPS); }
   const PZ = ZONES.park; x.fillStyle = '#35552c'; for (let wx = PZ.x0; wx < PZ.x1; wx += 4) for (let wz = PZ.z0; wz < PZ.z1; wz += 4) if (inPark(wx + 2, wz + 2)) x.fillRect(...P(wx, wz), 4 * MAPS + 1, 4 * MAPS + 1);
   // río
   x.strokeStyle = '#3d6f86'; x.lineWidth = (RIVER_HW * 2 - 5) * MAPS; x.lineJoin = 'round'; x.lineCap = 'round'; x.beginPath(); RIVER.forEach(([a, b], i) => i ? x.lineTo(...P(a, b)) : x.moveTo(...P(a, b))); x.stroke();
@@ -737,7 +738,7 @@ function drawFullMap() {
   x.drawImage(mapBase, G._fm.ox, G._fm.oy, mapBase.width * s, mapBase.height * s);
   const P = (wx, wz) => [G._fm.ox + (wx - MAPO.x) * MAPS * s, G._fm.oy + (wz - MAPO.z) * MAPS * s];
   x.font = `700 ${15 * devicePixelRatio}px "Barlow Condensed", sans-serif`; x.fillStyle = 'rgba(240,232,214,.9)'; x.textAlign = 'center';
-  for (const [t, wx, wz] of [['CASTELO', HILL.x, HILL.z + 4], ['PARQUE DOS CONDES', 10, 255], ['ESTACIÓN', 212, -300], ['RÚA DO CARDEAL', 42, 40], ['COMPAÑÍA', 35, 162], ['RÍO CABE', -12, -250], ['PONTE VELLA', -37, -4], ['SANTA CLARA', -88, -34], ['A PINGUELA', -195, 284], ['EMBARCADOIRO', G.jetty.x + 30, G.jetty.z + 4], ['PRAZA DR. GOYANES', 30, 2]]) x.fillText(t, ...P(wx, wz));
+  for (const [t, wx, wz] of [['CASTELO', HILL.x, HILL.z + 4], ['PARQUE DOS CONDES', PARKC.x, PARKC.z + 40], ['MALECÓN', -40, -40], ['CAMPO', 10, 202], ['P. A. CARBALLO', 144, 119], ['ESTACIÓN', 212, -300], ['RÚA DO CARDEAL', 42, 40], ['COMPAÑÍA', 35, 162], ['RÍO CABE', -12, -250], ['PONTE VELLA', -37, -4], ['SANTA CLARA', -88, -34], ['A PINGUELA', -195, 284], ['EMBARCADOIRO', G.jetty.x - 4, G.jetty.z + 20], ['PRAZA DR. GOYANES', 30, 2]]) x.fillText(t, ...P(wx, wz));
   x.textAlign = 'left';
   const me = G.player.car || G.player.ped; const [px, py] = P(me.x, me.z);
   for (const m of G.missionMarkers) { const [a, b] = P(m.def.at[0], m.def.at[1]); x.fillStyle = save.done[m.def.id] ? '#9bd28a' : '#f2a33a'; x.fillRect(a - 7, b - 7, 14, 14); x.fillStyle = '#f2ecdc'; x.font = `600 ${13 * devicePixelRatio}px Barlow Condensed, sans-serif`; x.fillText(m.def.name, a + 10, b + 4); }

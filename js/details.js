@@ -121,28 +121,27 @@ function buildKiosk(scene, x, z, ry) {
   scene.add(g);
   const c = Math.abs(Math.sin(ry)) > 0.5, hw = (c ? D : W) / 2 + 0.1, hd = (c ? W : D) / 2 + 0.1;
   addBoxCol(x - hw, z - hd, x + hw, z + hd, H + 0.7, 'quiosco');
-  const lz = z - Math.cos(ry) * 0 + (c ? -(W / 2 + 1.6) * Math.sin(ry) * (ry > 0 ? 1 : -1) : 0);
-  addBoxCol(x - 0.6, lz - 0.7, x + 0.6, lz + 0.7, 1.8, 'caseta');
+  const lx = -W / 2 - 1.6, cx2 = x + lx * Math.cos(ry), cz2 = z - lx * Math.sin(ry);
+  addBoxCol(cx2 - 0.65, cz2 - 0.65, cx2 + 0.65, cz2 + 0.65, 1.8, 'caseta');
   G.anchoa = { x, z };
 }
 function buildMaleconDetails(B, scene) {
-  const Z = ZONES.malecon;
+  const Z = ZONES.malecon, xp = Z.x0 + 0.1; // o río queda ao oeste
   // varanda/peitoril de granito sobre o río
-  const xp = -50.6, len = Z.z1 - Z.z0 - 2, wall = boxGeo(0.5, 0.65, len); xform(wall, xp, 0.33, (Z.z0 + Z.z1) / 2); B.stone.add(wall);
-  addBoxCol(xp - 0.25, Z.z0 + 1, xp + 0.25, Z.z1 - 1, 0.65, 'peitoril');
-  // quiosco Anchoa ao comezo do paseo, de costas ao río
-  buildKiosk(scene, -55.5, Z.z0 + 7, -Math.PI / 2);
+  const len = Z.z1 - Z.z0, wall = boxGeo(0.5, 0.65, len); xform(wall, xp, 0.33, (Z.z0 + Z.z1) / 2); B.stone.add(wall);
+  addBoxCol(xp - 0.25, Z.z0, xp + 0.25, Z.z1, 0.65, 'peitoril');
+  // quiosco Anchoa no extremo norte, de costas ao río
+  buildKiosk(scene, Z.x0 + 3.2, Z.z0 + 4.5, Math.PI / 2);
   // bancos de granito ao longo do peitoril
-  for (let z = Z.z0 + 14; z < Z.z1 - 3; z += 8) graniteBench(scene, xp - 1.1, z, -Math.PI / 2);
-  // plataneiros ao longo do paseo (lado da rúa) e farolas negras
-  for (let z = Z.z0 + 5; z < Z.z1 - 2; z += 7) G.extraTrees.push([-65.5, z, RR(1.0, 1.25)]);
+  for (let z = Z.z0 + 12; z < Z.z1 - 3; z += 8) graniteBench(scene, xp + 1.1, z, Math.PI / 2);
+  // plataneiros ao longo do paseo e farolas negras
+  for (let z = Z.z0 + 2; z < Z.z1 - 2; z += 7) G.extraTrees.push([Z.x0 + 11.5, z, RR(1.0, 1.25)]);
   G.parkLampPts = G.parkLampPts || [];
-  for (let z = Z.z0 + 18; z < Z.z1 - 2; z += 16) G.parkLampPts.push([xp - 1.0, z]);
+  for (let z = Z.z0 + 16; z < Z.z1 - 2; z += 14) G.parkLampPts.push([xp + 1.0, z]);
 }
-/* ---------- Praza da Estación: marquesiña de vidro sobre a entrada (Street View) ---------- */
+/* ---------- Praza da Estación: empedrado, aparcamento e marquesiña de vidro (Street View) ---------- */
 function buildStationPlaza(B, scene) {
   const xf = 321 - 111, zc = -228;
-  // praza empedrada diante da estación, con prazas de aparcamento
   const pv = new THREE.PlaneGeometry(xf - 198.8, 112); pv.rotateX(-Math.PI / 2);
   const uv = pv.attributes.uv, pp = pv.attributes.position; for (let i = 0; i < uv.count; i++) uv.setXY(i, pp.getX(i) / 3, pp.getZ(i) / 3);
   const pm = new THREE.Mesh(pv, new THREE.MeshStandardMaterial({ map: TEX.cobble, normalMap: TEX.cobbleN, color: 0xb9b6ae, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -2 }));
@@ -154,12 +153,63 @@ function buildStationPlaza(B, scene) {
   glass.position.set(xf - 0.95, 4.3, zc); glass.rotation.z = -0.08; scene.add(glass);
   const fr = boxGeo(0.08, 0.12, 6.6); xform(fr, xf - 1.9, 4.23, zc); B.metal.add(fr);
   for (const s of [-1, 1]) { const t = boxGeo(1.95, 0.05, 0.05); xform(t, xf - 0.95, 4.5, zc + s * 3.2, 0, 0, -0.3); B.metal.add(t); }
-  // sinais de acceso e papeleira
   const sg = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.36), std({ map: textTex('Acceso · Entrada', { w: 256, h: 80, bg: '#1f4e8c', fg: '#ffffff', size: 30, font: 'Barlow, sans-serif', weight: 600 }), roughness: .5 }));
   sg.position.set(xf - 0.04, 3.1, zc); sg.rotation.y = -Math.PI / 2; scene.add(sg);
   for (const dz of [-6, 6]) { const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.3, 0.7, 10), std({ color: 0x3b3d40, roughness: .8 })); pl.position.set(xf - 1.2, 0.35, zc + dz); scene.add(pl); const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 1), std({ color: 0x2f5a24, roughness: .95, flatShading: true })); b.position.set(xf - 1.2, 0.95, zc + dz); scene.add(b); addCircCol(xf - 1.2, zc + dz, 0.4, 1.2, 'macetón'); }
 }
+/* ---------- Campo de fútbol da Compañía (ao sur do colexio, xunto ao río) ---------- */
+function buildCampoCompania(B, scene) {
+  const Z = ZONES.campoComp, cx = (Z.x0 + Z.x1) / 2, cz = (Z.z0 + Z.z1) / 2, L = 68, W = 40;
+  const c = cnv(512, 256), x = c.getContext('2d');
+  for (let i = 0; i < 12; i++) { x.fillStyle = i % 2 ? '#3f8a3a' : '#4a9a42'; x.fillRect(i * 512 / 12, 0, 512 / 12 + 1, 256); }
+  x.strokeStyle = '#f4f4ee'; x.lineWidth = 3; const sx = 512 / L, sz = 256 / W;
+  x.strokeRect(2 * sx, 2 * sz, (L - 4) * sx, (W - 4) * sz); x.beginPath(); x.moveTo(256, 2 * sz); x.lineTo(256, 256 - 2 * sz); x.stroke();
+  x.beginPath(); x.arc(256, 128, 6 * sx, 0, 7); x.stroke();
+  for (const e of [0, 1]) { const ex = e ? 512 - 2 * sx : 2 * sx, d = e ? -1 : 1; x.strokeRect(Math.min(ex, ex + d * 11 * sx), 128 - 13 * sz, 11 * sx, 26 * sz); x.strokeRect(Math.min(ex, ex + d * 4 * sx), 128 - 6 * sz, 4 * sx, 12 * sz); }
+  const turf = new THREE.Mesh(new THREE.PlaneGeometry(L, W), new THREE.MeshStandardMaterial({ map: toTex(c, false), roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2 }));
+  turf.rotation.x = -Math.PI / 2; turf.position.set(cx, 0.06, cz); turf.receiveShadow = true; scene.add(turf);
+  // porterías
+  const white = MAT.white;
+  for (const s of [-1, 1]) {
+    const gx = cx + s * (L / 2 - 2);
+    for (const dz of [-3.66, 3.66]) { const p = new THREE.CylinderGeometry(0.06, 0.06, 2.44, 8); xform(p, gx, 1.22, cz + dz); B.white.add(p); }
+    const bar = new THREE.CylinderGeometry(0.06, 0.06, 7.32, 8); bar.rotateX(Math.PI / 2); xform(bar, gx, 2.44, cz); B.white.add(bar);
+    addBoxCol(gx - 0.15, cz - 3.8, gx + 0.15, cz - 3.5, 2.5, 'poste'); addBoxCol(gx - 0.15, cz + 3.5, gx + 0.15, cz + 3.8, 2.5, 'poste');
+  }
+  // valado metálico con porta no lado do colexio
+  for (const [x0, z0, x1, z1] of [[Z.x0 + 1, Z.z0 + 1, Z.x1 - 1, Z.z0 + 1], [Z.x0 + 1, Z.z1 - 1, Z.x1 - 1, Z.z1 - 1], [Z.x0 + 1, Z.z0 + 1, Z.x0 + 1, Z.z1 - 1], [Z.x1 - 1, Z.z0 + 1, Z.x1 - 1, Z.z1 - 1]]) {
+    const len = Math.hypot(x1 - x0, z1 - z0), horiz = z0 === z1;
+    const gap = horiz && z0 < cz ? [cx - 3, cx + 3] : null;
+    const segs = gap ? [[x0, gap[0]], [gap[1], x1]] : [[horiz ? x0 : z0, horiz ? x1 : z1]];
+    for (const [a, b] of segs) {
+      const net = new THREE.Mesh(new THREE.PlaneGeometry(b - a, 3), new THREE.MeshStandardMaterial({ color: 0x2d3b2f, transparent: true, opacity: 0.35, side: THREE.DoubleSide, roughness: 0.8 }));
+      if (horiz) { net.position.set((a + b) / 2, 1.5, z0); addBoxCol(a, z0 - 0.1, b, z0 + 0.1, 3, 'valado'); }
+      else { net.position.set(x0, 1.5, (a + b) / 2); net.rotation.y = Math.PI / 2; addBoxCol(x0 - 0.1, a, x0 + 0.1, b, 3, 'valado'); }
+      scene.add(net);
+      for (let t = a; t <= b + 0.01; t += 4) { const p = new THREE.CylinderGeometry(0.05, 0.05, 3, 6); xform(p, horiz ? t : x0, 1.5, horiz ? z0 : t); B.metalDark.add(p); }
+    }
+  }
+  G.campoComp = { x: cx, z: cz };
+}
+/* ---------- Parque de Antonio Carballo (leste do colexio) ---------- */
+function buildCarballo(B, scene) {
+  const Z = ZONES.carballo, cx = (Z.x0 + Z.x1) / 2, cz = (Z.z0 + Z.z1) / 2;
+  const g = new THREE.PlaneGeometry(Z.x1 - Z.x0, Z.z1 - Z.z0); g.rotateX(-Math.PI / 2);
+  const uv = g.attributes.uv, pp = g.attributes.position; for (let i = 0; i < uv.count; i++) uv.setXY(i, pp.getX(i) / 10, pp.getZ(i) / 10);
+  xform(g, cx, 0.03, cz); B.park.add(g);
+  const path = (pts, w) => { const r = ribbon(pts, w, { step: 2, vScale: 4, yOff: 0.06 }); const u = r.attributes.uv, p = r.attributes.position; for (let i = 0; i < u.count; i++) u.setXY(i, p.getX(i) / 5, p.getZ(i) / 5); B.gravel.add(r); };
+  path([[Z.x0, Z.z0 + 6], [cx, cz], [Z.x1, Z.z1 - 6]], 3); path([[Z.x0 + 8, Z.z1], [cx, cz], [Z.x1 - 8, Z.z0]], 3);
+  const ring = []; for (let a = 0; a <= Math.PI * 2 + 0.01; a += Math.PI / 20) ring.push([cx + Math.cos(a) * 9, cz + Math.sin(a) * 9]); path(ring, 2.6);
+  for (let i = 0; i < 26; i++) { const x = RR(Z.x0 + 4, Z.x1 - 4), z = RR(Z.z0 + 4, Z.z1 - 4); if (Math.hypot(x - cx, z - cz) < 13) continue; G.extraTrees.push([x, z, RR(0.8, 1.15)]); }
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + 0.3; bench(B, cx + Math.cos(a) * 11.6, 0.03, cz + Math.sin(a) * 11.6, Math.atan2(-Math.cos(a), -Math.sin(a))); }
+  G.parkLampPts = G.parkLampPts || []; for (const a of [0.8, 2.4, 4.0, 5.6]) G.parkLampPts.push([cx + Math.cos(a) * 12.5, cz + Math.sin(a) * 12.5]);
+  const sg = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 1.1), std({ map: textTex('PARQUE ANTONIO CARBALLO', { w: 640, h: 110, bg: '#2a3a2a', fg: '#f1e6c8', size: 52, border: '#c9b98a' }), roughness: .7 }));
+  sg.position.set(Z.x0 - 0.3, 2.6, Z.z0 + 10); sg.rotation.y = -Math.PI / 2; scene.add(sg);
+  for (let i = 0; i < 300 && G.parkPoints.length < 90; i++) { const x = RR(Z.x0 + 3, Z.x1 - 3), z = RR(Z.z0 + 3, Z.z1 - 3); if (Math.hypot(x - cx, z - cz) > 10) G.parkPoints.push([x, z]); }
+}
 function buildDetails(B, scene) {
+  buildCampoCompania(B, scene);
+  buildCarballo(B, scene);
   buildStationPlaza(B, scene);
   buildCompanhiaGarden(B, scene);
   buildCardealDetails(B, scene);

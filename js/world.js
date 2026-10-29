@@ -369,6 +369,7 @@ function lotOK(x0, z0, x1, z1) {
   const CL = ZONES.clara; if (x1 > CL.x0 && x0 < CL.x1 && z1 > CL.z0 && z0 < CL.z1) return false;
   const ML = ZONES.malecon; if (x1 > ML.x0 && x0 < ML.x1 && z1 > ML.z0 && z0 < ML.z1) return false;
   const C = ZONES.companhia; if (x1 > C.x0 && x0 < C.x1 && z1 > C.z0 && z0 < C.z1) return false;
+  for (const Q of [ZONES.campoComp, ZONES.carballo]) if (x1 > Q.x0 - 2 && x0 < Q.x1 + 2 && z1 > Q.z0 - 2 && z0 < Q.z1 + 2) return false;
   const PG = ZONES.pinguela; if (x1 > PG.x0 && x0 < PG.x1 && z1 > PG.z0 && z0 < PG.z1) return false;
   if (x1 > ZONES.station.x0 - 1) return false;
   const q = G.colGrid.query((x0 + x1) / 2, (z0 + z1) / 2, Math.max(x1 - x0, z1 - z0), []);
@@ -537,7 +538,7 @@ function buildCardeal(B, F, scene) {
 
 /* ---------- Parque dos Condes (orilla leste do Cabe, ao sur da Compañía) ---------- */
 function buildPark(B, scene) {
-  const P = ZONES.park, cx = -25, cz = 222;
+  const P = ZONES.park, cx = PARKC.x, cz = PARKC.z;
   // céspede en teselas de 4 m só onde non hai río
   for (let x = P.x0; x < P.x1; x += 4) for (let z = P.z0; z < P.z1; z += 4) {
     if (!inPark(x + 2, z + 2)) continue;
@@ -555,17 +556,17 @@ function buildPark(B, scene) {
   // paseo fluvial pola beira, do parque ata A Pinguela
   const bank = [];
   for (let i = 0; i < RIVER.length - 1; i++) {
-    const a = RIVER[i], b2 = RIVER[i + 1]; if (a[1] < 120 || a[0] < -235) continue;
-    const tx = b2[0] - a[0], tz = b2[1] - a[1], L = Math.hypot(tx, tz) || 1, nx = tz / L, nz = -tx / L; // orilla leste/sur
+    const a = RIVER[i], b2 = RIVER[i + 1]; if (a[1] < 92 || a[0] < -235) continue;
+    const tx = b2[0] - a[0], tz = b2[1] - a[1], L = Math.hypot(tx, tz) || 1, nx = -tz / L, nz = tx / L; // beira oeste (lado do parque)
     const px = a[0] + nx * (RIVER_HW + 5), pz = a[1] + nz * (RIVER_HW + 5);
-    if (pz > 120 && px < P.x1 && px > -235) bank.push([px, pz]);
+    if (pz > 92 && px > -235 && !inRoad(px, pz, 1) && !BRIDGES.some(b => b.dir === 'ew' && Math.abs(pz - b.z) < b.hw + 1 && Math.abs(px - b.c) < RIVER_HW + 6)) bank.push([px, pz]);
   }
   if (bank.length > 1) path(bank, 3.4);
   G.bankPath = bank;
   // GRAN FONTE
   buildGrandFountain(B, scene, cx, cz);
   // parque infantil
-  const px = 40, pz = 196;
+  const px = cx - 48, pz = cz + 44;
   for (let i = 0; i < 2; i++) { for (const [ox, oz] of [[-1.2, -0.8], [1.2, -0.8], [-1.2, 0.8], [1.2, 0.8]]) { const l = boxGeo(0.08, 2.5, 0.08); xform(l, px + ox + i * 4, 1.2, pz + oz * 0.4, 0, oz * 0.3); B.vcol.add(colorize(l, '#d23b2a')); } const top = boxGeo(2.6, 0.1, 0.1); xform(top, px + i * 4, 2.45, pz); B.vcol.add(colorize(top, '#d23b2a')); const seat = boxGeo(0.5, 0.05, 0.25); xform(seat, px + i * 4, 0.6, pz); B.vcol.add(colorize(seat, '#2a3b8f')); }
   const slide = boxGeo(0.7, 0.08, 3.5); xform(slide, px + 9, 1.1, pz, 0, 0.55); B.vcol.add(colorize(slide, '#f0b323'));
   const tower = boxGeo(1.4, 2, 1.4); xform(tower, px + 9, 1, pz - 2); B.vcol.add(colorize(tower, '#2f8a4b')); addCircCol(px + 9, pz - 2, 1, 2);
@@ -577,10 +578,10 @@ function buildPark(B, scene) {
   for (const a of [0.5, 2.1, 3.7, 5.3]) G.parkLampPts.push([cx + Math.cos(a) * 27, cz + Math.sin(a) * 20]);
   // cartel de entrada (lado da Rúa Roberto Baamonde)
   const sg = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.3), std({ map: textTex('PARQUE DOS CONDES', { w: 512, h: 112, bg: '#2a3a2a', fg: '#f1e6c8', size: 60, border: '#c9b98a' }), roughness: .7 }));
-  sg.position.set(P.x1 + 0.2, 3.2, cz); sg.rotation.y = Math.PI / 2; scene.add(sg);
-  for (const s2 of [-1, 1]) { const p = boxGeo(0.5, 4, 0.5, [3, 3]); xform(p, P.x1 + 0.2, 2, cz + s2 * 3.4); B.stone.add(p); addCircCol(P.x1 + 0.2, cz + s2 * 3.4, 0.4, 4); }
+  sg.position.set(cx, 3.2, P.z0 - 0.2); sg.rotation.y = Math.PI; scene.add(sg);
+  for (const s2 of [-1, 1]) { const p = boxGeo(0.5, 4, 0.5, [3, 3]); xform(p, cx + s2 * 3.4, 2, P.z0 - 0.2); B.stone.add(p); addCircCol(cx + s2 * 3.4, P.z0 - 0.2, 0.4, 4); }
   // embarcadoiro na beira, apuntando ao río
-  const rn = riverNear(-92, 198), nx = (-92 - rn.px), nz = (198 - rn.pz), nl = Math.hypot(nx, nz) || 1;
+  const ej = [-72, 212], rn = riverNear(ej[0], ej[1]), nx = (ej[0] - rn.px), nz = (ej[1] - rn.pz), nl = Math.hypot(nx, nz) || 1;
   const bx = rn.px + nx / nl * (RIVER_HW - 1.5), bz = rn.pz + nz / nl * (RIVER_HW - 1.5), th = Math.atan2(nx / nl, nz / nl);
   inFrame(B, scene, bx, bz, th, (LB, g) => buildEmbarcadoiro(LB, g));
   { const [jx, jz] = [bx - Math.sin(th) * 1.0, bz - Math.cos(th) * 1.0]; G.jetty = { x: jx, z: jz }; }
@@ -762,11 +763,11 @@ function buildProps(B, scene, Q) {
   // taxis na estación
   G.taxiStand = [{ x: 190 + 4.8, z: -254, yaw: Math.PI }, { x: 190 + 4.8, z: -261, yaw: Math.PI }];
   // botellas de Mencía (coleccionables)
-  const pb = BRIDGES.find(b => b.type === 'park'), vb = BRIDGES.find(b => b.type === 'vella');
+  const pb = BRIDGES.find(b => b.park), vb = BRIDGES.find(b => b.type === 'vella');
   const spots = [
     [G.torre.x, G.torre.top + 1.6, G.torre.z, 'no alto da Torre da Homenaxe'], [vb.c - 6, 0.2, vb.z, 'baixo a Ponte Vella'], [G.jetty.x, -0.3, G.jetty.z, 'no embarcadoiro'],
     [35, 0.3, 117, 'diante da portada da Compañía'], [281.5, 4.3, -325, 'na locomotora de vapor'], [229, 0.9, -188, 'no andén 1'],
-    [HILL.x + 30, HILL.top + 0.3, HILL.z - 20, 'no claustro do mosteiro'], [pb.x, 1.3, pb.c, 'na ponte do parque'], [12, 0.3, 72, 'ao final do Cardeal'],
+    [HILL.x + 30, HILL.top + 0.3, HILL.z - 20, 'no claustro do mosteiro'], [pb.c, 1.3, pb.z, 'na pasarela do parque'], [12, 0.3, 72, 'ao final do Cardeal'],
     [-270, 0.3, 120, 'na Régoa'], [150, 0.3, -170, 'no barrio da estación'], [40, 0.3, -125, 'detrás do monte'],
   ];
   const bg = mergeGeos([xform(new THREE.CylinderGeometry(0.11, 0.11, 0.42, 12), 0, 0.21, 0), xform(new THREE.CylinderGeometry(0.04, 0.11, 0.14, 12), 0, 0.49, 0), xform(new THREE.CylinderGeometry(0.04, 0.04, 0.12, 8), 0, 0.62, 0)]);
@@ -783,11 +784,11 @@ function buildProps(B, scene, Q) {
 function buildTrees(scene, Q) {
   const trees = [];
   const P = ZONES.park;
-  for (let i = 0; i < 600 && trees.length < 150; i++) { const x = RR(P.x0 + 3, P.x1 - 3), z = RR(P.z0 + 3, P.z1 - 3); if (!inPark(x, z) || riverDistRaw(x, z) < RIVER_HW + 9) continue; if (Math.hypot(x - 25, z - 222) < 0 || Math.hypot(x + 25, z - 222) < 30 || Math.abs(z - 222) < 3 || Math.abs(x + 25) < 3 || Math.hypot(x - 45, z - 196) < 10) continue; trees.push([x, z, RR(0.9, 1.4)]); }
+  for (let i = 0; i < 600 && trees.length < 150; i++) { const x = RR(P.x0 + 3, P.x1 - 3), z = RR(P.z0 + 3, P.z1 - 3); if (!inPark(x, z) || riverDistRaw(x, z) < RIVER_HW + 9) continue; if (Math.hypot(x - PARKC.x, z - PARKC.z) < 30 || Math.abs(z - PARKC.z) < 3 || Math.abs(x - PARKC.x) < 3 || Math.hypot(x - (PARKC.x - 43), z - (PARKC.z + 44)) < 10 || (G.bankPath || []).some(p => Math.hypot(p[0] - x, p[1] - z) < 3)) continue; trees.push([x, z, RR(0.9, 1.4)]); }
   for (const s of [-1, 1]) for (let i = 0; i < RIVER.length - 1; i += 2) {
     const a = RIVER[i], b2 = RIVER[i + 1], tx = b2[0] - a[0], tz = b2[1] - a[1], L = Math.hypot(tx, tz) || 1, x = a[0] - tz / L * s * (RIVER_HW + 3.5), z = a[1] + tx / L * s * (RIVER_HW + 3.5);
     if (x < MAP.minX || x > MAP.maxX - 20 || z < MAP.minZ || z > MAP.maxZ + 40) continue;
-    if (BRIDGES.some(b => (b.dir === 'ns' ? Math.hypot(a[0] - b.x, a[1] - b.c) : Math.hypot(a[0] - b.c, a[1] - b.z)) < b.hw + 4) || inRoad(x, z, 2) || inPark(x, z) || (z > 120 && x < -60 && x > -240 && riverDistRaw(x, z) < RIVER_HW + 7)) continue;
+    if (BRIDGES.some(b => (b.dir === 'ns' ? Math.hypot(a[0] - b.x, a[1] - b.c) : Math.hypot(a[0] - b.c, a[1] - b.z)) < b.hw + 4) || inRoad(x, z, 2) || inPark(x, z) || (x > ZONES.malecon.x0 - 4 && x < ZONES.malecon.x1 && z > ZONES.malecon.z0 && z < ZONES.malecon.z1) || (G.bankPath || []).some(p => Math.hypot(p[0] - x, p[1] - z) < 3)) continue;
     trees.push([x, z, RR(0.8, 1.2)]);
   }
   for (const t of G.extraTrees || []) trees.push(t);

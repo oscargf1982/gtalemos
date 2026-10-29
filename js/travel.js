@@ -7,8 +7,8 @@ const FT_DESTS = [
   { n: 'Castelo de San Vicente', d: 'Torre da Homenaxe e Mosteiro', get x() { return G.castleGate.x; }, get z() { return G.castleGate.z; }, yaw: Math.PI },
   { n: 'Ponte Vella', d: 'Santa Clara e Praza Dr. Goyanes', x: -66, z: 12, yaw: Math.PI / 2 },
   { n: 'Rúa do Cardeal', d: 'Bares e terrazas', x: 12, z: 22, yaw: 0 },
-  { n: 'Paseo do Malecón', d: 'Feira do Viño e manifestación', x: -64, z: 22, yaw: 0 },
-  { n: 'Parque dos Condes', d: 'A gran fonte e o embarcadoiro', x: -25, z: 246, yaw: Math.PI },
+  { n: 'Paseo do Malecón', d: 'Feira do Viño e manifestación', x: -6, z: -30, yaw: -Math.PI / 2 },
+  { n: 'Parque dos Condes', d: 'A gran fonte e o embarcadoiro', x: PARKC.x, z: PARKC.z - 24, yaw: 0 },
   { n: 'Campo da Pinguela', d: 'Campo de fútbol', x: -195, z: 252, yaw: 0 },
   { n: 'Estación de Monforte', d: 'Andéns e Museo do Ferrocarril', x: 196, z: -236, yaw: Math.PI / 2 },
 ];
