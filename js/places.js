@@ -121,6 +121,8 @@ function computeLandmarks() {
     G.monumentZones.push(frameRectPoly(LM.cons, -31, -11.5, 31, 26));
     G.namedZones.push({ n: 'Auditorio e Conservatorio Mestre Ibáñez', p: frameRectPoly(LM.cons, -31, -11.5, 31, 26) });
   }
+  // --- Club Fluvial (piscinas e pistas á beira do Cabe) ---
+  if (typeof fluvialLandmarks === 'function') fluvialLandmarks();
   // --- Torre da Homenaxe e Mosteiro de San Vicente ---
   {
     const t = polyCentroid(osmBldg('Torre da Homenaxe').p), m = polyCentroid(osmBldg('Castelo de Monforte de Lemos').p);
@@ -153,7 +155,7 @@ function computeLandmarks() {
     LM.parkC = { x: best[0], z: best[1] };
     // explanada de formigón ao nornoroeste da fonte: pista de volei praia
     { const b = -20 * Math.PI / 180; LM.volei = makeFrame(best[0] + Math.sin(b) * 30, best[1] - Math.cos(b) * 30, 30 * Math.PI / 180);
-      const vp = frameRectPoly(LM.volei, -11.5, -6.5, 11.5, 6.5); G.monumentZones.push(vp); G.namedZones.push({ n: 'Pista de volei praia', p: vp }); LM.volei.poly = vp; }
+      const vp = frameRectPoly(LM.volei, -11.5, -6.5, 11.5, 6.5); G.monumentZones.push(vp); G.namedZones.push({ n: 'Pista de volei praia', p: vp }); LM.volei.poly = vp; (G.noTrees = G.noTrees || []).push(frameRectPoly(LM.volei, -14, -9, 14, 9)); }
     G.namedZones.push({ n: 'Parque dos Condes', p: a.p });
   }
   // --- Ponte Vella ---
@@ -431,7 +433,7 @@ function buildTrees(scene, Q) {
       const x = RR(bb.x0, bb.x1), z = RR(bb.z0, bb.z1);
       if (!inPoly(x, z, a.p) || riverDistRaw(x, z) < RIVER_HW + 5 || inStreet(x, z, 1.5) || inRoad(x, z, 1.5, true)) continue;
       if (LM.parkC && Math.hypot(x - LM.parkC.x, z - LM.parkC.z) < 30) continue;
-      if (LM.volei && inPoly(x, z, frameRectPoly(LM.volei, -14, -9, 14, 9))) continue;
+      if ((G.noTrees || []).some(q => inPoly(x, z, q))) continue;
       if (AREAS.some(o => (o.t === 'pitch' || o.t === 'play' || o.t === 'parking') && inPoly(x, z, o.p))) continue;
       trees.push([x, z, RR(0.8, 1.25)]); k++;
     }
@@ -445,7 +447,7 @@ function buildTrees(scene, Q) {
       if (x < MAP.minX || x > MAP.maxX || z < MAP.minZ || z > MAP.maxZ) continue;
       if (BRIDGES.some(b => Math.hypot(x - b.x, z - b.z) < b.half + 4) || inStreet(x, z, 1.5) || inRoad(x, z, 1.5, true) || obbOverlaps(x, z, 1, 1, 0, 0)) continue;
       if (LM.malecon && inPoly(x, z, LM.malecon.poly)) continue;
-      if (LM.volei && inPoly(x, z, frameRectPoly(LM.volei, -14, -9, 14, 9))) continue;
+      if ((G.noTrees || []).some(q => inPoly(x, z, q))) continue;
       trees.push([x, z, RR(0.8, 1.25)]);
     }
   }

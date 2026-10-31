@@ -195,7 +195,7 @@ function spawnActors() {
   world.skids = new Skids(scene); world.smoke = new Smoke(scene);
   world.train = new Train(scene);
   // xogador
-  const RESERVE = 98; // veciños extra para obreiros, ciclistas, manifestación e feira
+  const RESERVE = 108; // veciños extra para obreiros, ciclistas, manifestación e feira
   world.crowd = new Crowd(scene, QS.peds + 1 + RESERVE);
   const pp = world.crowd.add({ state: 'player', colors: { shirt: '#7a1f3d', pants: '#22324d', skin: '#e9bc98', hair: '#2a1d14', shoe: '#efefef', sleeve: false } });
   pp.x = G.startPos.x; pp.z = G.startPos.z; pp.yaw = G.startPos.yaw; pp.y = groundH(pp.x, pp.z); pp.scale = 1.02; G.player.ped = pp;
@@ -230,6 +230,7 @@ function spawnActors() {
   initPellas();
   initMayor();
   initBand();
+  initFluvial();
   initWorks();
   // botellas xa atopadas
   for (const b of G.bottles) if (save.bottles.includes(b.where)) { b.got = true; b.m.visible = b.halo.visible = false; }
@@ -688,6 +689,7 @@ function buildMinimapBase() {
   x.fillStyle = '#4a4d52';
   for (const b of G.buildingsList) if (b.poly) { x.beginPath(); b.poly.forEach(([a, c2], i) => i ? x.lineTo(...P(a, c2)) : x.moveTo(...P(a, c2))); x.closePath(); x.fill(); }
   for (const z of G.monumentZones) poly(z, '#6e6352');
+  for (const [z, c] of (G.mapExtra || [])) poly(z, c);
   // vías do tren
   for (const r of OSM.rails) line(r.p, '#6b5d4a', Math.max(1.5, 2.2 * MAPS));
   // rúas (primeiro as pequenas)
@@ -991,7 +993,7 @@ function simulate(dt, menu) {
   }
   // peóns
   for (const p of peds) { if (p === pl.ped) continue; pedThink(p, dt, world); }
-  updateRiders(dt); updateWorks(dt); updateFair(dt); updateBand(dt); updateBandMusic(dt);
+  updateRiders(dt); updateWorks(dt); updateFair(dt); updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
   if (!menu && !pl.car && !G.cine) updatePlayerFoot(dt);
   if (!menu) updateCine(dt);
   for (const p of peds) world.crowd.pose(p);
