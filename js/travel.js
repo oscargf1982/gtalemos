@@ -130,7 +130,7 @@ function endIntro() {
   me.x = p.x; me.z = p.z; me.y = groundH(p.x, p.z); me.yaw = p.yaw; me.visible = true;
   camYaw = p.yaw + Math.PI; camPitch = 0.22; camIdle = 0; camera._init = 0;
   G.cine = null; $('hud').classList.remove('cine'); $('skipIntro').hidden = true; $('fade').classList.remove('on');
-  setTimeout(() => toast('Benvido a Monforte! Pacho espérate na Praza da Compañía: está marcado no GPS.', 5.5), 400);
+  setTimeout(() => toast('Benvido a Monforte! Iván Nogal, o de Renfe que está aí ao lado, pode axudarche. Pacho espérate na Praza da Compañía (marcada no GPS).', 6), 400);
   setTimeout(() => toast(isTouch ? 'A túa berlina clásica granate está aparcada aí diante, na Praza da Estación (⇅ para subir)' : 'A túa berlina clásica granate está aparcada aí diante, na Praza da Estación (F para subir)', 5), 6200);
   setTimeout(() => { if (G._worksIntro) toast(G._worksIntro, 5); }, 11800);
   const pa = NPCS.find(n => n.id === 'pacho'); if (pa && G.quest.state === 'none') setWaypoint(pa.p.x, pa.p.z);

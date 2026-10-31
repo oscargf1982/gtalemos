@@ -165,6 +165,12 @@ button, select { font: inherit; }
 @media (max-width: 520px) { .menu-panel { width: 100%; background: linear-gradient(180deg, #0d1013f2 0%, #0d1013cc 100%); } #tourName { display: none; } }
 #dialog { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: max(18px, env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; cursor: pointer; }
 .dlg-inner { width: min(760px, 100%); background: linear-gradient(180deg, #15191df2, #0d1013f7); border-top: 4px solid var(--sodium); padding: 14px 20px 16px; box-shadow: 0 -10px 40px #0008; }
+/* retrato do personaxe que fala */
+.dlg-inner { display: flex; gap: 16px; align-items: flex-start; }
+.dlg-body { flex: 1; min-width: 0; }
+#dlgFace { width: 96px; height: 96px; flex: none; image-rendering: pixelated; border: 3px solid var(--sodium); border-radius: 6px; background: #1d2b3a; box-shadow: 0 4px 14px #0008; margin-top: 2px; }
+#dlgFace[data-who="me"] { border-color: #9fd4e6; }
+@media (pointer: coarse), (max-width: 520px) { #dlgFace { width: 64px; height: 64px; } .dlg-inner { gap: 10px; } }
 #dlgName { font-family: var(--display); font-weight: 900; font-size: 28px; text-transform: uppercase; color: var(--sodium); line-height: 1; }
 #dlgName[data-who="me"] { color: #9fd4e6; }
 #dlgText { font-family: var(--body); font-size: 18px; line-height: 1.5; margin: 6px 0 0; min-height: 3em; max-width: 70ch; }
@@ -268,7 +274,7 @@ button, select { font: inherit; }
   <div id="missionIntro"><div id="mTitle"></div><p id="mIntro"></p></div>
   <div id="big"><div id="bigA"></div><div id="bigB"></div></div>
 </div>
-<div id="dialog" hidden><div class="dlg-inner"><div id="dlgName"></div><p id="dlgText"></p><div id="dlgChoices"></div><div id="dlgHint" hidden>Espazo / toque para continuar ▸</div></div></div>
+<div id="dialog" hidden><div class="dlg-inner"><img id="dlgFace" alt="" hidden><div class="dlg-body"><div id="dlgName"></div><p id="dlgText"></p><div id="dlgChoices"></div><div id="dlgHint" hidden>Espazo / toque para continuar ▸</div></div></div></div>
 
 <div id="mapOverlay" hidden>
   <div class="map-head"><h2>Monforte de Lemos</h2><p>Toca o mapa para marcar un destino no GPS</p></div>
@@ -312,6 +318,7 @@ button, select { font: inherit; }
 <script src="js/actors.js"></script>
 <script src="js/pacho.js"></script>
 <script src="js/band.js"></script>
+<script src="js/portraits.js"></script>
 <script src="js/riders.js"></script>
 <script src="js/works.js"></script>
 <script src="js/fair.js"></script>

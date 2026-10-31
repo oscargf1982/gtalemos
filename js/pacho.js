@@ -55,6 +55,7 @@ function spawnStoryNPCs() {
   spawnNPC({ id: 'emre', name: 'Jusé', x: LM.stationOld(229.5, -222)[0], z: LM.stationOld(229.5, -222)[1], yaw: LM.station.yaw(-Math.PI / 2), scale: 1.0, colors: { shirt: '#f4f4f2', pants: '#1d2a4a', skin: '#e9c2a2', hair: '#3a2a1c', shoe: '#e9e9e9', sleeve: true } });
   const juse = NPCS.find(n => n.id === 'emre'); if (juse) { repaintArms(juse.p, '#d4202b'); addCheckerShirt(juse); }
   spawnSpasic();
+  spawnIvan();
 }
 function wearFener(p) { p.col.shirt = FENER.yellow; world.crowd.paint(p); repaintArms(p, FENER.navy); }
 
@@ -73,6 +74,7 @@ function nextLine() {
   const L = D.lines[D.i];
   if (typeof L === 'function') { L(); return nextLine(); }
   $('dlgName').textContent = L.who; $('dlgName').dataset.who = L.who === 'Ti' ? 'me' : 'npc';
+  setDialogFace(L.who);
   D.full = L.text; D.shown = 0; D.typing = true; $('dlgText').textContent = '';
   $('dlgChoices').innerHTML = ''; $('dlgHint').hidden = true;
   D.choices = L.choices || null;
@@ -124,6 +126,7 @@ function talkTo(n) {
   if (G.dialog) return;
   if (n.id === 'spasic') return talkSpasic(n);
   if (n.id === 'mayor') return talkMayor(n);
+  if (n.id === 'ivan') return ivanTalk(n);
   const q = G.quest;
   if (n.id === 'pacho') {
     const hola = P('Que pasa, chorbo! Aúpa Depor!');
@@ -214,7 +217,7 @@ function updateStory(dt) {
     const p = n.p, h = 1.95 * p.scale;
     if (n.overlay) { world.crowd.meshes.torso.getMatrixAt(p.idx, n.overlay.matrix); n.overlay.matrixWorldNeedsUpdate = true; n.overlay.visible = p.visible; }
     n.tag.position.set(p.x, p.y + h + 0.35, p.z);
-    const has = (n.id === 'pacho' && (q.state === 'none' || q.state === 'return')) || (n.id === 'emre' && q.state === 'go') || (n.id === 'spasic' && G.quest2.state === 'none');
+    const has = (n.id === 'pacho' && (q.state === 'none' || q.state === 'return')) || (n.id === 'emre' && q.state === 'go') || (n.id === 'spasic' && G.quest2.state === 'none') || (n.id === 'ivan' && !G.ivanMet);
     n.bub.visible = has && !G.dialog; n.bub.position.set(p.x, p.y + h + 0.95 + Math.sin(G.t * 3) * 0.08, p.z);
     const d = Math.hypot(camera.position.x - p.x, camera.position.z - p.z); n.tag.visible = d < 40;
     if (n.ball) { // toques co balón cando non fala

@@ -253,7 +253,7 @@ function setupInput() {
     if (G.cine && G.cine.intro) { if (['Space', 'Enter', 'Escape', 'KeyE', 'KeyF'].includes(e.code)) skipIntro(); return; }
     if (G.cine) return;
     if (!$('travel').hidden) { if (e.code === 'Escape') closeTravel(); return; }
-    if (G.dialog) { if (['Space', 'KeyE', 'Enter', 'KeyF'].includes(e.code)) { dialogAdvance(); e.preventDefault(); } const m = /^Digit([1-3])$/.exec(e.code) || /^Numpad([1-3])$/.exec(e.code); if (m) choose(+m[1] - 1); return; }
+    if (G.dialog) { if (['Space', 'KeyE', 'Enter', 'KeyF'].includes(e.code)) { dialogAdvance(); e.preventDefault(); } const m = /^Digit([1-9])$/.exec(e.code) || /^Numpad([1-9])$/.exec(e.code); if (m) choose(+m[1] - 1); return; }
     if (e.code === 'KeyF' || e.code === 'Enter') toggleCar();
     if (e.code === 'KeyC') cycleCam();
     if (e.code === 'KeyM') toggleMap();
