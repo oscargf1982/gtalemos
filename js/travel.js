@@ -55,7 +55,7 @@ function startPellas(dest) {
 }
 // saltar a animación da viaxe rápida (Espazo / Intro / botón)
 function skipTravel() {
-  const C = G.cine; if (!C || C.intro) return;
+  const C = G.cine; if (!C || C.intro || C.dinner || C.phone) return;
   if (C.phase !== 'black') teleportTo(C.dest);
   if (YEPES) { YEPES.p.visible = false; YEPES.veh.visible = false; YEPES.tag.visible = false; }
   $('fade').classList.remove('on'); G.cine = null; $('hud').classList.remove('cine'); $('skipIntro').hidden = true;
@@ -78,6 +78,8 @@ function placePellas(x, z, yaw, rider) {
 }
 function updateCine(dt) {
   const C = G.cine; if (!C) return false;
+  if (C.dinner) return updateDinner(dt);
+  if (C.phone) return updatePhone(dt);
   if (C.intro) return updateIntro(dt);
   C.t += dt;
   const me = G.player.ped;
@@ -110,6 +112,8 @@ function updateCine(dt) {
 }
 function cineCamera(dt) {
   const C = G.cine, me = G.player.ped;
+  if (C.dinner) return cenaCamera(dt);
+  if (C.phone) return phoneCamera(dt);
   if (C.intro) return introCamera(dt);
   const fx = Math.sin(C.yaw), fz = Math.cos(C.yaw), sx = Math.cos(C.yaw), sz = -Math.sin(C.yaw);
   const focus = C.phase === 'arrive' ? { x: (me.x + C.pos.x) / 2, z: (me.z + C.pos.z) / 2 } : C.pos || C.stop;

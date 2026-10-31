@@ -57,6 +57,7 @@ function startStory() {
   G.hour = 20.4; envTimer = 0; lastEnvHour = -99;
   $('btnStory').hidden = true; $('storyPwd').hidden = true;
   initStoryWorld();
+  if (typeof startTrainPhone === 'function') startTrainPhone();
 }
 function storyAfterIntro() {
   const S = G.story; S.phase = 'goDinner';
@@ -111,6 +112,7 @@ function storyPrompt() {
 /* ---------- a cea UCL (cinemática con diálogo) ---------- */
 function storyDinner() {
   const S = G.story; S.phase = 'dinner';
+  if (typeof startCena === 'function') { setWaypoint(null); return startCena(); }
   $('fade').classList.add('on'); setWaypoint(null);
   setTimeout(() => {
     G.hour = 23.6; envTimer = 0; lastEnvHour = -99;

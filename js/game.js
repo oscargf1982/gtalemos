@@ -252,7 +252,8 @@ function setupInput() {
     if (e.code === 'Escape' || e.code === 'KeyP') { togglePause(); e.preventDefault(); }
     if (G.paused) return;
     if (G.cine && G.cine.intro) { if (['Space', 'Enter', 'Escape', 'KeyE', 'KeyF'].includes(e.code)) skipIntro(); return; }
-    if (G.cine) { if (['Space', 'Enter'].includes(e.code)) { skipTravel(); e.preventDefault(); } return; }
+    if (G.cine && (G.cine.dinner || G.cine.phone) && !G.dialog) { if (['Space', 'Enter'].includes(e.code)) { G.cine.dinner ? skipCena() : endTrainPhone(); e.preventDefault(); } return; }
+    if (G.cine && !G.cine.dinner) { if (['Space', 'Enter'].includes(e.code)) { skipTravel(); e.preventDefault(); } return; }
     if (!$('travel').hidden) { if (e.code === 'Escape') closeTravel(); return; }
     if (G.dialog) { if (['Space', 'KeyE', 'Enter', 'KeyF'].includes(e.code)) { dialogAdvance(); e.preventDefault(); } const m = /^Digit([1-9])$/.exec(e.code) || /^Numpad([1-9])$/.exec(e.code); if (m) choose(+m[1] - 1); return; }
     if (e.code === 'KeyF' || e.code === 'Enter') toggleCar();
@@ -302,7 +303,7 @@ function setupInput() {
   // botóns do menú
   $('btnPlay').onclick = startGame;
   initModes();
-  $('skipIntro').onclick = e => { e.stopPropagation(); if (G.cine && !G.cine.intro) skipTravel(); else skipIntro(); };
+  $('skipIntro').onclick = e => { e.stopPropagation(); if (G.cine && G.cine.dinner) skipCena(); else if (G.cine && G.cine.phone) endTrainPhone(); else if (G.cine && !G.cine.intro) skipTravel(); else skipIntro(); };
   $('dialog').addEventListener('click', () => dialogAdvance()); $('btnResume').onclick = () => togglePause(false);
   $('optQuality').onchange = e => { try { localStorage.setItem('lemosQ', e.target.value); } catch (er) { } $('qNote').hidden = false; };
   $('optTime').onchange = e => { G.hour = +e.target.value; envTimer = 0; lastEnvHour = -99; };
