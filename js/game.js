@@ -249,6 +249,7 @@ function setupInput() {
     keys[e.code] = true;
     if (!G.started) return;
     if (G.cine && G.cine.intro && !G.paused && e.code === 'Escape') { skipIntro(); e.preventDefault(); return; }
+    if (G.invOpen && (e.code === 'Escape' || e.code === 'KeyI')) { toggleInventory(false); e.preventDefault(); return; }
     if (e.code === 'Escape' || e.code === 'KeyP') { togglePause(); e.preventDefault(); }
     if (G.paused) return;
     if (G.cine && G.cine.intro) { if (['Space', 'Enter', 'Escape', 'KeyE', 'KeyF'].includes(e.code)) skipIntro(); return; }
@@ -260,6 +261,7 @@ function setupInput() {
     if (e.code === 'KeyC') cycleCam();
     if (e.code === 'KeyM') toggleMap();
     if (e.code === 'KeyY') quickTravel();
+    if (e.code === 'KeyI' && !G.invOpen) toggleInventory(true);
     if (e.code === 'KeyH') { if (G.player.car) G.sfx.horn(G.player.car, 1); }
     if (e.code === 'KeyR') G.sfx.toggleRadio();
     if (e.code === 'KeyT') taxiShift();
@@ -311,6 +313,7 @@ function setupInput() {
   $('btnMapClose').onclick = () => toggleMap(false);
   $('btnTravel').onclick = () => openTravel();
   $('hbMap').onclick = () => toggleMap(true);
+  $('hbInv').onclick = e => { e.stopPropagation(); toggleInventory(); };
   $('hbTravel').onclick = () => quickTravel();
   $('btnTravelClose').onclick = () => closeTravel();
   $('fullmap').addEventListener('click', onMapClick);
@@ -444,6 +447,7 @@ function interact() {
   if (G.story && storyInteractHook()) return;
   if (plazaHotelsInteract()) return;
   if (fineInteract()) return;
+  if (carudeInteract()) return;
   if (storyInteract()) return;
   // comezar misión se estás nun marcador
   for (const m of G.missionMarkers) if (m.near && !G.mission) { startMission(m.def); return; }
@@ -1001,7 +1005,7 @@ function simulate(dt, menu) {
   }
   // peóns
   for (const p of peds) { if (p === pl.ped) continue; pedThink(p, dt, world); }
-  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) updateVirginia(dt); updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
+  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
   if (!menu && !pl.car && !G.cine) updatePlayerFoot(dt);
   if (!menu) updateCine(dt);
   if (!menu) updateSajoni(dt);
@@ -1009,6 +1013,7 @@ function simulate(dt, menu) {
   for (const p of peds) world.crowd.pose(p);
   if (typeof updateHeroes === 'function') updateHeroes();
   if (typeof virginiaOverlays === 'function') virginiaOverlays();
+  if (typeof carudeOverlays === 'function') carudeOverlays();
   world.crowd.flush();
   world.smoke.update(dt);
   // tren

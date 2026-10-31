@@ -173,6 +173,12 @@ function mayorSay(n, text) {
 }
 function talkMayor(n) {
   const M = t => ({ who: 'The Mayor', text: t });
+  if (G.carude && G.carude.moved) return openDialog([
+    M('Vaia, vaia! Benvido ao NOVO Carud\'e Rock, agora na Praza da Compañía, como Deus e este alcalde mandan.'),
+    M('En Carude houbo un... incidente líquido cun altofalante. Uns chámanlle sabotaxe. Eu chámolle oportunidade.'),
+    M('Grazas a min, agora o festival ten de fondo o Escorial galego. Rock, cultura e patrimonio: tres logros desbloqueados dunha soa vez!'),
+    M('E se alguén lle pregunta quen o organizou... diga «The Mayor». Con maiúsculas.'),
+  ]);
   openDialog([
     M('Vaia, vaia! Un cidadán achégase sen cita previa. Vota vostede en Monforte? Non? Tanto ten: o voto non se pide, a admiración si.'),
     M('Contemple esta marabilla: a gran fonte do Parque dos Condes. O proxecto foi dun enxeñeiro, a idea foi miña e os aplausos, por suposto, tamén.'),
@@ -232,7 +238,7 @@ function updateBand(dt) {
   }
   p.y = terrainH(p.x, p.z);
   n.lineT -= dt;
-  if (dme < 32 && n.lineT <= 0 && !G.dialog) { n.lineT = RR(8, 10); n.li = ((n.li || 0) + 1) % MAYOR_LINES.length; mayorSay(n, MAYOR_LINES[n.li]); }
+  if (dme < 32 && n.lineT <= 0 && !G.dialog) { n.lineT = RR(8, 10); const ML = G.carude && G.carude.moved ? MAYOR_FEST_LINES : MAYOR_LINES; n.li = ((n.li || 0) + 1) % ML.length; mayorSay(n, ML[n.li]); }
   if (n.speechHold > 0) { n.speechHold -= dt; if (n.speechHold <= 0 || dme > 40) n.speech.visible = false; }
   const sc = p.scale, yaw = p.yaw, fx = Math.sin(yaw), fz = Math.cos(yaw), fat = p.fat || 1;
   n.speech.position.set(p.x, p.y + 2.75 * sc, p.z);

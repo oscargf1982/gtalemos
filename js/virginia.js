@@ -71,6 +71,7 @@ function talkVirginia(n) {
       () => virginiaSic(n),
     ]);
   }
+  { const Q = carudeQ(); if (Q.state !== 'none') return openDialog(carudeVirginiaLines()); }
   openDialog([
     VB('Eh, ti! Si, ti! Para un momento. Son Virginia Bolsas, presidenta da Asociación Salvemos o Malecón. E este é Pacheco, vicepresidente.'),
     PCH('Guau!'),
@@ -79,6 +80,7 @@ function talkVirginia(n) {
       choices: [
         { t: 'E por que non unha ponte?', fn: () => [VB('Porque non! Porque o Malecón é dos paseantes, dos patos e de Pacheco. E porque se o propón ese home, xa sei que vai mal.'), VB('Se mañá di que a auga molla, convoco unha manifestación en contra da auga. Con pancarta e todo.')] },
         { t: 'Onde asino?', fn: () => [VB('Aquí, aquí! Unha sinatura máis... xa van trescentas doce. Pacheco asinou coa pata, que tamén é veciño e paga o IBI da caseta.'), () => { if (!save.virginiaSigned) { save.virginiaSigned = true; persist(); toast('Asinaches a petición «NON Á PONTE» de Salvemos o Malecón', 3.5); } }] },
+        { t: 'Podo axudarte nalgo?', fn: () => carudeVirginiaLines() },
         { t: 'Pois a min o alcalde caeume ben', fn: () => [VB('CAEUCHE BEN?! Pacheco, mira este... Non, Pacheco, quieto. Aínda non.'), PCH('Grrrr...'), VB('Vou tomar nota da túa cara. Como te vexa facéndolle un recadiño a ese home, Pacheco vaise acordar do teu nocello.')] },
       ],
     }),

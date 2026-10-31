@@ -55,7 +55,7 @@ function startPellas(dest) {
 }
 // saltar a animación da viaxe rápida (Espazo / Intro / botón)
 function skipTravel() {
-  const C = G.cine; if (!C || C.intro || C.dinner || C.phone) return;
+  const C = G.cine; if (!C || C.intro || C.dinner || C.phone || C.pee) return;
   if (C.phase !== 'black') teleportTo(C.dest);
   if (YEPES) { YEPES.p.visible = false; YEPES.veh.visible = false; YEPES.tag.visible = false; }
   $('fade').classList.remove('on'); G.cine = null; $('hud').classList.remove('cine'); $('skipIntro').hidden = true;
@@ -78,6 +78,7 @@ function placePellas(x, z, yaw, rider) {
 }
 function updateCine(dt) {
   const C = G.cine; if (!C) return false;
+  if (C.pee) return updatePee(dt);
   if (C.dinner) return updateDinner(dt);
   if (C.phone) return updatePhone(dt);
   if (C.intro) return updateIntro(dt);
@@ -112,6 +113,7 @@ function updateCine(dt) {
 }
 function cineCamera(dt) {
   const C = G.cine, me = G.player.ped;
+  if (C.pee) return peeCamera(dt);
   if (C.dinner) return cenaCamera(dt);
   if (C.phone) return phoneCamera(dt);
   if (C.intro) return introCamera(dt);

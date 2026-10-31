@@ -6,17 +6,17 @@
    e suxestión de viaxe rápida.
    ========================================================== */
 const ITEMS = {
-  moedas: { n: 'Cinco euros soltos', i: '🪙' },
-  puro: { n: 'Puro do bo', i: '🚬' },
-  tesoiras: { n: 'Tesoiras douradas', i: '✂️' },
-  autografo: { n: 'Autógrafo de The Mayor', i: '✍️' },
-  bocata: { n: 'Bocata de tortilla', i: '🥪' },
-  carteira: { n: 'Carteira (baleira)', i: '👛' },
-  dni: { n: 'DNI de Avelino', i: '🪪' },
-  decimoA: { n: 'Medio décimo', i: '🎫' },
-  decimo: { n: 'Décimo enteiro', i: '🎟️' },
-  botella: { n: 'Botella de viño do peleón', i: '🍷' },
-  billete: { n: 'Billete a Cee', i: '🚆' },
+  moedas: { n: 'Cinco euros soltos', i: '🪙', d: 'O único que quedou no peto despois da cea. Dan para pouco... ou para un puro.' },
+  puro: { n: 'Puro do bo', i: '🚬', d: 'Dos gordos, dos que fuma o Spasic. Os outros «saben a cartón».' },
+  tesoiras: { n: 'Tesoiras douradas', i: '✂️', d: 'As tesoiras douradas de inaugurar do alcalde. Sen elas, The Mayor non é ninguén.' },
+  autografo: { n: 'Autógrafo de The Mayor', i: '✍️', d: 'Rúbrica de tres voltas e un floreo. Para Damián Selfies e as súas historias.' },
+  bocata: { n: 'Bocata de tortilla', i: '🥪', d: 'Tortilla CON cebola. Gañado fregando pratos no Hostal River.' },
+  carteira: { n: 'Carteira (baleira)', i: '👛', d: 'A túa carteira! Recuperada... e baleira. Cheira a can.' },
+  dni: { n: 'DNI de Avelino', i: '🪪', d: 'Avelino Villar, de Cee. Na foto sae peor ca na realidade.' },
+  decimoA: { n: 'Medio décimo', i: '🎫', d: 'Medio décimo de lotaría. A outra metade gañouna Currito ao «Olín sin verlas».' },
+  decimo: { n: 'Décimo enteiro', i: '🎟️', d: 'O décimo enteiro! Igual está premiado...' },
+  botella: { n: 'Botella de viño do peleón', i: '🍷', d: 'A última botella do peleón da cea UCL. Alguén na cidade a vai querer.' },
+  billete: { n: 'Billete a Cee', i: '🚆', d: 'Rexional Monforte → Santiago e bus a Cee. Volta á casa!' },
 };
 const npcPos = id => () => { const n = NPCS.find(q => q.id === id); return n ? { x: n.p.x, z: n.p.z } : null; };
 const ptPos = id => () => { const p = G.story && G.story.points && G.story.points.find(q => q.id === id); return p ? { x: p.x, z: p.z } : null; };
@@ -347,4 +347,32 @@ function advEnding() {
       ] }),
     ]);
   }, 1200);
+}
+
+/* ---------- mochila / inventario (tecla I ou botón MOCHILA) ---------- */
+function toggleInventory(force) {
+  let el = $('invPanel');
+  if (!el) {
+    const st = document.createElement('style');
+    st.textContent = `#invPanel{position:fixed;inset:0;display:grid;place-items:center;background:#0009;z-index:60;font-family:Barlow,sans-serif}
+#invPanel[hidden]{display:none}#invPanel .box{width:min(560px,92vw);max-height:84vh;overflow:auto;background:#15191d;border:2px solid #f2c21b;padding:16px 18px;color:#e9e6dc;box-shadow:0 20px 60px #000a}
+#invPanel h2{margin:0 0 4px;font:900 28px "Big Shoulders Display",Barlow,sans-serif;letter-spacing:.05em;color:#f2c21b}#invPanel .sub{opacity:.7;font-size:14px;margin-bottom:12px}
+#invPanel .it{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #ffffff1a}#invPanel .ic{font-size:30px;line-height:1;width:40px;text-align:center}#invPanel .it b{display:block;font-size:17px}#invPanel .it span{font-size:14px;opacity:.8}
+#invPanel .empty{opacity:.7;padding:12px 0}#invPanel .cl{margin-top:12px;appearance:none;border:0;background:#f2c21b;color:#15191d;font:800 15px Barlow,sans-serif;padding:8px 14px;cursor:pointer;text-transform:uppercase}`;
+    document.head.appendChild(st);
+    el = document.createElement('div'); el.id = 'invPanel'; el.hidden = true; document.body.appendChild(el);
+    el.addEventListener('click', e => { if (e.target === el || e.target.classList.contains('cl')) toggleInventory(false); });
+  }
+  const show = force !== undefined ? force : el.hidden;
+  if (show) {
+    const S = G.story, money = G.player.money;
+    let html = '';
+    if (!S) html = `<div class="empty">A mochila só se usa no modo «A historia de Avelino Villar». No modo libre levas ${money} € e moita liberdade.</div>`;
+    else if (!S.inv.length) html = '<div class="empty">Baleira. Nin unha pelusa.</div>';
+    else html = S.inv.map(k => `<div class="it"><div class="ic">${ITEMS[k].i}</div><div><b>${ITEMS[k].n}</b><span>${ITEMS[k].d || ''}</span></div></div>`).join('');
+    const st = S && S.step && STEPS[S.step];
+    el.innerHTML = `<div class="box"><h2>MOCHILA</h2><div class="sub">${money} €${S ? ' · Débeda UCELERS: ' + (S.debt > 0 ? S.debt + ' €' : 'pagada ✓') : ''}${st ? '<br>Obxectivo: ' + st.t : ''}</div>${html}<button class="cl" type="button">Pechar <kbd>I</kbd></button></div>`;
+    if (document.exitPointerLock) document.exitPointerLock();
+  }
+  el.hidden = !show; G.invOpen = show;
 }
