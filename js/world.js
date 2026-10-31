@@ -121,6 +121,7 @@ function buildWorld(scene, Q) {
   buildUcelers(B, scene);
   buildPlazaHotels(B, scene);
   if (typeof buildCarude === 'function') buildCarude();
+  if (typeof buildConcello === 'function') buildConcello(B, scene);
   buildGoyanes(B, scene);
   if (LM.volei) { const V = LM.volei; inFrame(B, scene, V.ox, V.oz, V.rot, (LB, g) => buildVoleiCourt(LB, g)); }
   buildRailsOSM(B, scene, (x, z) => { const [lx, lz] = LM.station.inv(x, z); return lx > 330 && lx < 432 && Math.abs(lz) < 176; });

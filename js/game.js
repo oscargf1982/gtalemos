@@ -316,7 +316,6 @@ function setupInput() {
   $('hbInv').onclick = e => { e.stopPropagation(); toggleInventory(); };
   $('hbTravel').onclick = () => quickTravel();
   $('btnTravelClose').onclick = () => closeTravel();
-  $('fullmap').addEventListener('click', onMapClick);
   document.querySelectorAll('[data-wp]').forEach(b => b.onclick = () => { const [x, z] = b.dataset.wp.split(',').map(Number); setWaypoint(x, z); toggleMap(false); });
   $('btnReset').onclick = () => { if (G.player.car) { const c = G.player.car; c.yaw = Math.round(c.yaw / (Math.PI / 2)) * Math.PI / 2; c.vx = c.vz = c.r = 0; c.health = Math.max(c.health, 40); const n = nearestNode(c.x, c.z, n => n.edges.some(e => e.road.type === 'car')); c.place(n.x + 3, n.z + 3, c.yaw); } togglePause(false); };
   addEventListener('gamepadconnected', () => toast('Mando conectado'));
@@ -683,39 +682,44 @@ let mapBase, MAPS = 1.2; // px por metro
 const MAPO = { x: MAP.minX - 20, z: MAP.minZ - 20, w: (MAP.maxX - MAP.minX) + 40, h: (MAP.maxZ - MAP.minZ) + 40 };
 function buildMinimapBase() {
   const c = cnv(Math.ceil(MAPO.w * MAPS), Math.ceil(MAPO.h * MAPS)), x = c.getContext('2d');
-  const P = (wx, wz) => [(wx - MAPO.x) * MAPS, (wz - MAPO.z) * MAPS];
-  const poly = (pts, fill) => { x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(...P(a, b)) : x.moveTo(...P(a, b))); x.closePath(); x.fillStyle = fill; x.fill(); };
-  const line = (pts, col, w) => { x.strokeStyle = col; x.lineWidth = w; x.lineJoin = 'round'; x.lineCap = 'round'; x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(...P(a, b)) : x.moveTo(...P(a, b))); x.stroke(); };
   x.fillStyle = '#26301f'; x.fillRect(0, 0, c.width, c.height);
+  drawMapLayers(x, (wx, wz) => [(wx - MAPO.x) * MAPS, (wz - MAPO.z) * MAPS], MAPS);
+  mapBase = c;
+}
+/* capas vectoriais do mapa (minimapa e mapa grande con zoom) */
+function drawMapLayers(x, P, SC, vis) {
+  const inView = pts => { if (!vis) return true; for (let i = 0; i < pts.length; i += Math.max(1, pts.length >> 3)) { const [a, b] = pts[i]; if (a > vis.x0 && a < vis.x1 && b > vis.z0 && b < vis.z1) return true; } const [a, b] = pts[0], [c2, d] = pts[pts.length - 1]; return (Math.min(a, c2) < vis.x1 && Math.max(a, c2) > vis.x0 && Math.min(b, d) < vis.z1 && Math.max(b, d) > vis.z0); };
+  const poly = (pts, fill) => { if (!inView(pts)) return; x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(...P(a, b)) : x.moveTo(...P(a, b))); x.closePath(); x.fillStyle = fill; x.fill(); };
+  const line = (pts, col, w) => { x.strokeStyle = col; x.lineWidth = w; x.lineJoin = 'round'; x.lineCap = 'round'; x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(...P(a, b)) : x.moveTo(...P(a, b))); x.stroke(); };
   poly(URBAN, '#2c3328');
   // monte
-  const [hx, hz] = P(HILL.x, HILL.z); const g = x.createRadialGradient(hx, hz, 10, hx, hz, HILL.r1 * MAPS); g.addColorStop(0, '#3a4a2c'); g.addColorStop(1, 'rgba(38,48,31,0)'); x.fillStyle = g; x.beginPath(); x.arc(hx, hz, HILL.r1 * MAPS, 0, 7); x.fill();
+  const [hx, hz] = P(HILL.x, HILL.z); const g = x.createRadialGradient(hx, hz, 10, hx, hz, HILL.r1 * SC); g.addColorStop(0, '#3a4a2c'); g.addColorStop(1, 'rgba(38,48,31,0)'); x.fillStyle = g; x.beginPath(); x.arc(hx, hz, HILL.r1 * SC, 0, 7); x.fill();
   // áreas de OSM
   for (const a of AREAS) {
     const col = { park: '#35552c', grass: '#33502b', wood: '#2e4a26', cemetery: '#3a4a35', pitch: '#3f7a34', stadium: '#3f7a34', play: '#4a6a38', parking: '#3b3e42', plaza: '#5d5648', platform: '#6b6658' }[a.t];
     if (col) poly(a.p, col);
   }
   // río
-  for (let i = 0; i < RIVER.length - 1; i++) line([RIVER[i], RIVER[i + 1]], '#3d6f86', Math.max(2, (RIVER_W[i] + RIVER_W[i + 1] - 3) * MAPS));
+  for (let i = 0; i < RIVER.length - 1; i++) line([RIVER[i], RIVER[i + 1]], '#3d6f86', Math.max(2, (RIVER_W[i] + RIVER_W[i + 1] - 3) * SC));
   // edificios
   x.fillStyle = '#4a4d52';
-  for (const b of G.buildingsList) if (b.poly) { x.beginPath(); b.poly.forEach(([a, c2], i) => i ? x.lineTo(...P(a, c2)) : x.moveTo(...P(a, c2))); x.closePath(); x.fill(); }
+  for (const b of G.buildingsList) if (b.poly) { if (!inView(b.poly)) continue; x.beginPath(); b.poly.forEach(([a, c2], i) => i ? x.lineTo(...P(a, c2)) : x.moveTo(...P(a, c2))); x.closePath(); x.fill(); }
   for (const z of G.monumentZones) poly(z, '#6e6352');
   for (const [z, c] of (G.mapExtra || [])) poly(z, c);
   // vías do tren
-  for (const r of OSM.rails) line(r.p, '#6b5d4a', Math.max(1.5, 2.2 * MAPS));
+  for (const r of OSM.rails) line(r.p, '#6b5d4a', Math.max(1.5, 2.2 * SC));
   // rúas (primeiro as pequenas)
   const order = { track: 0, path: 1, service: 2, ped: 3, car: 4 };
   const sorted = ROADS.slice().sort((a, b) => (order[a.type] - order[b.type]) || (a.major - b.major));
   for (const r of sorted) {
-    if (r.type === 'track') line(r.pts, '#5b5440', 2 * MAPS);
-    else if (r.type === 'path') line(r.pts, '#77705e', Math.max(1, 1.8 * MAPS));
-    else if (r.type === 'ped') line(r.pts, '#b7a98c', r.w * MAPS);
-    else line(r.pts, r.major ? '#e6dcc0' : '#cfd0cc', Math.max(2, (r.w + (r.sw ? 1.5 : 0)) * MAPS));
+    if (!inView(r.pts)) continue;
+    if (r.type === 'track') line(r.pts, '#5b5440', 2 * SC);
+    else if (r.type === 'path') line(r.pts, '#77705e', Math.max(1, 1.8 * SC));
+    else if (r.type === 'ped') line(r.pts, '#b7a98c', r.w * SC);
+    else line(r.pts, r.major ? '#e6dcc0' : '#cfd0cc', Math.max(2, (r.w + (r.sw ? 1.5 : 0)) * SC));
   }
   // castelo
-  x.strokeStyle = '#a89a7a'; x.lineWidth = 3 * MAPS; x.beginPath(); x.arc(hx, hz, (HILL.r0 - 1.5) * MAPS, 0, 7); x.stroke();
-  mapBase = c;
+  x.strokeStyle = '#a89a7a'; x.lineWidth = 3 * SC; x.beginPath(); x.arc(hx, hz, (HILL.r0 - 1.5) * SC, 0, 7); x.stroke();
 }
 const mini = { c: null, x: null };
 function drawMinimap() {
@@ -758,28 +762,82 @@ function drawMinimap() {
 function toggleMap(force) {
   const el = $('mapOverlay'), show = force !== undefined ? force : el.hidden;
   el.hidden = !show; G.mapOpen = show;
-  if (show) drawFullMap();
+  if (show) { if (document.exitPointerLock) document.exitPointerLock(); mapViewInit(); drawFullMap(); }
+}
+/* ---------- mapa a pantalla completa con zoom e desprazamento ---------- */
+const MV = { cx: 0, cz: 0, s: 1, min: 0.3, max: 14, drag: null, moved: false, pts: new Map(), raf: 0 };
+function mapViewInit() {
+  const c = $('fullmap'), r = c.getBoundingClientRect(), dpr = devicePixelRatio;
+  c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
+  MV.min = Math.min(c.width / MAPO.w, c.height / MAPO.h);
+  if (!MV.init) { MV.init = true; const me = G.player.car || G.player.ped; MV.cx = me.x; MV.cz = me.z; MV.s = Math.max(MV.min, 1.6 * dpr); }
+  MV.s = clamp(MV.s, MV.min, MV.max * dpr);
+  if (!MV.bound) { MV.bound = true; mapBindInput(c); addEventListener('resize', () => { if (G.mapOpen) { mapViewInit(); drawFullMap(); } }); }
+}
+const mapW2S = (wx, wz) => { const c = $('fullmap'); return [c.width / 2 + (wx - MV.cx) * MV.s, c.height / 2 + (wz - MV.cz) * MV.s]; };
+const mapS2W = (sx, sy) => { const c = $('fullmap'); return [MV.cx + (sx - c.width / 2) / MV.s, MV.cz + (sy - c.height / 2) / MV.s]; };
+function mapRedraw() { if (MV.raf) return; MV.raf = requestAnimationFrame(() => { MV.raf = 0; drawFullMap(); }); }
+function mapZoomAt(sx, sy, k) {
+  const [wx, wz] = mapS2W(sx, sy), dpr = devicePixelRatio;
+  MV.s = clamp(MV.s * k, MV.min, MV.max * dpr);
+  const c = $('fullmap'); MV.cx = wx - (sx - c.width / 2) / MV.s; MV.cz = wz - (sy - c.height / 2) / MV.s; mapRedraw();
+}
+function mapBindInput(c) {
+  const dpr = () => devicePixelRatio, rel = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) * dpr(), (e.clientY - r.top) * dpr()]; };
+  c.addEventListener('wheel', e => { e.preventDefault(); const [sx, sy] = rel(e); mapZoomAt(sx, sy, Math.pow(1.0018, -e.deltaY)); }, { passive: false });
+  c.addEventListener('dblclick', e => { const [sx, sy] = rel(e); mapZoomAt(sx, sy, 2); });
+  c.addEventListener('pointerdown', e => { c.setPointerCapture(e.pointerId); MV.pts.set(e.pointerId, rel(e)); MV.moved = false; MV.down = rel(e); if (MV.pts.size === 2) { const [p1, p2] = [...MV.pts.values()]; MV.pinch = { d: Math.hypot(p1[0] - p2[0], p1[1] - p2[1]), s: MV.s }; } });
+  c.addEventListener('pointermove', e => {
+    if (!MV.pts.has(e.pointerId)) return; const prev = MV.pts.get(e.pointerId), cur = rel(e); MV.pts.set(e.pointerId, cur);
+    if (MV.pts.size === 2 && MV.pinch) { const [p1, p2] = [...MV.pts.values()], d = Math.hypot(p1[0] - p2[0], p1[1] - p2[1]), mx = (p1[0] + p2[0]) / 2, my = (p1[1] + p2[1]) / 2; const k = (MV.pinch.s * d / MV.pinch.d) / MV.s; mapZoomAt(mx, my, k); MV.moved = true; return; }
+    const dx = cur[0] - prev[0], dy = cur[1] - prev[1];
+    if (Math.hypot(cur[0] - MV.down[0], cur[1] - MV.down[1]) > 6 * dpr()) MV.moved = true;
+    if (MV.moved) { MV.cx -= dx / MV.s; MV.cz -= dy / MV.s; mapRedraw(); }
+  });
+  const up = e => {
+    const wasOne = MV.pts.size === 1; MV.pts.delete(e.pointerId); if (MV.pts.size < 2) MV.pinch = null;
+    if (wasOne && !MV.moved && e.type === 'pointerup') { const [sx, sy] = rel(e); const [wx, wz] = mapS2W(sx, sy); setWaypoint(wx, wz); mapRedraw(); }
+  };
+  c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
+  const btn = (id, fn) => { const b = $(id); if (b) b.onclick = e => { e.stopPropagation(); fn(); }; };
+  btn('mapZin', () => mapZoomAt(c.width / 2, c.height / 2, 1.6));
+  btn('mapZout', () => mapZoomAt(c.width / 2, c.height / 2, 1 / 1.6));
+  btn('mapMe', () => { const me = G.player.car || G.player.ped; MV.cx = me.x; MV.cz = me.z; MV.s = Math.max(MV.s, 3 * dpr()); mapRedraw(); });
+  btn('mapAll', () => { MV.cx = MAPO.x + MAPO.w / 2; MV.cz = MAPO.z + MAPO.h / 2; MV.s = MV.min; mapRedraw(); });
 }
 function drawFullMap() {
-  const c = $('fullmap'), r = c.getBoundingClientRect(); c.width = r.width * devicePixelRatio; c.height = r.height * devicePixelRatio;
-  const x = c.getContext('2d'), s = Math.min(c.width / mapBase.width, c.height / mapBase.height); G._fm = { s, ox: (c.width - mapBase.width * s) / 2, oy: (c.height - mapBase.height * s) / 2 };
+  const c = $('fullmap'), x = c.getContext('2d'), dpr = devicePixelRatio, s = MV.s;
   x.fillStyle = '#1a2116'; x.fillRect(0, 0, c.width, c.height);
-  x.drawImage(mapBase, G._fm.ox, G._fm.oy, mapBase.width * s, mapBase.height * s);
-  const P = (wx, wz) => [G._fm.ox + (wx - MAPO.x) * MAPS * s, G._fm.oy + (wz - MAPO.z) * MAPS * s];
-  x.font = `700 ${15 * devicePixelRatio}px "Barlow Condensed", sans-serif`; x.fillStyle = 'rgba(240,232,214,.9)'; x.textAlign = 'center';
-  for (const L of G.mapLabels || []) x.fillText(L[0], ...P(L[1], L[2]));
+  const [x0, z0] = mapS2W(0, 0), [x1, z1] = mapS2W(c.width, c.height);
+  // base rápida cando o zoom é pequeno; vectorial cando te achegas
+  if (s / dpr < 1.4) { const k = s / MAPS, [ox, oy] = mapW2S(MAPO.x, MAPO.z); x.imageSmoothingEnabled = true; x.drawImage(mapBase, ox, oy, mapBase.width * k, mapBase.height * k); }
+  else { x.fillStyle = '#26301f'; const [ox, oy] = mapW2S(MAPO.x, MAPO.z); x.fillRect(ox, oy, MAPO.w * s, MAPO.h * s); drawMapLayers(x, mapW2S, s, { x0: x0 - 30, x1: x1 + 30, z0: z0 - 30, z1: z1 + 30 }); }
+  // ruta GPS
+  if (G.route && G.route.length > 1) { const me = G.player.car || G.player.ped; x.strokeStyle = '#c36bff'; x.lineWidth = Math.max(3 * dpr, 3 * s * 0.6); x.lineJoin = 'round'; x.beginPath(); x.moveTo(...mapW2S(me.x, me.z)); for (const n of G.route) x.lineTo(...mapW2S(n.x, n.z)); if (G.waypoint) x.lineTo(...mapW2S(G.waypoint.x, G.waypoint.z)); x.stroke(); }
+  // nomes das rúas ao achegarse
+  if (s / dpr >= 2.2) {
+    const seen = new Set(), fs = Math.round(clamp(4.2 * s / dpr, 11, 17) * dpr);
+    x.font = `600 ${fs}px "Barlow Condensed", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    for (const r of ROADS) {
+      if (!r.name || r.type === 'path' || r.type === 'track' || seen.has(r.name) || r.len * s < x.measureText(r.name).width * 1.1) continue;
+      const m = roadPoint(r, r.len / 2), [sx, sy] = mapW2S(m.x, m.z); if (sx < 0 || sy < 0 || sx > c.width || sy > c.height) continue;
+      seen.add(r.name);
+      let ang = Math.atan2(m.uz, m.ux); if (ang > Math.PI / 2) ang -= Math.PI; if (ang < -Math.PI / 2) ang += Math.PI;
+      x.save(); x.translate(sx, sy); x.rotate(ang); x.lineWidth = 3 * dpr; x.strokeStyle = 'rgba(20,24,20,.85)'; x.strokeText(r.name, 0, 0); x.fillStyle = '#f4efe2'; x.fillText(r.name, 0, 0); x.restore();
+    }
+  }
+  // zonas e lugares
+  x.font = `700 ${Math.round(clamp(15 * Math.sqrt(s / dpr), 13, 22) * dpr)}px "Barlow Condensed", sans-serif`; x.fillStyle = 'rgba(240,232,214,.92)'; x.textAlign = 'center';
+  if (s / dpr < 2.2) for (const L of G.mapLabels || []) { const [a, b] = mapW2S(L[1], L[2]); x.lineWidth = 3 * dpr; x.strokeStyle = 'rgba(15,18,15,.7)'; x.strokeText(L[0], a, b); x.fillText(L[0], a, b); }
+  else for (const z of G.namedZones || []) { if (!z.n || z.p.length < 3) continue; const [cx, cz] = polyCentroid(z.p), [a, b] = mapW2S(cx, cz); if (a < 0 || b < 0 || a > c.width || b > c.height) continue; x.font = `700 ${Math.round(13 * dpr)}px "Barlow Condensed", sans-serif`; x.lineWidth = 3 * dpr; x.strokeStyle = 'rgba(15,18,15,.8)'; x.strokeText(z.n.toUpperCase(), a, b); x.fillStyle = '#ffd98a'; x.fillText(z.n.toUpperCase(), a, b); }
   x.textAlign = 'left';
-  const me = G.player.car || G.player.ped; const [px, py] = P(me.x, me.z);
-  for (const m of G.missionMarkers) { const [a, b] = P(m.def.at[0], m.def.at[1]); x.fillStyle = save.done[m.def.id] ? '#9bd28a' : '#f2a33a'; x.fillRect(a - 7, b - 7, 14, 14); x.fillStyle = '#f2ecdc'; x.font = `600 ${13 * devicePixelRatio}px Barlow Condensed, sans-serif`; x.fillText(m.def.name, a + 10, b + 4); }
-  if (G.waypoint) { const [a, b] = P(G.waypoint.x, G.waypoint.z); x.fillStyle = '#c36bff'; x.beginPath(); x.arc(a, b, 8, 0, 7); x.fill(); }
-  if (G.works) { const [a, b] = P(G.works.center.x, G.works.center.z); x.fillStyle = '#ff8a1a'; x.fillRect(a - 8, b - 8, 16, 16); x.fillStyle = '#15191d'; x.font = `800 ${12 * devicePixelRatio}px Barlow Condensed, sans-serif`; x.textAlign = 'center'; x.fillText('!', a, b + 4); x.textAlign = 'left'; x.fillStyle = '#ffb36b'; x.font = `600 ${13 * devicePixelRatio}px Barlow Condensed, sans-serif`; x.fillText('OBRAS · ' + G.works.name, a + 12, b + 4); }
-  x.fillStyle = '#fff'; x.strokeStyle = '#7a1f3d'; x.lineWidth = 3; x.beginPath(); x.arc(px, py, 7, 0, 7); x.fill(); x.stroke();
-}
-function onMapClick(e) {
-  const c = $('fullmap'), r = c.getBoundingClientRect(), fm = G._fm; if (!fm) return;
-  const cx = (e.clientX - r.left) * devicePixelRatio, cy = (e.clientY - r.top) * devicePixelRatio;
-  const wx = (cx - fm.ox) / (MAPS * fm.s) + MAPO.x, wz = (cy - fm.oy) / (MAPS * fm.s) + MAPO.z;
-  setWaypoint(wx, wz); drawFullMap();
+  for (const m of G.missionMarkers) { const [a, b] = mapW2S(m.def.at[0], m.def.at[1]); x.fillStyle = save.done[m.def.id] ? '#9bd28a' : '#f2a33a'; x.fillRect(a - 7 * dpr, b - 7 * dpr, 14 * dpr, 14 * dpr); x.fillStyle = '#f2ecdc'; x.font = `600 ${13 * dpr}px Barlow Condensed, sans-serif`; x.fillText(m.def.name, a + 11 * dpr, b + 4 * dpr); }
+  if (G.waypoint) { const [a, b] = mapW2S(G.waypoint.x, G.waypoint.z); x.fillStyle = '#c36bff'; x.strokeStyle = '#111'; x.lineWidth = 2 * dpr; x.beginPath(); x.arc(a, b, 8 * dpr, 0, 7); x.fill(); x.stroke(); }
+  if (G.works) { const [a, b] = mapW2S(G.works.center.x, G.works.center.z); x.fillStyle = '#ff8a1a'; x.fillRect(a - 8 * dpr, b - 8 * dpr, 16 * dpr, 16 * dpr); }
+  const me = G.player.car || G.player.ped, [px, py] = mapW2S(me.x, me.z), yaw = G.player.car ? G.player.car.yaw : G.player.ped.yaw;
+  x.save(); x.translate(px, py); x.rotate(Math.PI - yaw); x.scale(dpr * 1.3, dpr * 1.3); x.fillStyle = '#fff'; x.strokeStyle = '#7a1f3d'; x.lineWidth = 2; x.beginPath(); x.moveTo(0, -9); x.lineTo(6.5, 7); x.lineTo(0, 3.5); x.lineTo(-6.5, 7); x.closePath(); x.fill(); x.stroke(); x.restore();
+  // escala
+  const m100 = 100 * s; x.fillStyle = 'rgba(15,18,15,.8)'; x.fillRect(c.width - m100 - 30 * dpr, c.height - 34 * dpr, m100 + 20 * dpr, 24 * dpr); x.fillStyle = '#f2ecdc'; x.fillRect(c.width - m100 - 20 * dpr, c.height - 18 * dpr, m100, 3 * dpr); x.font = `600 ${12 * dpr}px Barlow Condensed, sans-serif`; x.textAlign = 'center'; x.fillText(Math.round(100 / 0.65) + ' m', c.width - m100 / 2 - 20 * dpr, c.height - 24 * dpr);
 }
 function setWaypoint(x, z) {
   if (x === null) { G.waypoint = null; G.route = null; return; }
@@ -1005,7 +1063,7 @@ function simulate(dt, menu) {
   }
   // peóns
   for (const p of peds) { if (p === pl.ped) continue; pedThink(p, dt, world); }
-  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
+  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
   if (!menu && !pl.car && !G.cine) updatePlayerFoot(dt);
   if (!menu) updateCine(dt);
   if (!menu) updateSajoni(dt);

@@ -129,6 +129,7 @@ function computeLandmarks() {
   if (typeof plazaHotelsLandmarks === 'function') plazaHotelsLandmarks();
   if (typeof goyanesLandmarks === 'function') goyanesLandmarks();
   if (typeof carudeLandmarks === 'function') carudeLandmarks();
+  if (typeof concelloLandmarks === 'function') concelloLandmarks();
   // --- Torre da Homenaxe e Mosteiro de San Vicente ---
   {
     const t = polyCentroid(osmBldg('Torre da Homenaxe').p), m = polyCentroid(osmBldg('Castelo de Monforte de Lemos').p);

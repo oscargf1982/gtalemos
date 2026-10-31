@@ -119,11 +119,18 @@ button, select { font: inherit; }
 #mIntro { font-family: var(--body); font-size: 16px; line-height: 1.45; color: var(--granite-dim); margin: 6px 0 0; }
 
 /* ---------- mapa ---------- */
-#mapOverlay { position: fixed; inset: 0; z-index: 30; background: #0d1013f2; display: grid; grid-template-rows: auto 1fr auto; padding-block: max(14px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); gap: 10px; }
+#mapOverlay { position: fixed; inset: 0; z-index: 30; background: #1a2116; overflow: hidden; }
+#mapOverlay .map-head { position: absolute; left: 0; right: 0; top: 0; z-index: 2; padding: max(10px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 18px max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(#0d1013e6, #0d101300); pointer-events: none; }
+#mapOverlay .wps { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 18px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(#0d101300, #0d1013e6); }
+.map-zoom { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 50%; transform: translateY(-50%); z-index: 2; display: flex; flex-direction: column; gap: 6px; }
+.map-zoom button { appearance: none; border: 0; width: 46px; height: 46px; background: #15191de6; color: var(--granite); font: 800 24px var(--hud), sans-serif; cursor: pointer; box-shadow: 0 0 0 1px #ffffff26 inset; }
+.map-zoom button:hover { background: var(--wine); }
+.map-zoom button.sm { font-size: 13px; letter-spacing: .03em; }
 .map-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .map-head h2 { margin: 0; font-family: var(--display); font-weight: 900; font-size: 34px; text-transform: uppercase; }
 .map-head p { margin: 0; color: var(--granite-dim); font-family: var(--hud); font-size: 15px; letter-spacing: .04em; }
-#fullmap { width: 100%; height: 100%; min-height: 0; cursor: crosshair; }
+#fullmap { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+#fullmap:active { cursor: grabbing; }
 .wps { display: flex; gap: 8px; flex-wrap: wrap; }
 .wps button { appearance: none; border: 0; background: var(--slate-2); color: var(--granite); font-family: var(--hud); font-size: 16px; font-weight: 600; letter-spacing: .05em; padding: 8px 12px; cursor: pointer; box-shadow: 0 0 0 1px #ffffff1c inset; }
 .wps button:hover { background: var(--wine-deep); }
@@ -278,8 +285,9 @@ button, select { font: inherit; }
 <div id="dialog" hidden><div class="dlg-inner"><img id="dlgFace" alt="" hidden><div class="dlg-body"><div id="dlgName"></div><p id="dlgText"></p><div id="dlgChoices"></div><div id="dlgHint" hidden>Espazo / toque para continuar ▸</div></div></div></div>
 
 <div id="mapOverlay" hidden>
-  <div class="map-head"><h2>Monforte de Lemos</h2><p>Toca o mapa para marcar un destino no GPS</p></div>
   <canvas id="fullmap"></canvas>
+  <div class="map-head"><h2>Monforte de Lemos</h2><p>Arrastra para moverte · roda ou belisca para ampliar · toca para marcar destino no GPS</p></div>
+  <div class="map-zoom"><button id="mapZin" type="button" aria-label="Ampliar">+</button><button id="mapZout" type="button" aria-label="Reducir">−</button><button id="mapMe" type="button" class="sm" aria-label="Centrar en min">EU</button><button id="mapAll" type="button" class="sm" aria-label="Ver todo">TODO</button></div>
   <div class="wps">
     <button data-wp="90,-60">Castelo</button><button data-wp="-37,10">Ponte Vella</button><button data-wp="12,45">Rúa do Cardeal</button>
     <button data-wp="-112,150">Parque dos Condes</button><button data-wp="196,-228">Estación</button><button data-wp="35,100">Compañía</button><button data-wp="-195,252">A Pinguela</button>
@@ -334,6 +342,7 @@ button, select { font: inherit; }
 <script src="js/heroes.js"></script>
 <script src="js/virginia.js"></script>
 <script src="js/carude.js"></script>
+<script src="js/concello.js"></script>
 <script src="js/riders.js"></script>
 <script src="js/works.js"></script>
 <script src="js/fair.js"></script>

@@ -196,8 +196,9 @@ function initFine() {
   if (G.fineInit) return; G.fineInit = true;
   const b = OSM.bldgs.find(q => q.n === 'Concello de Monforte de Lemos'), c = b ? polyCentroid(b.p) : [-314, 189];
   const nr = nearRoad(c[0], c[1], r => r.type === 'car'); let px = nr.px, pz = nr.pz;
+  if (G.concelloDoor) { G.fine.desk = { x: G.concelloDoor.x, z: G.concelloDoor.z }; } else {
   const dx = c[0] - px, dz = c[1] - pz, d = Math.hypot(dx, dz) || 1; px += dx / d * Math.min(d - 3, (nr.r ? nr.r.hw : 3) + 2.5); pz += dz / d * Math.min(d - 3, (nr.r ? nr.r.hw : 3) + 2.5);
-  G.fine.desk = { x: px, z: pz };
+  G.fine.desk = { x: px, z: pz }; }
   const tag = nameSprite('Concello · pagar multa', '#ff8a5c'); tag.visible = false; G.scene.add(tag); G.fine.tag = tag;
   const badge = document.createElement('div'); badge.id = 'fineBadge'; badge.hidden = true; $('hud').appendChild(badge);
   const st = document.createElement('style'); st.textContent = `#fineBadge{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:max(92px,env(safe-area-inset-top,0px));background:#2a0f12e8;border:2px solid #ff5a4a;border-radius:6px;padding:4px 10px;font:700 15px Barlow,sans-serif;color:#ffd9d4;pointer-events:none}#fineBadge b{color:#ffd23b;font-size:20px;margin-right:6px}
