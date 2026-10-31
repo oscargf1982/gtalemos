@@ -131,14 +131,14 @@ function updateSky(dt, focus) {
   sun.color.setRGB(1, lerp(0.95, 0.62, low), lerp(0.88, 0.42, low));
   sun.intensity = (1 - night) * lerp(1.75, 0.7, rain) * sstep(-0.05, 0.08, _sunDir.y);
   sun.position.set(focus.x + _sunDir.x * 160, focus.y + _sunDir.y * 160, focus.z + _sunDir.z * 160); sun.target.position.set(focus.x, focus.y, focus.z);
-  moon.intensity = night * 0.32; moon.position.set(focus.x - 140, 220, focus.z - 240);
-  hemi.intensity = lerp(0.42, 0.16, night) * lerp(1, 0.9, rain);
-  hemi.color.setRGB(lerp(0.74, 0.25, night), lerp(0.82, 0.3, night), lerp(0.92, 0.5, night));
-  hemi.groundColor.setRGB(lerp(0.38, 0.06, night), lerp(0.33, 0.06, night), lerp(0.27, 0.08, night));
-  renderer.toneMappingExposure = lerp(0.92, 1.25, night);
+  moon.intensity = night * 0.62; moon.position.set(focus.x - 140, 220, focus.z - 240);
+  hemi.intensity = lerp(0.42, 0.34, night) * lerp(1, 0.9, rain);
+  hemi.color.setRGB(lerp(0.74, 0.46, night), lerp(0.82, 0.52, night), lerp(0.92, 0.72, night));
+  hemi.groundColor.setRGB(lerp(0.38, 0.17, night), lerp(0.33, 0.17, night), lerp(0.27, 0.2, night));
+  renderer.toneMappingExposure = lerp(0.92, 1.45, night);
   // néboa da cor do horizonte
   const sunset = sstep(0.35, -0.02, _sunDir.y) * (1 - sstep(-0.02, -0.22, _sunDir.y));
-  _c1.setRGB(0.66, 0.75, 0.84).lerp(_c2.setRGB(0.035, 0.05, 0.085), night).lerp(_c2.setRGB(0.95, 0.6, 0.42), sunset * 0.45).lerp(_c2.setRGB(0.48, 0.5, 0.54).multiplyScalar(lerp(1, 0.12, night)), rain * 0.6);
+  _c1.setRGB(0.66, 0.75, 0.84).lerp(_c2.setRGB(0.1, 0.12, 0.18), night).lerp(_c2.setRGB(0.95, 0.6, 0.42), sunset * 0.45).lerp(_c2.setRGB(0.48, 0.5, 0.54).multiplyScalar(lerp(1, 0.12, night)), rain * 0.6);
   scene.fog.color.copy(_c1); scene.fog.density = lerp(0.0016, 0.0046, rain) + night * 0.0004;
   // materiais nocturnos
   for (const n of G.nightMats) n.mat.emissiveIntensity = n.base + night * n.k;

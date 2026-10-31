@@ -51,6 +51,7 @@ function startStory() {
   const orig = persist; window.persist = function () { const m = save.money; save.money = G.story ? G.story.money0 : m; orig(); save.money = m; };
   G.player.money = 0; save.money = 0; $('money').textContent = '0 €';
   startGame();
+  G.timeScale = 1 / 120; // no modo historia o tempo pasa á metade de velocidade
   G.hour = 20.4; envTimer = 0; lastEnvHour = -99;
   $('btnStory').hidden = true; $('storyPwd').hidden = true;
   initStoryWorld();
