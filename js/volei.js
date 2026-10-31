@@ -419,6 +419,7 @@ function voleyCurrito(dt, n) {
   p.arms = null; p.nod = -0.1;
 }
 function voleyWin(n) {
+  if (G.story && typeof advVolleyWin === 'function' && advVolleyWin(n)) return;
   const C = t => ({ who: 'Currito el Mago', text: t }), first = !save.curritoWin;
   openDialog([
     C(`DEZ pases! Iso é química, parella! Quedamos inscritos no Torneo Remember!`),

@@ -81,8 +81,8 @@ function initStoryWorld() {
   // pagar a débeda e mercar o billete
   S.points = [];
   if (G.ucelersDoor) S.points.push({ id: 'pay', x: G.ucelersDoor.x, z: G.ucelersDoor.z });
-  { const [x, z] = LM.station.pt(315, 6); S.points.push({ id: 'ticket', x, z }); }
   { const p = G.stationStop || (([x, z]) => ({ x, z }))(LM.station.pt(340, 0)); S.points.push({ id: 'train', x: p.x, z: p.z }); }
+  if (typeof advInit === 'function') advInit();
 }
 function nearStoryThing() {
   const S = G.story; if (!S || !S.spots || G.player.car) return null;
@@ -95,10 +95,7 @@ function storyInteractHook() {
   const S = G.story; if (!S || G.dialog || G.cine) return false;
   const t = nearStoryThing(); if (!t) return false;
   if (t.kind === 'sleep') { trySleep(t.s); return true; }
-  const id = t.p.id;
-  if (id === 'pay' && S.phase === 'play') { payDebt(); return true; }
-  if (id === 'ticket' && S.phase === 'play') { buyTicket(); return true; }
-  if (id === 'train' && S.phase === 'play' && S.ticket && S.debt <= 0) { storyEnding(); return true; }
+  return advPoint(t.p.id, true);
   return false;
 }
 function storyPrompt() {
@@ -106,9 +103,7 @@ function storyPrompt() {
   const K = isTouch ? '★' : 'E', h = G.hour;
   if (t.kind === 'sleep') { const s = t.s; setPrompt(`${K} · Durmir: ${s.label}${s.open && !s.open(h) ? ' (pechado)' : ''}`); return; }
   const id = t.p.id;
-  if (id === 'pay' && S.phase === 'play') setPrompt(S.debt > 0 ? `${K} · Pagar a débeda do viño do peleón (${S.debt} €)` : 'Débeda pagada no UCELERS ✓');
-  if (id === 'ticket' && S.phase === 'play') setPrompt(S.ticket ? 'Billete a Cee no peto ✓' : `${K} · Mercar billete Monforte → Cee (${STORY_TICKET} €)`);
-  if (id === 'train' && S.phase === 'play' && S.ticket && S.debt <= 0) setPrompt(`${K} · Coller o tren de volta a Cee`);
+  const pr = advPoint(id, false); if (pr) setPrompt(pr);
 }
 
 /* ---------- a cea UCL (cinemática con diálogo) ---------- */
@@ -121,16 +116,18 @@ function storyDinner() {
     $('fade').classList.remove('on');
     bigMsg('CEA UCL', 'Restaurante Pulpería UCELERS · Rúa de Chantada, 48');
     setTimeout(() => openDialog([
-      CW('Benvidos á cea UCL! Polbo á feira, lacón con grelos, e para os campións... o noso viño do peleón, a xoia da casa.'),
-      AV('Dous anos sen ver a esta xente! Isto hai que celebralo. Unha botella máis do do peleón!'),
-      CW('Marchando! E outra. E outra... Que ben bebe a xente de Cee.'),
+      CW('Benvidos á cea UCL! Polbo á feira, lacón con grelos e, para os campións... o noso viño do peleón, a xoia da casa.'),
+      AV('Dous anos sen ver a esta xente! Isto hai que celebralo. Outra botella do peleón! E outra! E... que hora é?'),
+      CW('Marchando! E outra. E outra... Que ben bebe a xente de Cee. Parecedes peixes de Fisterra.'),
+      AV('Brindo pola UCL, polo polbo e polo inventor das servilletas de papel! Hip!'),
       AV('...'),
-      CW('Ben, xa é tarde e os teus compañeiros marcharon. Aquí está a conta do viño do peleón: 150 euros.'),
-      AV('Cento cincuenta?! A carteira... estaba aquí... Baleira. Entre os bares do Cardeal e o viño do peleón quedei sen un peso.'),
-      CW('Home, Avelino... Fagamos unha cousa: non marchas de Monforte sen pagarme. E mira que o tren a Cee custa 45 euros.'),
-      CW('Por esta noite podes durmir no almacén, entre as caixas de polbo. Pero só esta noite! Mañá búscaste a vida: hai moito traballo en Monforte se te moves.'),
-      AV('Grazas, home. Mañá empezo: pagar a débeda, mercar o billete e, sobre todo, buscar onde durmir cada noite.'),
-      CW('E ollo: o frío de Monforte non perdoa. Unha noite ao raso aguántase mal... dúas, acabas no hospital.'),
+      CW('Ben, Avelino, xa é tarde e os teus compañeiros marcharon todos dunha vez, coma se tivesen ensaiado. Aquí está a conta do viño do peleón: 150 euros.'),
+      AV('Cento cincuenta?! Tranquilo, que pago eu... A carteira... estaba aquí... Non está. Só teño cinco euros soltos e un caramelo de menta.'),
+      CW('Home, Avelino... Fagamos unha cousa: non marchas de Monforte sen pagarme. E o tren a Cee custa 45 euros, que xa che vexo a cara.'),
+      CW('Por certo: cando chegaches, xa ías medio contento e dicías que deixaras «algo moi importante» na estación. Empeza por aí.'),
+      CW('Por esta noite podes durmir no almacén, entre as caixas de polbo. Só esta noite! E ollo co frío: unha noite ao raso aguántase mal... dúas, acabas no hospital.'),
+      AV('Grazas. Mañá resolvo o misterio da carteira. Avelino Villar, detective privado... e moi resacoso.'),
+      () => { G.player.money = 5; $('money').textContent = '5 €'; },
     ], () => storySleep({ id: 'almacen', label: 'Almacén do UCELERS', cost: 0, x: G.ucelersDoor.x, z: G.ucelersDoor.z, why: 'Durmes entre caixas de polbo e botellas baleiras do viño do peleón.' }, true)), 1200);
   }, 900);
 }
@@ -162,7 +159,8 @@ function storySleep(s, first) {
       const me = G.player.ped; me.x = s.x; me.z = s.z; me.y = groundH(me.x, me.z); me.lie = 0; G.sajoniPl = null;
       S.snap = { money: G.player.money, day: S.day, debt: S.debt, ticket: S.ticket, x: s.x, z: s.z };
       $('fade').classList.remove('on'); S.phase = 'play';
-      bigMsg('DÍA ' + S.day, S.debt > 0 || !S.ticket ? 'Consigue cartos: misións (E), taxi, o póker de Currito, o torneo...' : 'Xa podes volver a Cee!');
+      bigMsg('DÍA ' + S.day, first ? 'A carteira do viño do peleón' : (S.step && STEPS[S.step] ? STEPS[S.step].t : 'Bos días, Monforte'));
+      if (first && typeof advStart === 'function') setTimeout(advStart, 2200);
     }, 2600);
   }, 900);
 }
@@ -258,6 +256,7 @@ function updateAvelino(dt) {
   hud.hidden = false;
   const hh = Math.floor(G.hour), mm = Math.floor((G.hour % 1) * 60), clock = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
   const night = G.hour >= 20 || G.hour < 6;
+  if (S.day && typeof advHudHtml === 'function') { hud.innerHTML = advHudHtml(clock, night); if (typeof advUpdate === 'function') advUpdate(dt); return; }
   hud.innerHTML = `<b>${S.day ? 'DÍA ' + S.day : 'A CEA UCL'} · ${clock}</b>` +
     (S.day ? `<span class="${S.debt > 0 ? '' : 'ok'}">Débeda UCELERS: ${S.debt > 0 ? S.debt + ' €' : 'pagada ✓'}</span><br>` +
       `<span class="${S.ticket ? 'ok' : ''}">Billete a Cee: ${S.ticket ? 'no peto ✓' : STORY_TICKET + ' €'}</span><br>` +

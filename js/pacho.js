@@ -127,6 +127,7 @@ const E = (text, extra) => ({ who: 'Jusé', text, ...extra });
 const ME = text => ({ who: 'Ti', text });
 function talkTo(n) {
   if (G.dialog) return;
+  if (G.story && typeof advTalk === 'function' && advTalk(n)) return;
   if (n.id === 'spasic') return talkSpasic(n);
   if (n.id === 'mayor') return talkMayor(n);
   if (n.id === 'ivan') return ivanTalk(n);
@@ -159,8 +160,8 @@ function talkTo(n) {
       P('Mírala! Uf... ata cheira a Bósforo.'),
       P('Sabes que? Para que non me vexa con ela antes de tempo, póñoa xa eu. Así a vou quentando.'),
       () => { wearFener(n.p); },
-      P('Que ninguén do Madrid me vexa, eh? Toma, por molestarte: catrocentos euros e un bocadillo de raxo cando queiras no Cardeal.'),
-      () => { q.state = 'done'; saveQuest(); addMoney(400); bigMsg('MISIÓN SUPERADA', 'Unha camiseta para Pancho Camisolas · +400 €'); G.sfx.win(); save.done.pacho = true; persist(); updateMenuStats(); },
+      P('Que ninguén do Madrid me vexa, eh? Toma, por molestarte: ' + (G.story ? 'cincuenta euros, que a crise tamén chegou á Compañía,' : 'catrocentos euros') + ' e un bocadillo de raxo cando queiras no Cardeal.'),
+      () => { q.state = 'done'; saveQuest(); addMoney(G.story ? 50 : 400); bigMsg('MISIÓN SUPERADA', 'Unha camiseta para Pancho Camisolas · +' + (G.story ? 50 : 400) + ' €'); G.sfx.win(); save.done.pacho = true; persist(); updateMenuStats(); },
     ]);
     if (q.state === 'done') return openDialog([hola, pick([
       P('Ao meu cuñado encantoulle a camiseta. Agora quere unha do Madrid. Isto non acaba nunca.'),
