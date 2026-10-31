@@ -6,7 +6,7 @@
    (minixogo) e no Hotel Lemavos pagando 20 €.
    ========================================================== */
 const PH = {
-  river: { x0: 276, x1: 301, z0: 46, z1: 72, H: 19 },
+  river: { x0: 276, x1: 301, z0: -28, z1: -4, H: 19 }, // á beira da glorieta, ao outro lado da fonte fronte ao Lemavos
   lemavos: { x0: 276, x1: 303, z0: -72, z1: -49, H: 19 },
 };
 function plazaHotelsLandmarks() {
@@ -72,11 +72,11 @@ function buildPlazaHotels(B, scene) {
       const box = boxGeo(dx, b.H + 2, dz, [6, 6]); xform(box, cx, y0 + b.H / 2 - 1, cz); LB.vcol.add(colorize(box, '#efece6'));
       addBoxCol(b.x0, b.z0, b.x1, b.z1, b.H + 2, 'hostal');
       const roof = boxGeo(dx + 0.3, 0.4, dz + 0.3); xform(roof, cx, y0 + b.H + 0.2, cz); LB.flat.add(roof);
-      const att = boxGeo(dx - 5, 2.6, dz - 5); xform(att, cx - 1.5, y0 + b.H + 1.5, cz - 1.5); LB.vcol.add(colorize(att, '#f2efe8'));
+      const att = boxGeo(dx - 5, 2.6, dz - 5); xform(att, cx - 1.5, y0 + b.H + 1.5, cz + 1.5); LB.vcol.add(colorize(att, '#f2efe8'));
       phFacadeMesh(g, riverFacade(dz, b.H, true), dz, b.H, b.x1 + 0.02, y0 + b.H / 2, cz, Math.PI / 2);
-      phFacadeMesh(g, riverFacade(dx, b.H, false), dx, b.H, cx, y0 + b.H / 2, b.z1 + 0.02, 0);
+      phFacadeMesh(g, riverFacade(dx, b.H, false), dx, b.H, cx, y0 + b.H / 2, b.z0 - 0.02, Math.PI);
       // esquina redondeada acristalada con bandas rosas
-      const cx2 = b.x1 - 0.6, cz2 = b.z1 - 0.6, R = 3.4;
+      const cx2 = b.x1 - 0.6, cz2 = b.z0 + 0.6, R = 3.4;
       const gt = (() => { const c = cnv(512, 128), x = c.getContext('2d'); x.fillStyle = '#f4f2ee'; x.fillRect(0, 0, 512, 128); for (let i = 0; i < 8; i++) { const gg = x.createLinearGradient(0, 10, 0, 90); gg.addColorStop(0, '#6f8698'); gg.addColorStop(1, '#2c3a46'); x.fillStyle = gg; x.fillRect(i * 64 + 4, 10, 56, 78); x.fillStyle = '#2f5fb8'; x.fillRect(i * 64 + 4, 92, 56, 22); } return toTex(c); })();
       gt.repeat.set(1, 1);
       for (let f = 0; f < 5; f++) {
@@ -88,9 +88,9 @@ function buildPlazaHotels(B, scene) {
       // toldos vermellos e terraza na rúa lateral
       const awT = textTex('CAFETERÍA RIVER', { w: 512, h: 64, bg: '#b8222a', fg: '#ffffff', size: 40 });
       for (const ax of [b.x0 + 6, b.x0 + 14.5]) {
-        const aw = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.08, 2.4), std({ color: 0xc8262e, roughness: 0.8 })); aw.position.set(ax, y0 + 3.3, b.z1 + 1.15); aw.rotation.x = 0.28; aw.castShadow = true; g.add(aw);
-        const fr = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 0.4), std({ map: awT, roughness: 0.8 })); fr.position.set(ax, y0 + 2.75, b.z1 + 2.36); g.add(fr);
-        for (let i = 0; i < 3; i++) { const tx = ax - 2.4 + i * 2.4, tz = b.z1 + 3.3; const t = new THREE.CylinderGeometry(0.35, 0.35, 0.05, 10); xform(t, tx, y0 + 0.75, tz); LB.metal.add(t); const l = new THREE.CylinderGeometry(0.04, 0.04, 0.75, 6); xform(l, tx, y0 + 0.37, tz); LB.metal.add(l); for (const s of [-1, 1]) { const ch = boxGeo(0.42, 0.06, 0.42); xform(ch, tx + s * 0.6, y0 + 0.45, tz); LB.metal.add(ch); } }
+        const aw = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.08, 2.4), std({ color: 0xc8262e, roughness: 0.8 })); aw.position.set(ax, y0 + 3.3, b.z0 - 1.15); aw.rotation.x = -0.28; aw.castShadow = true; g.add(aw);
+        const fr = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 0.4), std({ map: awT, roughness: 0.8 })); fr.position.set(ax, y0 + 2.75, b.z0 - 2.36); fr.rotation.y = Math.PI; g.add(fr);
+        for (let i = 0; i < 3; i++) { const tx = ax - 2.4 + i * 2.4, tz = b.z0 - 2.0; const t = new THREE.CylinderGeometry(0.35, 0.35, 0.05, 10); xform(t, tx, y0 + 0.75, tz); LB.metal.add(t); const l = new THREE.CylinderGeometry(0.04, 0.04, 0.75, 6); xform(l, tx, y0 + 0.37, tz); LB.metal.add(l); for (const s of [-1, 1]) { const ch = boxGeo(0.42, 0.06, 0.42); xform(ch, tx + s * 0.6, y0 + 0.45, tz); LB.metal.add(ch); } }
       }
       // rótulo luminoso no alto da esquina
       const sg = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.1), nightMat(std({ map: textTex('HOSTAL RIVER', { w: 768, h: 140, bg: '#f4f2ee', fg: '#c8262e', size: 104 }), emissive: 0xffffff, emissiveMap: textTex('HOSTAL RIVER', { w: 768, h: 140, bg: '#000000', fg: '#ff5a5a', size: 104 }), side: THREE.DoubleSide }), 0.1, 1.3));
