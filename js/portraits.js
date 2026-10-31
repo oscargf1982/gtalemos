@@ -46,6 +46,7 @@ function portraitFor(who) {
     'Jusé': { skin: '#e9c2a2', skinD: '#c99a7a', hair: '#3a2a1c', shirt: '#d4202b', pattern: 'check', angry: true, stubble: true, bg: '#5a1d22', bg2: '#9a3a3a' },
     'El Spasic': { skin: '#e8b994', skinD: '#c48f6a', hairStyle: 'bald', shirt: '#1d7a3a', stripe: '#f2f2f2', cigar: true, bg: '#1b4a2a', bg2: '#3a7a4a' },
     'The Mayor': { skin: '#e7b996', skinD: '#c48f6a', hair: '#d6d2ca', hairStyle: 'side', shirt: '#4b4f56', lapel: '#3a3d43', tie: '#1f7a3a', collar: '#f4f2ec', moustache: '#d8d4cc', fat: true, smile: true, bg: '#4a3a1a', bg2: '#9a7a3a' },
+    'El Sajoni': sajoniFace(),
     'El Pellas': { skin: '#e3b48f', skinD: '#c08a66', hair: '#2a1d14', cap: '#d4202b', shirt: '#5f646b', smile: true, bg: '#3a2a4a', bg2: '#6a5a8a' },
     'Ti': { skin: '#e9bc98', skinD: '#c99672', hair: '#2a1d14', hairStyle: 'side', shirt: '#7a1f3d', collar: '#5a1428', bg: '#1d2b3a', bg2: '#3a556e' },
   }[who];

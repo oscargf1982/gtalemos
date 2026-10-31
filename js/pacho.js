@@ -58,6 +58,7 @@ function spawnStoryNPCs() {
   spawnIvan();
   spawnDamian();
   spawnCurrito();
+  spawnSajoni();
 }
 function wearFener(p) { p.col.shirt = FENER.yellow; world.crowd.paint(p); repaintArms(p, FENER.navy); }
 
@@ -131,6 +132,7 @@ function talkTo(n) {
   if (n.id === 'ivan') return ivanTalk(n);
   if (n.id === 'damian') return damianTalk(n);
   if (n.id === 'currito') return talkCurrito(n);
+  if (n.id === 'sajoni') return talkSajoni(n);
   const q = G.quest;
   if (n.id === 'pacho') {
     const hola = P('Que pasa, chorbo! Aúpa Depor!');

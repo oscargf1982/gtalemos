@@ -123,6 +123,7 @@ function computeLandmarks() {
   }
   // --- Club Fluvial (piscinas e pistas á beira do Cabe) ---
   if (typeof fluvialLandmarks === 'function') fluvialLandmarks();
+  if (typeof sajoniLandmarks === 'function') sajoniLandmarks();
   // --- Torre da Homenaxe e Mosteiro de San Vicente ---
   {
     const t = polyCentroid(osmBldg('Torre da Homenaxe').p), m = polyCentroid(osmBldg('Castelo de Monforte de Lemos').p);
