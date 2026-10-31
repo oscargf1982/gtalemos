@@ -9,7 +9,7 @@ const PUNT_MSGS = [
   ['Moncho', '#e0569a', 'Avelino, onde andas?? Xa estamos todos sentados 🍷'],
   ['Rober', '#2f7fd8', 'O meu chuletón está desaparecendo a velocidade de lóstrego 🥩🥩'],
   ['Xurxo', '#d88a1f', 'Como tardes moito vas ti mercar os chuletóns á carnicería 😂😂'],
-  ['me', '', 'Xa chego!! Este tren vai a paso de ovella 🐑'],
+  ['me', '', 'Eh You!! Xa chego!! Este tren vai a paso de ovella 🐑'],
   ['Lois', '#2fa36b', 'Falando de ovellas... sabedes a da ovella que miraba o río coa pata metida na bota do pastor? 😂'],
   ['Moncho', '#e0569a', 'OUTRA VEZ ESE CHISTE NON 🙈🙈'],
   ['Xurxo', '#d88a1f', 'E o pastor descalzo buscando a bota dende 1987 😂😂😂'],

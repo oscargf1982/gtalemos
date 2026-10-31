@@ -4,10 +4,11 @@
    Ponte Vella), segundo as fotos:
    - norte (de oeste a leste): hotel de galerías brancas e azuis
      (esquina co Malecón), estanco «TABACOS» e Bar Michael Cantón
-   - leste: Oficina do Peregrino (cantería, galerías e faiados,
-     ventás con motivos xacobeos), ao norte o edificio branco con
-     farmacia e ao sur o edificio gris co centro auditivo
-   - suroeste, xunto á ponte e á Rúa das Hortas: clínica auditiva
+   - sur (a praza peonil): á dereita da saída da ponte, na esquina
+     coa Rúa das Hortas, a clínica auditiva; no medio da praza, fronte
+     ao Bar Michael Cantón, a Oficina do Peregrino
+   - leste: na entrada da Rúa do Comercio a farmacia de fachada azul
+     e, xa na Rúa do Doutor Casares, o edificio gris do centro auditivo
    - praza peonil con bolardos, bancos de pedra e arboriñas
    - cámara na Rúa do Comercio: multa (estrela) que se paga no Concello
    ========================================================== */
@@ -18,10 +19,10 @@ function goyanesLandmarks() {
   { const dx = -69 - -74, dz = 118 - 179, L = Math.hypot(dx, dz); LM.goy2 = makeFrame(-74, 179, Math.atan2(-dz / L, dx / L)); }
   // marco 3: Rúa das Hortas (x cara ao sur); beira oeste en z > 0
   { const dx = -122 - -108, dz = 220 - 179, L = Math.hypot(dx, dz); LM.goy3 = makeFrame(-108, 179, Math.atan2(-dz / L, dx / L)); }
-  const zones = [frameRectPoly(LM.goy1, -13.2, -22, 11.2, -4.6), frameRectPoly(LM.goy2, -18, 4.6, 20, 20), frameRectPoly(LM.goy3, 0.5, 4.6, 14, 16)];
+  const zones = [frameRectPoly(LM.goy1, -13.2, -22, 11.2, -4.6), frameRectPoly(LM.goy2, -4, 4.6, 20, 20), frameRectPoly(LM.goy1, -15, 4.6, 12, 22)];
   for (const P of zones) { reserve(P); (G.noTrees = G.noTrees || []).push(P); }
   G.namedZones.push({ n: 'Praza do Doutor Goyanes', p: frameRectPoly(LM.goy1, -12, -4.6, 18, 16) });
-  G.namedZones.push({ n: 'Oficina do Peregrino', p: frameRectPoly(LM.goy2, -6, 4.6, 9, 18) });
+  G.namedZones.push({ n: 'Oficina do Peregrino', p: frameRectPoly(LM.goy1, -1, 12, 10, 21) });
   G.namedZones.push({ n: 'Bar Michael Cantón', p: frameRectPoly(LM.goy1, 5, -18, 11.2, -4.6) });
 }
 function blueGalleryTex(cols) {
@@ -99,23 +100,61 @@ function buildGoyanes(B, scene) {
       goyTables(LB, [[cx - 1.4, -FL + 1.6], [cx + 1.4, -FL + 1.6]], y0);
     }
   });
-  // ================= beira leste (Doutor Casares / Rúa do Comercio) =================
+  // ================= beira leste (entrada da Rúa do Comercio / Doutor Casares) =================
   inFrame(B, scene, F2.ox, F2.oz, F2.rot, (LB, g) => {
-    const y0 = terrainH(...F2.pt(0, 9));
-    // --- edificio gris de cinco plantas co centro auditivo (esquina sueste) ---
-    goyBuild(LB, g, { s0: -18, s1: -6, H: 16.0, D: 13, fl: FL, wall: '#c9c9c4', roof: 'flat', paint(P) {
+    const y0 = terrainH(...F2.pt(2, 9));
+    // --- FARMACIA: edificio branco e azul na esquina da entrada da Rúa do Comercio ---
+    { const s0 = -2.5, s1 = 8, D = 5.5, H = 15.2;
+      goyBuild(LB, g, { s0, s1, H, D, fl: FL, wall: '#eef2f6', roof: 'flat', paint(P) {
+        P.rect(0, 0, P.W, P.H, '#eef2f6'); P.noise(600, 0.04); P.rect(0, 0, P.W, 3.9, '#2f5fb8');
+        P.shop(0.4, 5.4, 3.2, '#1f4fa0', { glow: '#e0f0ff' }); P.sign(0.4, 3.3, 5.4, 0.5, 'FARMACIA', '#2f5fb8', '#ffffff', { glow: '#ffffff' }); P.door(6.2, 1.3, 2.7, '#1f4fa0', { frame: '#e8eef4' }); P.shop(8.0, 3.0, 3.2, '#1f4fa0');
+        for (let f = 0; f < 4; f++) { P.rect(0, 4.2 + f * 2.75, P.W, 0.25, '#2f5fb8'); for (const u of [0.6, 4.2, 7.8]) P.win(u, 4.6 + f * 2.75, 2.6, 1.6, { frame: '#f6f8fa', blind: RR(0, 0.4) }); }
+      } }, 1, y0);
+      // fachada sur, cara á Rúa do Comercio
+      const side = arCanvas(D, H); side.rect(0, 0, D, H, '#eef2f6'); side.noise(300, 0.04); side.rect(0, 0, D, 3.9, '#2f5fb8'); side.shop(0.5, D - 1, 3.2, '#1f4fa0', { glow: '#e0f0ff' }); side.sign(0.5, 3.3, D - 1, 0.5, 'FARMACIA', '#2f5fb8', '#ffffff', { glow: '#ffffff' });
+      for (let f = 0; f < 4; f++) { side.rect(0, 4.2 + f * 2.75, D, 0.25, '#2f5fb8'); for (const u of [0.6, 4.0]) side.win(u, 4.6 + f * 2.75, 2.4, 1.6, { frame: '#f6f8fa', blind: 0.2 }); }
+      const st = arTex(side), sm = new THREE.Mesh(new THREE.PlaneGeometry(D, H), nightMat(std({ map: st.t, emissiveMap: st.e, emissive: 0xffffff, emissiveIntensity: 0 }), 0.05, 1));
+      sm.position.set(s0 - 0.02, y0 + H / 2, FL + D / 2); sm.rotation.y = -Math.PI / 2; g.add(sm);
+      // cruces verdes luminosas (na esquina, cara á praza e cara á Rúa do Comercio)
+      const cr = cnv(128, 128), x = cr.getContext('2d'); x.fillStyle = '#1fd06a'; x.fillRect(44, 8, 40, 112); x.fillRect(8, 44, 112, 40); const t = toTex(cr, false);
+      const cm = nightMat(std({ map: t, transparent: true, emissive: 0x1fd06a, emissiveMap: t, emissiveIntensity: 0.6, side: THREE.DoubleSide }), 0.6, 1.4);
+      const c1 = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), cm); c1.position.set(s0 + 0.5, y0 + 4.6, FL - 0.6); c1.rotation.y = Math.PI / 2; g.add(c1);
+    }
+    // --- edificio gris de cinco plantas co centro auditivo (Rúa do Doutor Casares) ---
+    goyBuild(LB, g, { s0: 8, s1: 20, H: 16.0, D: 13, fl: FL, wall: '#c9c9c4', roof: 'flat', paint(P) {
       P.rect(0, 0, P.W, P.H, '#cfcfca'); P.noise(900, 0.06); P.stains(0.8); P.rect(0, 0, P.W, 3.9, '#e9e7e0');
       P.shop(0.4, 5.6, 3.3, '#2a2d31', { glow: '#e8f2ff' }); P.sign(0.4, 3.35, 5.6, 0.45, 'CENTRO AUDITIVO', '#e9e7e0', '#2a2d31');
       P.door(6.6, 1.3, 2.7, '#3a3d42'); P.shutter(8.4, 3.2, 3.0, '#9aa0a6');
       for (let f = 0; f < 4; f++) for (const u of [0.8, 3.8, 6.8, 9.6]) P.win(u, 4.5 + f * 2.9, 1.6, 1.6, { frame: '#e9e7e0', blind: RR(0.3, 0.9) });
     } }, 1, y0);
-    // --- Oficina do Peregrino: cantería, galería branca e faiados ---
-    { const s0 = -6, s1 = 9, W = s1 - s0, H = 10.4, cx = (s0 + s1) / 2;
-      goyBuild(LB, g, { s0, s1, H, D: 13, fl: FL, wall: '#b8a68a', roof: 'tile', roofH: 3.0, paint(P) {
+    // cámara de control na entrada da Rúa do Comercio
+    { const pole = new THREE.CylinderGeometry(0.07, 0.08, 4.2, 8); xform(pole, -3.5, y0 + 2.1, 3.6); LB.metalDark.add(pole); addCircCol(-3.5, 3.6, 0.15, 4, 'poste');
+      const cam = boxGeo(0.25, 0.22, 0.6); xform(cam, -3.2, y0 + 4.1, 3.2); LB.vcol.add(colorize(cam, '#e8e8e4'));
+      const sg = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.2), std({ map: (() => { const c = cnv(180, 240), x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, 180, 240); x.fillStyle = '#d4202b'; x.beginPath(); x.arc(90, 70, 58, 0, 7); x.fill(); x.fillStyle = '#ffffff'; x.beginPath(); x.arc(90, 70, 44, 0, 7); x.fill(); x.fillStyle = '#1b1b1d'; x.fillRect(58, 58, 64, 26); x.font = '800 20px Barlow'; x.textAlign = 'center'; x.fillText('ZONA PEONIL', 90, 160); x.font = '600 17px Barlow'; x.fillText('Control por cámara', 90, 186); x.fillText('Multa: 40 €', 90, 210); return toTex(c, false); })(), side: THREE.DoubleSide }));
+      sg.position.set(-3.5, y0 + 2.6, 3.45); sg.rotation.y = -Math.PI / 2; g.add(sg); }
+  });
+  // ================= beira sur: a praza peonil =================
+  inFrame(B, scene, F1.ox, F1.oz, F1.rot, (LB, g) => {
+    const y0 = terrainH(F1.ox, F1.oz + 9);
+    // --- CLÍNICA AUDITIVA: á dereita da saída da Ponte Vella, na esquina coa Rúa das Hortas ---
+    { const s0 = -14, s1 = -4, W = s1 - s0, H = 14.6, D = 10;
+      goyBuild(LB, g, { s0, s1, H, D, fl: FL, wall: '#ecebe6', roof: 'flat', paint(P) {
+        P.rect(0, 0, P.W, P.H, '#f2f1ec'); P.ashlar(0, 0, P.W, 3.9, [170, 168, 160], true); P.noise(500, 0.04);
+        P.sign(0.6, 2.7, 6.2, 0.6, 'CLÍNICA AUDITIVA', '#d4202b', '#ffffff', { glow: '#ff9a9a' });
+        P.shop(0.8, 5.8, 2.4, '#d8d6d0', { glow: '#f4f6ff' }); P.door(7.6, 1.3, 2.6, '#3a3d42');
+        for (let f = 0; f < 3; f++) for (const u of [0.8, 4.0, 7.2]) P.win(u, 4.4 + f * 3.1, 1.3, 1.9, { frame: '#f6f6f2', blind: RR(0, 0.5) });
+      }, balconies: [0, 1, 2].map(f => ({ u: 0.5, w: 4.2, y: 4.2 + f * 3.1, d: 0.55 })) }, 1, y0);
+      // fachada oeste, cara á Rúa das Hortas e á ponte, co rótulo
+      const side = arCanvas(D, H); side.rect(0, 0, D, H, '#f2f1ec'); side.ashlar(0, 0, D, 3.9, [170, 168, 160], true); side.sign(0.5, 2.6, D - 1, 0.6, 'CLÍNICA AUDITIVA', '#d4202b', '#ffffff', { glow: '#ff9a9a' }); side.shop(0.8, D - 1.6, 2.4, '#d8d6d0'); for (let f = 0; f < 3; f++) for (const u of [1.0, 4.4, 7.6]) side.win(u, 4.4 + f * 3.1, 1.6, 1.6, { frame: '#f6f6f2', blind: 0.3 });
+      const st = arTex(side), sm = new THREE.Mesh(new THREE.PlaneGeometry(D, H), nightMat(std({ map: st.t, emissiveMap: st.e, emissive: 0xffffff, emissiveIntensity: 0 }), 0, 1));
+      sm.position.set(s0 - 0.02, y0 + H / 2, FL + D / 2); sm.rotation.y = -Math.PI / 2; g.add(sm);
+    }
+    // --- OFICINA DO PEREGRINO: na praza, fronte ao Bar Michael Cantón ---
+    { const PF = 12, s0 = -1, s1 = 8.5, W = s1 - s0, H = 10.4, cx = (s0 + s1) / 2;
+      goyBuild(LB, g, { s0, s1, H, D: 6.5, fl: PF, wall: '#b8a68a', roof: 'tile', roofH: 3.0, paint(P) {
         P.rect(0, 0, P.W, P.H, '#f4f2ec'); P.ashlar(0, 0, P.W, 7.2, [182, 164, 132], true); P.noise(500, 0.04);
-        // cinco ventás altas en arco con vidro esmerilado e motivos xacobeos
         const x = P.x;
-        [1.0, 3.8, 6.6, 9.4, 12.2].forEach((u, i) => {
+        [0.7, 4.2, 7.7].forEach((u, i) => {
           x.fillStyle = '#a8977a'; x.fillRect(P.X(u - 0.15), P.Y(3.3), P.S(1.9), P.S(3.3));
           x.fillStyle = '#cfe0e6'; x.fillRect(P.X(u), P.Y(3.0), P.S(1.6), P.S(3.0)); x.beginPath(); x.arc(P.X(u + 0.8), P.Y(3.0), P.S(0.8), Math.PI, 0); x.fill();
           x.fillStyle = 'rgba(255,255,255,.35)'; x.fillRect(P.X(u + 0.15), P.Y(2.8), P.S(0.3), P.S(2.6));
@@ -127,56 +166,22 @@ function buildGoyanes(B, scene) {
             x.fillStyle = '#f2c21b'; x.beginPath(); x.moveTo(cxu - r, cy - r * 0.2); x.lineTo(cxu + r * 0.3, cy - r * 0.2); x.lineTo(cxu + r * 0.3, cy - r * 0.6); x.lineTo(cxu + r, cy); x.lineTo(cxu + r * 0.3, cy + r * 0.6); x.lineTo(cxu + r * 0.3, cy + r * 0.2); x.lineTo(cxu - r, cy + r * 0.2); x.closePath(); x.fill();
           }
         });
-        P.sign(5.3, 3.35, 4.4, 0.45, 'OFICINA DO PEREGRINO', '#f4f2ec', '#2a4a8a');
-        for (const u of [1.6, 4.4, 7.2, 10.0, 12.8]) P.win(u, 4.6, 1.2, 2.1, { frame: '#f4f2ec', blind: 0.2 });
+        P.sign(2.6, 3.35, 4.8, 0.45, 'OFICINA DO PEREGRINO', '#f4f2ec', '#2a4a8a');
+        for (const u of [1.0, 4.5, 8.0]) P.win(u, 4.6, 1.2, 2.1, { frame: '#f4f2ec', blind: 0.2 });
         P.rect(0, 7.0, P.W, 0.25, '#d8cdb6');
-      }, balconies: [1.4, 4.2, 7.0, 9.8, 12.6].map(u => ({ u, w: 1.6, y: 4.45, d: 0.45, col: '#c9bba0' })) }, 1, y0);
-      goyGallery(g, W - 0.6, 2.8, 0.85, cx, y0 + 7.3, FL - 0.42, 0, { back: true, cols: 16 });
-      for (const u of [cx - 3.5, cx + 3.5]) {
-        const wh = std({ color: 0xf4f2ec }), gm = std({ map: galleryTex(4, 2), roughness: 0.4 });
-        const dm = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.9, 2.2), [wh, wh, wh, wh, wh, gm]); dm.position.set(u, y0 + H + 1.1, FL + 1.2); g.add(dm);
-        const cap = new THREE.Mesh(new THREE.ConeGeometry(2.3, 0.9, 4, 1), std({ color: 0xa8452e, roughness: 0.8 })); cap.rotation.y = Math.PI / 4; cap.scale.set(1, 1, 0.75); cap.position.set(u, y0 + H + 2.5, FL + 1.2); g.add(cap);
-      }
-      // concha do Camiño na fachada
-      const sh = new THREE.Mesh(new THREE.CircleGeometry(0.45, 16, Math.PI, Math.PI), std({ color: 0xf2c21b, side: THREE.DoubleSide })); sh.position.set(cx, y0 + 3.95, FL - 0.05); sh.rotation.y = Math.PI; g.add(sh);
+      }, balconies: [0.8, 4.3, 7.8].map(u => ({ u, w: 1.6, y: 4.45, d: 0.45, col: '#c9bba0' })) }, 1, y0);
+      goyGallery(g, W - 0.6, 2.8, 0.85, cx, y0 + 7.3, PF - 0.42, 0, { back: true, cols: 11 });
+      { const wh = std({ color: 0xf4f2ec }), gm = std({ map: galleryTex(4, 2), roughness: 0.4 });
+        const dm = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.9, 2.2), [wh, wh, wh, wh, wh, gm]); dm.position.set(cx, y0 + H + 1.1, PF + 1.2); g.add(dm);
+        const cap = new THREE.Mesh(new THREE.ConeGeometry(2.3, 0.9, 4, 1), std({ color: 0xa8452e, roughness: 0.8 })); cap.rotation.y = Math.PI / 4; cap.scale.set(1, 1, 0.75); cap.position.set(cx, y0 + H + 2.5, PF + 1.2); g.add(cap); }
+      const sh = new THREE.Mesh(new THREE.CircleGeometry(0.45, 16, Math.PI, Math.PI), std({ color: 0xf2c21b, side: THREE.DoubleSide })); sh.position.set(cx, y0 + 3.95, PF - 0.05); sh.rotation.y = Math.PI; g.add(sh);
     }
-    // --- edificio branco e azul (ao norte) coa farmacia de fachada azul ---
-    goyBuild(LB, g, { s0: 9, s1: 20, H: 15.2, D: 13, fl: FL, wall: '#eef2f6', roof: 'flat', paint(P) {
-      P.rect(0, 0, P.W, P.H, '#eef2f6'); P.noise(600, 0.04); P.rect(0, 0, P.W, 3.9, '#2f5fb8');
-      P.shop(0.4, 5.6, 3.2, '#1f4fa0', { glow: '#e0f0ff' }); P.sign(0.4, 3.3, 5.6, 0.5, 'FARMACIA', '#2f5fb8', '#ffffff', { glow: '#ffffff' }); P.door(6.4, 1.3, 2.7, '#1f4fa0', { frame: '#e8eef4' }); P.shop(8.2, 2.4, 3.2, '#1f4fa0');
-      for (let f = 0; f < 4; f++) { P.rect(0, 4.2 + f * 2.75, P.W, 0.25, '#2f5fb8'); for (const u of [0.6, 4.0, 7.4]) P.win(u, 4.6 + f * 2.75, 2.6, 1.6, { frame: '#f6f8fa', blind: RR(0, 0.4) }); }
-    } }, 1, y0);
-    // cruz verde da farmacia (luminosa)
-    { const cr = cnv(128, 128), x = cr.getContext('2d'); x.fillStyle = '#1fd06a'; x.fillRect(44, 8, 40, 112); x.fillRect(8, 44, 112, 40); const t = toTex(cr, false);
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), nightMat(std({ map: t, transparent: true, emissive: 0x1fd06a, emissiveMap: t, emissiveIntensity: 0.6, side: THREE.DoubleSide }), 0.6, 1.4));
-      m.position.set(9.6, y0 + 4.6, FL - 0.6); m.rotation.y = Math.PI / 2; g.add(m); }
-    // cámara de control na entrada da Rúa do Comercio
-    { const pole = new THREE.CylinderGeometry(0.07, 0.08, 4.2, 8); xform(pole, -3.5, y0 + 2.1, 3.6); LB.metalDark.add(pole); addCircCol(-3.5, 3.6, 0.15, 4, 'poste');
-      const cam = boxGeo(0.25, 0.22, 0.6); xform(cam, -3.2, y0 + 4.1, 3.2); LB.vcol.add(colorize(cam, '#e8e8e4'));
-      const sg = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.2), std({ map: (() => { const c = cnv(180, 240), x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, 180, 240); x.fillStyle = '#d4202b'; x.beginPath(); x.arc(90, 70, 58, 0, 7); x.fill(); x.fillStyle = '#ffffff'; x.beginPath(); x.arc(90, 70, 44, 0, 7); x.fill(); x.fillStyle = '#1b1b1d'; x.fillRect(58, 58, 64, 26); x.font = '800 20px Barlow'; x.textAlign = 'center'; x.fillText('ZONA PEONIL', 90, 160); x.font = '600 17px Barlow'; x.fillText('Control por cámara', 90, 186); x.fillText('Multa: 40 €', 90, 210); return toTex(c, false); })(), side: THREE.DoubleSide }));
-      sg.position.set(-3.5, y0 + 2.6, 3.45); sg.rotation.y = -Math.PI / 2; g.add(sg); }
-  });
-  // ================= clínica auditiva (xunto á ponte, beira oeste da Rúa das Hortas) =================
-  inFrame(B, scene, F3.ox, F3.oz, F3.rot, (LB, g) => {
-    const y0 = terrainH(...F3.pt(6, 9));
-    const s0 = 1.0, s1 = 13.5, W = s1 - s0, H = 14.6, D = 7.5;
-    goyBuild(LB, g, { s0, s1, H, D, fl: FL, wall: '#ecebe6', roof: 'flat', paint(P) {
-      P.rect(0, 0, P.W, P.H, '#f2f1ec'); P.ashlar(0, 0, P.W, 3.9, [170, 168, 160], true); P.noise(500, 0.04);
-      P.rect(P.W - 6.4, 2.6, 6.0, 0.6, '#d4202b'); P.sign(P.W - 6.4, 2.6, 6.0, 0.6, 'CLÍNICA AUDITIVA', '#d4202b', '#ffffff', { glow: '#ff9a9a' });
-      P.shop(P.W - 6.2, 5.6, 2.4, '#d8d6d0', { glow: '#f4f6ff' }); P.door(1.0, 1.3, 2.6, '#3a3d42');
-      for (let f = 0; f < 3; f++) for (const u of [0.8, 4.0, 7.2, 10.2]) P.win(u, 4.4 + f * 3.1, 1.3, 1.9, { frame: '#f6f6f2', blind: RR(0, 0.5) });
-    }, balconies: [0, 1, 2].map(f => ({ u: 0.5, w: 4.2, y: 4.2 + f * 3.1, d: 0.55 })) }, 1, y0);
-    // fachada cara á ponte (norte) co rótulo
-    const side = arCanvas(D, H); side.rect(0, 0, D, H, '#f2f1ec'); side.ashlar(0, 0, D, 3.9, [170, 168, 160], true); side.rect(0.5, 2.6, D - 1, 0.6, '#d4202b'); side.sign(0.5, 2.6, D - 1, 0.6, 'CLÍNICA AUDITIVA', '#d4202b', '#ffffff', { glow: '#ff9a9a' }); side.shop(0.8, D - 1.6, 2.4, '#d8d6d0'); for (let f = 0; f < 3; f++) for (const u of [1.0, 5.0]) side.win(u, 4.4 + f * 3.1, 2.4, 1.6, { frame: '#f6f6f2', blind: 0.3 });
-    const st = arTex(side), sm = new THREE.Mesh(new THREE.PlaneGeometry(D, H), nightMat(std({ map: st.t, emissiveMap: st.e, emissive: 0xffffff, emissiveIntensity: 0 }), 0, 1));
-    sm.position.set(s0 - 0.02, y0 + H / 2, FL + D / 2); sm.rotation.y = -Math.PI / 2; g.add(sm);
-  });
-  // ================= mobiliario da praza: bolardos, bancos de pedra e arboriñas =================
-  inFrame(B, scene, F1.ox, F1.oz, F1.rot, (LB, g) => {
-    const y0 = terrainH(F1.ox, F1.oz + 8);
-    for (let x = -10; x <= 16; x += 1.8) { if (Math.abs(x - 2) < 1.3) continue; const bo = new THREE.CylinderGeometry(0.09, 0.11, 0.85, 8); xform(bo, x, y0 + 0.42, 3.6); LB.metalDark.add(bo); addCircCol(x, 3.6, 0.14, 1, 'bolardo'); }
-    for (const [x, z, r] of [[-3, 10, 0], [5, 12, 0.3], [12, 9, 0], [-7, 15, 0.2]]) { const bn = boxGeo(2.2, 0.48, 0.6, [2, 1]); xform(bn, x, y0 + 0.24, z, r); LB.stone.add(bn); addOBBLocal(x, z, 1.1, 0.3, r); }
-    for (const [x, z] of [[1, 8], [9, 15], [15, 6], [-6, 9]]) {
+    // --- chan de lousas da praza peonil ---
+    { const pv = boxGeo(21, 0.3, 18, [5, 4]); xform(pv, 5.5, y0 - 0.1, 13.6); LB.paving.add(pv); }
+    // --- mobiliario: bolardos, bancos de pedra e arboriñas ---
+    for (let x = -3; x <= 15; x += 1.8) { const bo = new THREE.CylinderGeometry(0.09, 0.11, 0.85, 8); xform(bo, x, y0 + 0.42, 4.4); LB.metalDark.add(bo); addCircCol(x, 4.4, 0.14, 1, 'bolardo'); }
+    for (const [x, z, r] of [[1.5, 9.4, 0], [7.5, 9.4, 0], [13, 12, 0.5], [-2.2, 12, 1.57]]) { const bn = boxGeo(2.2, 0.48, 0.6, [2, 1]); xform(bn, x, y0 + 0.24, z, r); LB.stone.add(bn); addOBBLocal(x, z, 1.1, 0.3, r); }
+    for (const [x, z] of [[-2, 7.5], [4.5, 7.2], [11, 7.5], [14, 9.5]]) {
       const tr = new THREE.CylinderGeometry(0.07, 0.1, 2.4, 6); xform(tr, x, y0 + 1.2, z); LB.wood.add(tr);
       const cr = new THREE.IcosahedronGeometry(1.1, 0); xform(cr, x, y0 + 2.9, z); LB.vcol.add(colorize(cr, '#4f7a3a'));
       const grate = boxGeo(1.0, 0.03, 1.0); xform(grate, x, y0 + 0.08, z); LB.metalDark.add(grate);

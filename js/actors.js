@@ -478,13 +478,13 @@ class Crowd {
     for (const s of [0, 1]) {
       const sg = s ? 1 : -1, swing = (s ? -sw : sw) * amp;
       T.copy(M); A.makeTranslation(sg * 0.1, hipY, 0); T.multiply(A);
-      const thighA = swing - sit * 1.5;
+      const thighA = swing + sit * 1.5; // sentado: coxa cara adiante e perna cara abaixo
       A.makeRotationX(-thighA); T.multiply(A); A.makeRotationZ(sg * 0.02); T.multiply(A);
       mm.thigh.setMatrixAt(i * 2 + s, T);
       const knee = Math.max(0, -Math.cos(ph + (s ? Math.PI : 0))) * (0.5 + run * 0.9) * w + sit * 1.5 + kneel * 1.57;
       A.makeTranslation(0, -0.44, 0); T.multiply(A); A.makeRotationX(knee); T.multiply(A);
       mm.shin.setMatrixAt(i * 2 + s, T);
-      A.makeTranslation(0, -0.42, 0); T.multiply(A); A.makeRotationX(-knee * 0.5 + thighA * 0.3 - sit * 0.0); T.multiply(A);
+      A.makeTranslation(0, -0.42, 0); T.multiply(A); A.makeRotationX(-knee * 0.5 + swing * 0.3 + sit * 0.75); T.multiply(A);
       mm.shoe.setMatrixAt(i * 2 + s, T);
     }
   }

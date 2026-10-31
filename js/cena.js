@@ -176,7 +176,7 @@ function cenaBill() {
   const K = G.cine;
   openDialog([
     CW('Bueno, Avelino... xa marcharon todos. Que cea máis bonita! Aquí tes a conta.'),
-    AV('Claro, claro. Canto é? Vinte euros por cabeza, non?'),
+    AV('Eh You! Claro, claro. Canto é? Vinte euros por cabeza, non?'),
     CW('Polbo, lacón, pan e postres... iso está incluído no menú UCL. O que vai á parte é o viño do peleón: cento cincuenta euros.'),
     AV('CENTO CINCUENTA?! Por un viño que se chama PELEÓN?! Iso non é un viño, é un atraco á man armada!'),
     () => { K.angry = true; },

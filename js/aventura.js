@@ -124,7 +124,7 @@ function advTalk(n) {
   const id = n.id, step = S.step;
   if (id === 'ivan') {
     if (step === 'ivan') { openDialog([
-      A('Boas... Iván, non? Perdín a carteira. Ou ma perdeu ela a min, aínda non o teño claro.'),
+      A('Eh You! Boas... Iván, non? Perdín a carteira. Ou ma perdeu ela a min, aínda non o teño claro.'),
       I('Avelino Villar! Recordo perfectamente. Onte baixaches do rexional cantando o himno da Champions... en galego... coa letra inventada.'),
       A('Iso explica a dor de gorxa. E a carteira?'),
       I('Na caixa de obxectos perdidos só hai un paraugas, unha dentadura e un furón disecado. Ningún é teu, espero.'),
@@ -164,7 +164,7 @@ function advTalk(n) {
   }
   if (id === 'mayor') {
     if (step === 'mayor') { openDialog([
-      A('Señor alcalde! Un autógrafo, por favor. Non é para min, é para un influencer. Ben... para un rapaz con móbil.'),
+      A('Eh You! Señor alcalde! Un autógrafo, por favor. Non é para min, é para un influencer. Ben... para un rapaz con móbil.'),
       M('Autógrafos? AUTÓGRAFOS? Vaia, vaia! Alguén atopou o botón de «Modo Fan». Lamento informarlle de que, sen as miñas tesoiras douradas, este alcalde non asina nin a lista da compra.'),
       M('Sen elas non podo inaugurar nada! E un alcalde que non inaugura é, simplemente, un señor de traxe gris esperando o autobús. Que traxedia! Que aventura de pena!'),
       SP('Señora maior', 'Ai, fillo... onte vin ao do puro da bicicleta pescando na fonte cunha cana feita cun paraugas. Algo brillante sacou.'),
@@ -185,7 +185,7 @@ function advTalk(n) {
   }
   if (id === 'spasic') {
     if (step === 'spasic') { openDialog([
-      A('Spasic! Dixéronme que pescaches algo dourado na fonte.'),
+      A('Eh You, Spasic! Dixéronme que pescaches algo dourado na fonte.'),
       SS('Pescar? Eu non pesco. Eu RESCATO. A fonte é un ecosistema e esas tesoiras estaban a molestar aos peixes.'),
       A('Na fonte non hai peixes.'),
       SS('Porque as tesoiras os espantaron! Ves? Rescate. Douchas... se me traes un puro dos bos. Este xa está mascado dende o martes.'),
@@ -201,7 +201,7 @@ function advTalk(n) {
   if (id === 'sajoni') {
     if (step === 'sajoni') { openDialog([
       SJ('EEEH! Benvido ao recuncho do Sajoni! Hoxe hai reggaeton, mañá reggaeton e o domingo... adiviña.'),
-      A('Sajoni, o teu can roubou a miña carteira. Teño probas fotográficas.'),
+      A('Eh You! Sajoni, o teu can roubou a miña carteira. Teño probas fotográficas.'),
       SJ('Chispa? Imposible! Bueno... posible. Ten unha teima coas cousas de coiro. Leva tres zapatos meus e un balón de rugby.'),
       SJ('O que colle, enterrao. E só cava se lle dás un bocata. É o seu único vicio. Ben, ese e morder os cables do altofalante.'),
       A('Un bocata. Claro. E onde consigo eu un bocata con dous euros?'),
@@ -221,7 +221,7 @@ function advTalk(n) {
   if (id === 'currito') {
     if (step === 'currito') { openDialog([
       CU('SIIIUUU! Avelino! O meu rival favorito! Que tal a cabeza? Onte bebiches viño do peleón coma se fose auga bendita.'),
-      A('Currito, tes a outra metade do meu décimo. A nota di que ma gañaches ás cartas.'),
+      A('Eh You, Currito! Tes a outra metade do meu décimo. A nota di que ma gañaches ás cartas.'),
       CU('Gañeina limpamente! Bueno, cun pouco de MAGIA. Ti tiñas un catro e dicías que era un as porque «en Cee os catros valen máis».'),
       CU('Fagamos un trato: o Sucio Omar deixoume colgado para o Lemos–Arenteiro e o torneo de volei, e preciso parella. Se me pasas a bola dez veces seguidas, a metade é túa.'),
       A('Volei praia. En outubro. Despois do peleón. Por que non.'),
@@ -294,7 +294,7 @@ function advPoint(id, act) {
     if (step !== 'bocata') return act ? false : null;
     if (!act) return `${K} · Pedir traballo no Hostal River (por un bocata)`;
     openDialog([
-      A('Boas! Disque aquí se paga en bocatas. Fago o que sexa: fregar, varrer, cantar o himno da Champions...'),
+      A('Eh You! Boas! Disque aquí se paga en bocatas. Fago o que sexa: fregar, varrer, cantar o himno da Champions...'),
       HR('O de cantar non, por favor. Pero pratos sucios teño ata o teito. Lava oito en menos dun minuto e o bocata de tortilla é teu.'),
       HR('Arrastra o rato ou o dedo pola suciedade, ou alterna A e D. E non rompas ningún, que son da voda da miña curmá.', { choices: [
         { t: 'A fregar!', fn: () => [() => startDishes(() => { openDialog([HR('Brillan coma a calva do Spasic! Toma o teu bocata, campión. Con cebola, como a xente de ben.'), () => { give('bocata'); nextStep(); }]); }, n => { openDialog([HR(`${n} pratos... Así non chega nin para un biscoito. Volve cando queiras.`)]); })] },
