@@ -178,7 +178,7 @@ function talkMayor(n) {
     M('Contemple esta marabilla: a gran fonte do Parque dos Condes. O proxecto foi dun enxeñeiro, a idea foi miña e os aplausos, por suposto, tamén.'),
     M(pick(MAYOR_LINES), {
       choices: [
-        { t: 'É moi bonita, señor alcalde', fn: () => [M('Magnífico! Por fin alguén con puntos de intelixencia suficientes. Tome: unha chapa conmemorativa e dez euros para un viño no Cardeal. Non o comente no Pleno.'), () => { if (!save.mayorTip) { save.mayorTip = true; addMoney(10); persist(); } }] },
+        { t: 'É moi bonita, señor alcalde', fn: () => [M('Magnífico! Por fin alguén con puntos de intelixencia suficientes. Tome: unha chapa conmemorativa e dez euros para un viño no Cardeal. Non o comente no Pleno.'), () => { save.mayorErrand = true; if (!save.mayorTip) { save.mayorTip = true; addMoney(10); persist(); } }] },
         { t: 'E canto custou?', fn: () => [M('Ah, a curiosidade! Ese vicio milenario que algúns practican coa destreza dun inspector de Facenda. Esa información está gardada nun disquete... que, casualmente, non atopo.'), M('Mire, un paxaro! E escoite: Los Roncolas comezan xa. Siga a música e deixe as contas para os contables.')] },
         { t: 'Para o próximo mandato, unha ponte no Malecón?', fn: () => [M('Shhh! Baixe a voz, que están os da Asociación na beira e teñen o botón de protestar sempre activado.'), M('Non á ponte, non á ponte... de momento. En política, como nas aventuras gráficas, os obxectos úsanse no capítulo axeitado.')] },
       ],

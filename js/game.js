@@ -1001,13 +1001,14 @@ function simulate(dt, menu) {
   }
   // peóns
   for (const p of peds) { if (p === pl.ped) continue; pedThink(p, dt, world); }
-  updateRiders(dt); updateWorks(dt); updateFair(dt); updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
+  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) updateVirginia(dt); updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
   if (!menu && !pl.car && !G.cine) updatePlayerFoot(dt);
   if (!menu) updateCine(dt);
   if (!menu) updateSajoni(dt);
   G.poseDt = dt;
   for (const p of peds) world.crowd.pose(p);
   if (typeof updateHeroes === 'function') updateHeroes();
+  if (typeof virginiaOverlays === 'function') virginiaOverlays();
   world.crowd.flush();
   world.smoke.update(dt);
   // tren

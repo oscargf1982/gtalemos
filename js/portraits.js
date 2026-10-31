@@ -53,6 +53,7 @@ function portraitFor(who) {
     'Lotera': { skin: '#e9bc98', skinD: '#c99672', hair: '#6a2a2a', shirt: '#1f4fb8', collar: '#f4f4f0', smile: true, bg: '#1f3f8a', bg2: '#4f7fd8' },
     'Sucio Omar': { skin: '#d9a47e', skinD: '#b8835e', hair: '#2a1d14', cap: '#8a6a3a', shirt: '#6b7b5a', stubble: true, angry: true, bg: '#4a3a1a', bg2: '#8a7a4a' },
     'Señora maior': { skin: '#ecc7ab', skinD: '#cfa588', hair: '#cfcfd2', shirt: '#5b2a6e', collar: '#f6f1e4', smile: true, bg: '#3a2a4a', bg2: '#7a5a9a' },
+    'Virginia Bolsas': { skin: '#efc3a0', skinD: '#cf9a78', hair: '#3a2418', hairStyle: 'spiky', shirt: '#b89a6a', collar: '#8a6a3a', lapel: '#a8895a', shades: true, angry: true, bg: '#5a1d22', bg2: '#c0201f' },
     'Narrador': { skin: '#f2a33a', skinD: '#c8822a', hairStyle: 'bald', shirt: '#15191d', shades: true, smile: true, bg: '#15191d', bg2: '#3a3d42' },
     'Estanqueira': { skin: '#efc3a0', skinD: '#cf9a78', hair: '#8a5a3a', shirt: '#7a1f2a', collar: '#f2c21b', smile: true, bg: '#5a1a22', bg2: '#9a3a3a' },
     'Funcionaria do Concello': { skin: '#e9bc98', skinD: '#c99672', hair: '#3a2a1c', shirt: '#2a3a5a', collar: '#f4f4f0', bg: '#2a3a5a', bg2: '#5a7aa8' },
