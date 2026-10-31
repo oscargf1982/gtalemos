@@ -47,6 +47,10 @@ function portraitFor(who) {
     'El Spasic': { skin: '#e8b994', skinD: '#c48f6a', hairStyle: 'bald', shirt: '#1d7a3a', stripe: '#f2f2f2', cigar: true, bg: '#1b4a2a', bg2: '#3a7a4a' },
     'The Mayor': { skin: '#e7b996', skinD: '#c48f6a', hair: '#d6d2ca', hairStyle: 'side', shirt: '#4b4f56', lapel: '#3a3d43', tie: '#1f7a3a', collar: '#f4f2ec', moustache: '#d8d4cc', fat: true, smile: true, bg: '#4a3a1a', bg2: '#9a7a3a' },
     'El Sajoni': sajoniFace(),
+    'Avelino': { skin: '#e9bc98', skinD: '#c99672', hair: '#4a3020', hairStyle: 'side', shirt: '#1d4fd8', collar: '#f4f4f0', stubble: true, smile: true, bg: '#1d2b3a', bg2: '#3a6a9a' },
+    'Camareiro do UCELERS': { skin: '#e3b48f', skinD: '#c08a66', hair: '#1a120c', hairStyle: 'side', shirt: '#121214', collar: '#f4f4f0', tie: '#121214', moustache: '#1a120c', smile: true, bg: '#2a2a2e', bg2: '#5a5a62' },
+    'Enfermeira': { skin: '#efc3a0', skinD: '#cf9a78', hair: '#6a4a2c', shirt: '#7ac8d8', collar: '#f4f4f0', smile: true, bg: '#d8eef2', bg2: '#ffffff' },
+    'Conserxe do Fluvial': { skin: '#d9a47e', skinD: '#b8835e', hairStyle: 'bald', hair: '#9a9a9a', shirt: '#2f4f8a', moustache: '#9a9a9a', angry: true, bg: '#1d4f6a', bg2: '#3cc3dc' },
     'El Pellas': { skin: '#e3b48f', skinD: '#c08a66', hair: '#2a1d14', cap: '#d4202b', shirt: '#5f646b', smile: true, bg: '#3a2a4a', bg2: '#6a5a8a' },
     'Ti': { skin: '#e9bc98', skinD: '#c99672', hair: '#2a1d14', hairStyle: 'side', shirt: '#7a1f3d', collar: '#5a1428', bg: '#1d2b3a', bg2: '#3a556e' },
   }[who];

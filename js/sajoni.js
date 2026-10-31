@@ -178,7 +178,7 @@ function sajoniPlayer(dt, beat) {
   const moving = Math.abs(IN.mx) > 0.1 || Math.abs(IN.my) > 0.1 || G.player.car;
   if (S.kind === 'dance') {
     S.t -= dt;
-    if (S.t <= 0 || moving) { me.arms = null; G.sajoniPl = null; if (S.t <= 0) toast('O Sajoni aplaude: «Tes ritmo, chorbo!»', 2.6); return; }
+    if (S.t <= 0 || moving) { me.arms = null; G.sajoniPl = null; if (S.t <= 0) { toast(G.story ? 'O Sajoni aplaude: «Tes ritmo, chorbo! Se algunha noite non tes onde durmir, a miña tumbona é túa»' : 'O Sajoni aplaude: «Tes ritmo, chorbo!»', 4); G.sajoniDanced = true; } return; }
     const b = Math.sin(beat); me.arms = [-2.6 + b * 0.3, 0.3, 0.2, -2.6 - b * 0.3, 0.3, 0.2]; me.y += Math.abs(b) * 0.06; me.nod = Math.max(0, b) * 0.2; me.yaw += dt * 1.2;
   } else if (S.kind === 'lie') {
     if (moving && S.t > 0.5) { me.lie = 0; me.fallDir = 1; G.sajoniPl = null; return; }

@@ -132,13 +132,14 @@ function startArrivalIntro() {
   G.cine = { intro: true, t: 0, phase: 'train', look: new THREE.Vector3(tr.x, 3, tr.z) };
   $('hud').classList.add('cine'); $('skipIntro').innerHTML = 'Saltar intro <kbd>Espazo</kbd>'; $('skipIntro').hidden = false;
   if (G.sfx.trainHorn) G.sfx.trainHorn(tr);
-  bigMsg('MONFORTE DE LEMOS', 'Rexional procedente de Ourense · vía 1');
+  bigMsg('MONFORTE DE LEMOS', G.story ? 'Rexional procedente de Santiago · vía 1' : 'Rexional procedente de Ourense · vía 1');
 }
 function endIntro() {
   const me = G.player.ped, p = G.startPos;
   me.x = p.x; me.z = p.z; me.y = groundH(p.x, p.z); me.yaw = p.yaw; me.visible = true;
   camYaw = p.yaw + Math.PI; camPitch = 0.22; camIdle = 0; camera._init = 0;
   G.cine = null; $('hud').classList.remove('cine'); $('skipIntro').hidden = true; $('fade').classList.remove('on');
+  if (G.story) { storyAfterIntro(); return; }
   setTimeout(() => toast('Benvido a Monforte! Iván Nogal, o de Renfe que está aí ao lado, pode axudarche. Pancho Camisolas espérate na Praza da Compañía (marcada no GPS).', 6), 400);
   setTimeout(() => toast(isTouch ? 'A túa berlina clásica granate está aparcada aí diante, na Praza da Estación (⇅ para subir)' : 'A túa berlina clásica granate está aparcada aí diante, na Praza da Estación (F para subir)', 5), 6200);
   setTimeout(() => { if (G._worksIntro) toast(G._worksIntro, 5); }, 11800);

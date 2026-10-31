@@ -238,6 +238,7 @@ function updateStory(dt) {
   updateSpasic(dt);
   updateDamian(dt);
   updateCurrito(dt); updateVoley(dt);
+  updateAvelino(dt);
   // obxectivo no HUD se non hai outra misión
   if (!G.mission && !(q.state === 'go' || q.state === 'return')) spasicObjective(dt);
   if (!G.mission && (q.state === 'go' || q.state === 'return')) {

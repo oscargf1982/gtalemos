@@ -301,6 +301,7 @@ function setupInput() {
   hold('tbHorn', () => { if (G.player.car) G.sfx.horn(G.player.car, 1); }); hold('tbCam', () => cycleCam()); hold('tbMap', () => toggleMap()); hold('tbPause', () => togglePause()); hold('tbAct', () => { if (G.player.car && G.player.car.type === 'taxi') taxiShift(); else interact(); });
   // botóns do menú
   $('btnPlay').onclick = startGame;
+  initModes();
   $('skipIntro').onclick = e => { e.stopPropagation(); if (G.cine && !G.cine.intro) skipTravel(); else skipIntro(); };
   $('dialog').addEventListener('click', () => dialogAdvance()); $('btnResume').onclick = () => togglePause(false);
   $('optQuality').onchange = e => { try { localStorage.setItem('lemosQ', e.target.value); } catch (er) { } $('qNote').hidden = false; };
@@ -329,6 +330,7 @@ function readInput() {
   }
   if (IN.tHand) { IN.hand = IN.jump = true; }
   if (G.dialog || G.cine) { IN.mx = IN.my = 0; IN.jump = IN.hand = IN.run = false; }
+  if (G.story && G.story.cold) IN.run = false;
   // mando
   const gp = navigator.getGamepads ? [...navigator.getGamepads()].find(g => g && g.connected) : null;
   if (gp) {
@@ -436,6 +438,7 @@ function bankPoint(x, z, extra) { const rn = riverNear(x, z), dx = x - rn.px, dz
 function toggleCarForce() { const c = G.player.car; if (!c) return; c.driver = null; G.player.car = null; const p = G.player.ped; p.visible = true; [p.x, p.z] = bankPoint(c.x, c.z, 3); p.y = groundH(p.x, p.z); }
 function interact() {
   if (G.voley && G.voley.on) { voleyHit(); return; }
+  if (G.story && storyInteractHook()) return;
   if (storyInteract()) return;
   // comezar misión se estás nun marcador
   for (const m of G.missionMarkers) if (m.near && !G.mission) { startMission(m.def); return; }
@@ -925,7 +928,7 @@ function startGame() {
 function togglePause(force) {
   if (!G.started) return;
   G.paused = force !== undefined ? force : !G.paused;
-  $('menu').hidden = !G.paused; $('btnPlay').hidden = true; $('btnResume').hidden = false; $('btnReset').hidden = !G.player.car;
+  $('menu').hidden = !G.paused; $('btnPlay').hidden = true; $('btnStory').hidden = true; $('storyPwd').hidden = true; $('btnResume').hidden = false; $('btnReset').hidden = !G.player.car;
   if (G.paused && document.exitPointerLock) document.exitPointerLock();
   updateMenuStats();
 }
