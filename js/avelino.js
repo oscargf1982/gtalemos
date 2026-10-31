@@ -3,7 +3,7 @@
    GTA LEMOS 27400 · Modo historia: «A historia de Avelino Villar»
    Avelino chega dende Cee (bus a Santiago e tren a Monforte) para
    a cea UCL no Restaurante Pulpería UCELERS. Tras a cea non pode
-   pagar o viño do capón: ten que conseguir cartos con misións,
+   pagar o viño do peleón: ten que conseguir cartos con misións,
    pagar a débeda, mercar o billete de volta e buscar onde durmir
    cada noite. Dúas noites seguidas ao raso → desmaio.
    ========================================================== */
@@ -106,7 +106,7 @@ function storyPrompt() {
   const K = isTouch ? '★' : 'E', h = G.hour;
   if (t.kind === 'sleep') { const s = t.s; setPrompt(`${K} · Durmir: ${s.label}${s.open && !s.open(h) ? ' (pechado)' : ''}`); return; }
   const id = t.p.id;
-  if (id === 'pay' && S.phase === 'play') setPrompt(S.debt > 0 ? `${K} · Pagar a débeda do viño do capón (${S.debt} €)` : 'Débeda pagada no UCELERS ✓');
+  if (id === 'pay' && S.phase === 'play') setPrompt(S.debt > 0 ? `${K} · Pagar a débeda do viño do peleón (${S.debt} €)` : 'Débeda pagada no UCELERS ✓');
   if (id === 'ticket' && S.phase === 'play') setPrompt(S.ticket ? 'Billete a Cee no peto ✓' : `${K} · Mercar billete Monforte → Cee (${STORY_TICKET} €)`);
   if (id === 'train' && S.phase === 'play' && S.ticket && S.debt <= 0) setPrompt(`${K} · Coller o tren de volta a Cee`);
 }
@@ -121,17 +121,17 @@ function storyDinner() {
     $('fade').classList.remove('on');
     bigMsg('CEA UCL', 'Restaurante Pulpería UCELERS · Rúa de Chantada, 48');
     setTimeout(() => openDialog([
-      CW('Benvidos á cea UCL! Polbo á feira, lacón con grelos, e para os campións... o noso viño do capón, a xoia da casa.'),
-      AV('Dous anos sen ver a esta xente! Isto hai que celebralo. Unha botella máis do do capón!'),
+      CW('Benvidos á cea UCL! Polbo á feira, lacón con grelos, e para os campións... o noso viño do peleón, a xoia da casa.'),
+      AV('Dous anos sen ver a esta xente! Isto hai que celebralo. Unha botella máis do do peleón!'),
       CW('Marchando! E outra. E outra... Que ben bebe a xente de Cee.'),
       AV('...'),
-      CW('Ben, xa é tarde e os teus compañeiros marcharon. Aquí está a conta do viño do capón: 150 euros.'),
-      AV('Cento cincuenta?! A carteira... estaba aquí... Baleira. Entre os bares do Cardeal e o viño do capón quedei sen un peso.'),
+      CW('Ben, xa é tarde e os teus compañeiros marcharon. Aquí está a conta do viño do peleón: 150 euros.'),
+      AV('Cento cincuenta?! A carteira... estaba aquí... Baleira. Entre os bares do Cardeal e o viño do peleón quedei sen un peso.'),
       CW('Home, Avelino... Fagamos unha cousa: non marchas de Monforte sen pagarme. E mira que o tren a Cee custa 45 euros.'),
       CW('Por esta noite podes durmir no almacén, entre as caixas de polbo. Pero só esta noite! Mañá búscaste a vida: hai moito traballo en Monforte se te moves.'),
       AV('Grazas, home. Mañá empezo: pagar a débeda, mercar o billete e, sobre todo, buscar onde durmir cada noite.'),
       CW('E ollo: o frío de Monforte non perdoa. Unha noite ao raso aguántase mal... dúas, acabas no hospital.'),
-    ], () => storySleep({ id: 'almacen', label: 'Almacén do UCELERS', cost: 0, x: G.ucelersDoor.x, z: G.ucelersDoor.z, why: 'Durmes entre caixas de polbo e botellas baleiras do viño do capón.' }, true)), 1200);
+    ], () => storySleep({ id: 'almacen', label: 'Almacén do UCELERS', cost: 0, x: G.ucelersDoor.x, z: G.ucelersDoor.z, why: 'Durmes entre caixas de polbo e botellas baleiras do viño do peleón.' }, true)), 1200);
   }, 900);
 }
 
@@ -203,9 +203,9 @@ function storyRetry() {
 function payDebt() {
   const S = G.story;
   if (S.debt <= 0) return;
-  if (G.player.money < S.debt) { openDialog([CW(`Aínda me debes ${S.debt} euros do viño do capón, Avelino. Tes ${G.player.money}. Volve cando os teñas!`)]); return; }
+  if (G.player.money < S.debt) { openDialog([CW(`Aínda me debes ${S.debt} euros do viño do peleón, Avelino. Tes ${G.player.money}. Volve cando os teñas!`)]); return; }
   G.player.money -= S.debt; $('money').textContent = G.player.money + ' €'; S.debt = 0; G.sfx.coin && G.sfx.coin();
-  openDialog([CW('Cento cincuenta euros, contados. Palabra de Avelino Villar! Para a próxima cea UCL, o viño do capón vai por conta da casa... unha botella.'), AV('Unha soa? Ben, algo é algo.')]);
+  openDialog([CW('Cento cincuenta euros, contados. Palabra de Avelino Villar! Para a próxima cea UCL, o viño do peleón vai por conta da casa... unha botella.'), AV('Unha soa? Ben, algo é algo.')]);
 }
 function buyTicket() {
   const S = G.story;
