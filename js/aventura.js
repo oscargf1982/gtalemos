@@ -67,6 +67,7 @@ function addExtraDests() {
   if (typeof MED !== 'undefined') add('Feira Medieval', 'Praza de España e rúas de San Vicente', { x: MED.plaza[0] - 8, z: MED.plaza[1] + 6 });
   add('Rúa dos Abeledos', 'A zona catastrófica', { x: -372, z: 99 });
   add('Rúa de Rosalía de Castro', 'As vacas da estación', { x: 741, z: -650 });
+  { const r = ROADS.find(q => q.name === 'Rúa da Duquesa de Alba'); if (r) { const p = roadPoint(r, r.len * 0.3); add('Rúa da Duquesa de Alba', 'Carmiña e a moto do Lemos', { x: p.x, z: p.z }); } }
 }
 
 /* ---------- inicio e pasos ---------- */

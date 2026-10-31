@@ -421,7 +421,7 @@ function toggleCar() {
   }
   pl.car = v; v.driver = 'player'; v.sleep = false; pl.ped.visible = false; camDist = v.t.prof === 'bus' ? 13 : v.t.moto ? 5.4 : 7.2; camIdle = 9;
   G.sfx.door();
-  $('vname').textContent = v.t.nameG; $('vname').classList.add('show'); setTimeout(() => $('vname').classList.remove('show'), 2500);
+  $('vname').textContent = v.customName || v.t.nameG; $('vname').classList.add('show'); setTimeout(() => $('vname').classList.remove('show'), 2500);
   if (v.type === 'taxi' && !G.mission) toast('Estás nun taxi: preme T (ou ★) para comezar a quenda');
 }
 function updatePlayerCar(dt) {
@@ -1065,7 +1065,7 @@ function simulate(dt, menu) {
   }
   // peóns
   for (const p of peds) { if (p === pl.ped) continue; pedThink(p, dt, world); }
-  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); updateMedieval(dt); updateAbeledos(dt); updateCows(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
+  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); updateMedieval(dt); updateAbeledos(dt); updateCows(dt); updateCarmina(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
   if (!menu && !pl.car && !G.cine) updatePlayerFoot(dt);
   if (!menu) updateCine(dt);
   if (!menu) updateSajoni(dt);
@@ -1075,6 +1075,7 @@ function simulate(dt, menu) {
   if (typeof virginiaOverlays === 'function') virginiaOverlays();
   if (typeof carudeOverlays === 'function') carudeOverlays();
   if (typeof medTunics === 'function') medTunics();
+  if (typeof carminaOverlays === 'function') carminaOverlays();
   world.crowd.flush();
   world.smoke.update(dt);
   // tren

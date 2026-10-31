@@ -135,6 +135,7 @@ function talkTo(n) {
   if (n.id === 'currito') return talkCurrito(n);
   if (n.id === 'sajoni') return talkSajoni(n);
   if (n.id === 'virginia') return talkVirginia(n);
+  if (n.id === 'carmina') return talkCarmina(n);
   const q = G.quest;
   if (n.id === 'pacho') {
     const hola = P('Que pasa, chorbo! Aúpa Depor!');

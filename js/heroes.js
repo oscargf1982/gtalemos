@@ -18,6 +18,7 @@ const HERO_LOOK = {
   pacho: { smile: 1, bald: 1, brow: 0.6 }, emre: { stubble: 1, angry: 1 }, spasic: { stubble: 1, bald: 1 }, mayor: { moustache: '#d8d4cc', smile: 1, old: 1 },
   ivan: { smile: 1, stubble: 0.5 }, damian: { smile: 1 }, currito: { smile: 1 }, sajoni: { stubble: 1, smile: 1 }, hostal: { moustache: '#4a3a2a', bald: 1, smile: 1 },
   virginia: { female: 1, bald: 1, angry: 1 },
+  carmina: { female: 1, smile: 1 },
 };
 function heroGeos() {
   if (HERO.geo) return HERO.geo;
