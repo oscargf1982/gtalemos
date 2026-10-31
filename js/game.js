@@ -329,7 +329,7 @@ function readInput() {
     IN.run = Math.hypot(touch.jx, touch.jy) > 0.92;
   }
   if (IN.tHand) { IN.hand = IN.jump = true; }
-  if (G.dialog || G.cine) { IN.mx = IN.my = 0; IN.jump = IN.hand = IN.run = false; }
+  if (G.dialog || G.cine || G.dishes) { IN.mx = IN.my = 0; IN.jump = IN.hand = IN.run = false; }
   if (G.story && G.story.cold) IN.run = false;
   // mando
   const gp = navigator.getGamepads ? [...navigator.getGamepads()].find(g => g && g.connected) : null;
@@ -439,6 +439,7 @@ function toggleCarForce() { const c = G.player.car; if (!c) return; c.driver = n
 function interact() {
   if (G.voley && G.voley.on) { voleyHit(); return; }
   if (G.story && storyInteractHook()) return;
+  if (plazaHotelsInteract()) return;
   if (storyInteract()) return;
   // comezar misión se estás nun marcador
   for (const m of G.missionMarkers) if (m.near && !G.mission) { startMission(m.def); return; }

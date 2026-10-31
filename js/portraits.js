@@ -47,6 +47,8 @@ function portraitFor(who) {
     'El Spasic': { skin: '#e8b994', skinD: '#c48f6a', hairStyle: 'bald', shirt: '#1d7a3a', stripe: '#f2f2f2', cigar: true, bg: '#1b4a2a', bg2: '#3a7a4a' },
     'The Mayor': { skin: '#e7b996', skinD: '#c48f6a', hair: '#d6d2ca', hairStyle: 'side', shirt: '#4b4f56', lapel: '#3a3d43', tie: '#1f7a3a', collar: '#f4f2ec', moustache: '#d8d4cc', fat: true, smile: true, bg: '#4a3a1a', bg2: '#9a7a3a' },
     'El Sajoni': sajoniFace(),
+    'Recepcionista do Lemavos': { skin: '#efc3a0', skinD: '#cf9a78', hair: '#2a1d14', hairStyle: 'side', shirt: '#4a4f58', collar: '#f4f4f0', tie: '#9fd0ff', smile: true, bg: '#3a4048', bg2: '#9aa3ad' },
+    'Dono do Hostal River': { skin: '#e3b48f', skinD: '#c08a66', hairStyle: 'bald', hair: '#5a4a3a', shirt: '#f4f4f0', collar: '#d99aa3', moustache: '#4a3a2a', fat: true, smile: true, bg: '#7a2a2e', bg2: '#d99aa3' },
     'Avelino': { skin: '#e9bc98', skinD: '#c99672', hair: '#4a3020', hairStyle: 'side', shirt: '#1d4fd8', collar: '#f4f4f0', stubble: true, smile: true, bg: '#1d2b3a', bg2: '#3a6a9a' },
     'Camareiro do UCELERS': { skin: '#e3b48f', skinD: '#c08a66', hair: '#1a120c', hairStyle: 'side', shirt: '#121214', collar: '#f4f4f0', tie: '#121214', moustache: '#1a120c', smile: true, bg: '#2a2a2e', bg2: '#5a5a62' },
     'Enfermeira': { skin: '#efc3a0', skinD: '#cf9a78', hair: '#6a4a2c', shirt: '#7ac8d8', collar: '#f4f4f0', smile: true, bg: '#d8eef2', bg2: '#ffffff' },
