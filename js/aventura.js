@@ -53,9 +53,10 @@ const A = (t, e) => SP('Avelino', t, e), I = (t, e) => SP('Iván Nogal', t, e), 
 
 /* ---------- destinos extra de viaxe rápida ---------- */
 function addExtraDests() {
-  if (FT_DESTS.some(d => d.n === 'Rúa de Chantada')) return;
+  if (FT_DESTS.some(d => d.n === 'Restaurante UCELERS')) return;
   const add = (n, d, p) => p && FT_DESTS.push({ n, d, x: p.x, z: p.z, yaw: 0 });
-  if (G.ucelersDoor) { const F = LM.ucelers; const [x, z] = F.pt(UCEL.s, -UCEL.hw + 2); add('Rúa de Chantada', 'Restaurante Pulpería UCELERS', { x, z }); }
+  if (G.ucelersDoor) { const F = LM.ucelers; const [x, z] = F.pt(UCEL.s, -UCEL.hw + 2); add('Restaurante UCELERS', 'Pulpería na Rúa de Chantada, 48', { x, z }); }
+  if (LM.cons) { const [x, z] = LM.cons.pt(-3, -22); add('Conservatorio Mestre Ibáñez', 'Auditorio municipal, fronte ao CEIP', { x, z }); }
   if (LM.sajoni) { const [x, z] = LM.sajoni.pt(0, 4); add('Rúa Calvo Sotelo', 'O recuncho do Sajoni', { x, z }); }
   if (LM.ferro) { const [x, z] = LM.ferro.pt(-7, -11); add('Colexio Ferroviario', 'Rúa da Coruña', { x, z }); }
   if (LM.gas) { const [x, z] = LM.gas.pt(0, -3); add('Gasolineira Lemos', 'Rúa do Doutor Casares', { x, z }); }

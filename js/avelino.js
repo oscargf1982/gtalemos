@@ -14,6 +14,7 @@ const CW = (t, extra) => ({ who: 'Camareiro do UCELERS', text: t, ...extra });
 
 /* ---------- menú: modo libre e modo historia con contrasinal ---------- */
 function initModes() {
+  if (typeof addExtraDests === 'function') addExtraDests();
   const play = $('btnPlay'); play.textContent = 'Modo libre';
   const sb = document.createElement('button'); sb.className = 'btn'; sb.id = 'btnStory'; sb.innerHTML = 'A historia de<br>Avelino Villar'; sb.style.lineHeight = '0.95';
   play.after(sb);

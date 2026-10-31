@@ -177,9 +177,13 @@ class Vehicle {
     // estado físico
     this.x = 0; this.z = 0; this.y = 0; this.vy = 0; this.yaw = 0; this.vx = 0; this.vz = 0; this.r = 0; this.steer = 0;
     this.pitch = 0; this.roll = 0; this.spin = 0; this.onGround = true; this.health = 100; this.sleep = false;
-    this.Iz = t.mass * (t.L * t.L + t.W * t.W) / 12 * 1.1;
-    const n = t.prof === 'bus' ? 5 : 3; this.circles = []; for (let i = 0; i < n; i++) this.circles.push(lerp(-t.L / 2 + t.W / 2, t.L / 2 - t.W / 2, i / (n - 1)));
-    this.rad = t.W / 2 + 0.05;
+    // coches un pouco máis pequenos (máis doados de manexar polas rúas estreitas)
+    const VS = t.prof === 'bus' ? 1 : t.moto ? 0.95 : 0.84;
+    if (VS !== 1) { this.root.scale.setScalar(VS); this.t = { ...t, L: t.L * VS, W: t.W * VS, wb: t.wb * VS, wr: t.wr * VS }; }
+    const tp = this.t;
+    this.Iz = tp.mass * (tp.L * tp.L + tp.W * tp.W) / 12 * 1.1;
+    const n = tp.prof === 'bus' ? 5 : 3; this.circles = []; for (let i = 0; i < n; i++) this.circles.push(lerp(-tp.L / 2 + tp.W / 2, tp.L / 2 - tp.W / 2, i / (n - 1)));
+    this.rad = tp.W / 2 + 0.05;
     this.inp = { throttle: 0, brake: 0, steer: 0, hand: 0 };
     this.driver = null; this.ai = null; this.skid = 0; this.latAcc = 0; this.lonAcc = 0; this.sirenOn = false; this.inWater = 0;
   }
@@ -192,8 +196,8 @@ class Vehicle {
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw), lx = Math.cos(this.yaw), lz = -Math.sin(this.yaw);
     let vf = this.vx * fx + this.vz * fz, vl = this.vx * lx + this.vz * lz;
     // dirección suavizada (menos ángulo a alta velocidade)
-    const target = -inp.steer * t.steer / (1 + Math.pow(Math.abs(vf) / 9, 1.4));
-    this.steer += (target - this.steer) * Math.min(1, dt * 7);
+    const target = -inp.steer * t.steer * 1.18 / (1 + Math.pow(Math.abs(vf) / 10, 1.3));
+    this.steer += (target - this.steer) * Math.min(1, dt * (this.driver === 'player' ? 5 : 7));
     const d = this.steer, a = t.wb / 2, b = t.wb / 2;
     let Flong = 0, Flat = 0, torque = 0;
     if (this.onGround && !this.inWater) {
@@ -202,7 +206,7 @@ class Vehicle {
       if (inp.throttle > 0) { if (vf < -0.8) brake = Math.max(brake, inp.throttle); else Flong += Math.min(t.maxF, t.power / Math.max(Math.abs(vf), 4)) * inp.throttle; }
       if (inp.throttle < 0) { if (vf > 0.8) brake = Math.max(brake, -inp.throttle); else if (vf > -9) Flong += t.maxF * 0.55 * inp.throttle; }
       if (this.health <= 0) Flong = 0;
-      const Fb = 9500 * (m / 1400) * brake;
+      const Fb = 15500 * (m / 1400) * brake;
       if (Fb > 0) { if (Math.abs(vf) < Fb / m * dt * 1.2) { vf = 0; } else Flong -= Math.sign(vf) * Fb; }
       // resistencia
       Flong -= 0.42 * vf * Math.abs(vf) * (t.prof === 'bus' ? 3 : 1) + Math.sign(vf) * 0.012 * m * GRAV;
@@ -211,7 +215,7 @@ class Vehicle {
       const N = m * GRAV / 2, va = Math.max(Math.abs(vf), 1.2);
       const af = Math.atan((vl + this.r * a - d * vf) / va), ar = Math.atan((vl - this.r * b) / va);
       const C = 15 * N;
-      let mf = t.grip * N, mr = t.grip * N * (inp.hand ? 0.38 : 1.12);
+      let mf = t.grip * 1.15 * N, mr = t.grip * 1.15 * N * (inp.hand ? 0.38 : 1.12);
       if (G.rain) { mf *= 0.82; mr *= 0.8; }
       // círculo de fricción no eixo traseiro con potencia (sobrevirancia nos deportivos)
       if (t.prof === 'sport' && inp.throttle > 0.9 && Math.abs(vf) < 16) mr *= 0.9;

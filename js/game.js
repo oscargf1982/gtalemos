@@ -421,7 +421,9 @@ function toggleCar() {
 }
 function updatePlayerCar(dt) {
   const c = G.player.car, inp = c.inp;
-  inp.steer = clamp(IN.mx, -1, 1);
+  // a dirección vai entrando aos poucos (teclado = xiro suave e progresivo)
+  const want = clamp(IN.mx, -1, 1), cur = c._st || 0, rate = (Math.sign(want) !== Math.sign(cur) && cur !== 0 ? 6 : 3.2) * dt;
+  c._st = cur + clamp(want - cur, -rate, rate); inp.steer = c._st;
   const fs = c.fwdSpeed;
   if (IN.my > 0) { inp.throttle = IN.my; inp.brake = 0; }
   else if (IN.my < 0) { if (fs > 1) { inp.brake = -IN.my; inp.throttle = 0; } else { inp.throttle = IN.my; inp.brake = 0; } }
