@@ -94,6 +94,23 @@ function computeLandmarks() {
     G.monumentZones.push(frameRectPoly(LM.ferro, -18, -5.5, 18, 17));
     G.namedZones.push({ n: 'Colexio Ferroviario', p: frameRectPoly(LM.ferro, -18, -5.5, 18, 17) });
   }
+  // --- Gasolineira na confluencia da Rúa da Coruña coa Rúa do Doutor Casares / López Suárez (posición OSM) ---
+  {
+    const P0 = OSM.pois.find(p => p.t === 'fuel' && Math.abs(p.p[0] - 455) < 30 && Math.abs(p.p[1] + 489) < 30) || { p: [455, -489] };
+    const nr = nearRoad(P0.p[0], P0.p[1], r => r.type === 'car' && r.cls !== 'service'), r = nr.r;
+    let nx = P0.p[0] - nr.px, nz = P0.p[1] - nr.pz; if (Math.hypot(nx, nz) < 0.5) { nx = -nr.uz; nz = nr.ux; } [nx, nz] = norm2(nx, nz);
+    const d = r.hw + r.sw + 7.5, rot = Math.atan2(-nr.uz, nr.ux);
+    let F = makeFrame(nr.px + nx * d, nr.pz + nz * d, rot);
+    if (F.inv(nr.px, nr.pz)[1] > 0) F = makeFrame(F.ox, F.oz, rot + Math.PI); // a rúa queda en local −z
+    LM.gas = F;
+    G.monumentZones.push(frameRectPoly(F, -13, -6.5, 13, 11));
+    G.namedZones.push({ n: 'Gasolineira Lemos', p: frameRectPoly(F, -13, -6.5, 13, 11) });
+  }
+  // --- Glorieta Pablo Iglesias: fonte de aceiro corten e escultura aos ferroviarios ---
+  {
+    const f = AREAS.find(a => a.t === 'fountain' && a.p[0][0] > 600); LM.stFountain = f ? minRect(f.p) : null;
+    if (LM.stFountain) { const r = LM.stFountain; G.monumentZones.push([[r.cx - 6, r.cz - 6], [r.cx + 6, r.cz - 6], [r.cx + 6, r.cz + 6], [r.cx - 6, r.cz + 6]]); }
+  }
   // --- Torre da Homenaxe e Mosteiro de San Vicente ---
   {
     const t = polyCentroid(osmBldg('Torre da Homenaxe').p), m = polyCentroid(osmBldg('Castelo de Monforte de Lemos').p);

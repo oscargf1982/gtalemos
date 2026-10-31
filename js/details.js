@@ -165,4 +165,110 @@ function buildDetails(B, scene) {
   buildCardealDetails(B, scene);
   buildMaleconDetails(B, scene);
   buildBandStage(B, scene);
+  buildStationFountain(B, scene);
+  { const C = LM.gas; inFrame(B, G.scene, C.ox, C.oz, C.rot, (LB, g) => buildGasStation(LB, g)); }
+}
+
+/* ---------- Gasolineira Lemos (Rúa da Coruña) — marca inventada ---------- */
+function gasTex() {
+  const c = cnv(1024, 96), x = c.getContext('2d');
+  x.fillStyle = '#f4f4f0'; x.fillRect(0, 0, 1024, 96); x.fillStyle = '#1f7a4a'; x.fillRect(0, 70, 1024, 26); x.fillRect(0, 0, 1024, 8);
+  x.fillStyle = '#1f7a4a'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = '900 56px "Big Shoulders Display", "Arial Narrow", Impact, sans-serif'; x.fillText('GASOLINEIRA LEMOS', 512, 38);
+  return toTex(c, false);
+}
+function priceTex() {
+  const c = cnv(256, 512), x = c.getContext('2d');
+  x.fillStyle = '#1f7a4a'; x.fillRect(0, 0, 256, 512); x.fillStyle = '#f4f4f0'; x.fillRect(12, 12, 232, 120);
+  x.fillStyle = '#1f7a4a'; x.textAlign = 'center'; x.font = '900 48px "Big Shoulders Display", Impact, sans-serif'; x.fillText('LEMOS', 128, 70); x.font = '600 22px Barlow, sans-serif'; x.fillText('24 h · autoservizo', 128, 112);
+  const rows = [['SIN CHUMBO 95', '1,629'], ['SIN CHUMBO 98', '1,779'], ['GASÓLEO', '1,519']];
+  rows.forEach(([n, p], i) => { const y = 170 + i * 110; x.fillStyle = '#0d0f10'; x.fillRect(16, y, 224, 92); x.fillStyle = '#f4f4f0'; x.font = '700 20px Barlow, sans-serif'; x.fillText(n, 128, y + 26); x.fillStyle = '#ffb21a'; x.font = '700 46px "Courier New", monospace'; x.fillText(p, 128, y + 72); });
+  return toTex(c, false);
+}
+function buildGasStation(B, scene) {
+  const g = new THREE.Group(); scene.add(g);
+  const mk = (geo, mat, x, y, z, ry = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.y = ry; m.castShadow = m.receiveShadow = true; g.add(m); return m; };
+  const white = std({ color: 0xf2f2ee, roughness: 0.5 }), green = std({ color: 0x1f7a4a, roughness: 0.45 }), grey = std({ color: 0x5d6166, roughness: 0.6, metalness: 0.3 });
+  // pavimento da área de servizo
+  const pv = new THREE.PlaneGeometry(26, 17.5); pv.rotateX(-Math.PI / 2); xform(pv, 0, 0.07, 2.25); { const p = pv.attributes.position, uv = pv.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i) / 12, p.getZ(i) / 12); } B.asphRoad.add(pv);
+  // marquesiña sobre catro columnas
+  const CH = 5.3, CW = 17, CD = 8.5;
+  const roof = mk(new THREE.BoxGeometry(CW, 0.9, CD), white, 0, CH + 0.45, 0);
+  const under = new THREE.Mesh(new THREE.PlaneGeometry(CW - 0.4, CD - 0.4), nightMat(std({ color: 0xf6f6f2, emissive: 0xfff4dc, emissiveIntensity: 0.1, roughness: 0.6 }), 0.1, 1.6)); under.rotation.x = Math.PI / 2; under.position.set(0, CH - 0.01, 0); g.add(under);
+  const band = gasTex();
+  for (const [z, ry] of [[-CD / 2 - 0.01, Math.PI], [CD / 2 + 0.01, 0]]) { const b = new THREE.Mesh(new THREE.PlaneGeometry(CW, 0.9), std({ map: band, roughness: 0.5 })); b.position.set(0, CH + 0.45, z); b.rotation.y = ry; g.add(b); }
+  for (const [x, ry] of [[-CW / 2 - 0.01, -Math.PI / 2], [CW / 2 + 0.01, Math.PI / 2]]) mk(new THREE.BoxGeometry(0.02, 0.9, CD), green, x, CH + 0.45, 0);
+  for (const x of [-4, 4]) { mk(new THREE.BoxGeometry(0.45, CH, 0.45), white, x, CH / 2, 0); addCircCol(x, 0, 0.35, CH, 'columna'); }
+  // illas de surtidores
+  for (const x of [-4, 4]) {
+    mk(new THREE.BoxGeometry(1.1, 0.22, 5.2), std({ color: 0xbfbcb4, roughness: 0.8 }), x, 0.11, 0);
+    for (const z of [-1.5, 1.5]) {
+      const pump = mk(new THREE.BoxGeometry(0.8, 1.8, 0.55), white, x, 1.12, z);
+      mk(new THREE.BoxGeometry(0.82, 0.3, 0.57), green, x, 1.95, z);
+      for (const s of [-1, 1]) { const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.28), nightMat(std({ color: 0x0c1410, emissive: 0x3cff9a, emissiveIntensity: 0.3 }), 0.3, 1)); scr.position.set(x + s * 0.411, 1.55, z); scr.rotation.y = s * Math.PI / 2; g.add(scr); }
+      for (const s of [-1, 1]) { const h = mk(new THREE.CylinderGeometry(0.03, 0.03, 0.9, 6), std({ color: 0x111111 }), x + s * 0.45, 1.0, z + 0.15); h.rotation.z = s * 0.25; }
+      addCircCol(x, z, 0.5, 2, 'surtidor');
+    }
+  }
+  // tenda con fachada de vidro
+  mk(new THREE.BoxGeometry(12, 3.6, 5), white, 0, 1.8, 8.5);
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(9, 2.6), nightMat(std({ color: 0x2b3a44, roughness: 0.1, metalness: 0.4, emissive: 0xfff0d0, emissiveIntensity: 0.05 }), 0.05, 1.0)); glass.position.set(0, 1.5, 5.99); glass.rotation.y = Math.PI; g.add(glass);
+  const sb = new THREE.Mesh(new THREE.PlaneGeometry(12, 0.7), std({ map: band, roughness: 0.5 })); sb.position.set(0, 3.25, 5.99); sb.rotation.y = Math.PI; g.add(sb);
+  addBoxCol(-6, 6, 6, 11, 3.8, 'tenda');
+  // tótem de prezos xunto á rúa
+  mk(new THREE.BoxGeometry(1.6, 0.4, 0.5), grey, 11, 0.2, -4.6);
+  const tot = new THREE.Mesh(new THREE.BoxGeometry(1.4, 5.0, 0.35), green); tot.position.set(11, 2.9, -4.6); tot.castShadow = true; g.add(tot);
+  for (const [z, ry] of [[-4.79, Math.PI], [-4.41, 0]]) { const pt = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 2.6 * 1.0), nightMat(std({ map: priceTex(), emissiveMap: priceTex(), emissive: 0xffffff, emissiveIntensity: 0.15, roughness: 0.5 }), 0.15, 0.9)); pt.position.set(11, 3.6, z); pt.rotation.y = ry; g.add(pt); }
+  addCircCol(11, -4.6, 0.8, 5.4, 'totem');
+  pushLamp({ x: 0, y: CH - 0.3, z: -2 }); pushLamp({ x: 0, y: CH - 0.3, z: 2 });
+}
+
+/* ---------- Glorieta Pablo Iglesias (Praza da Estación): fonte de aceiro corten e escultura ---------- */
+function buildStationFountain(B, scene) {
+  const r = LM.stFountain; if (!r) return;
+  const F = makeFrame(r.cx, r.cz, -r.ang), y0 = terrainH(r.cx, r.cz);
+  const g = new THREE.Group(); g.position.set(F.ox, y0, F.oz); g.rotation.y = F.rot; scene.add(g);
+  const mk = (geo, mat, x, y, z, ry = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.y = ry; m.castShadow = m.receiveShadow = true; g.add(m); return m; };
+  const granite = MAT.stone, corten = std({ color: 0x8a4a26, roughness: 0.75, metalness: 0.35 }), water = std({ color: 0x3a5a58, roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.85 });
+  const L = Math.max(5.6, r.w), W = Math.max(1.4, r.d);
+  // vaso afundido con bordo de granito
+  const BL = L + 1.6, BW = W + 1.6;
+  for (const [w, d, x, z] of [[BL, 0.4, 0, -BW / 2], [BL, 0.4, 0, BW / 2], [0.4, BW, -BL / 2, 0], [0.4, BW, BL / 2, 0]]) mk(new THREE.BoxGeometry(w, 0.45, d), granite, x, 0.22, z);
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(BL - 0.4, BW - 0.4), water); pool.rotation.x = -Math.PI / 2; pool.position.y = 0.1; g.add(pool);
+  // pía de corten
+  mk(new THREE.BoxGeometry(L, 0.08, W), corten, 0, 0.25, 0);
+  for (const [w, d, x, z] of [[L, 0.06, 0, -W / 2], [L, 0.06, 0, W / 2], [0.06, W, -L / 2, 0], [0.06, W, L / 2, 0]]) mk(new THREE.BoxGeometry(w, 0.75, d), corten, x, 0.62, z);
+  const top = new THREE.Mesh(new THREE.PlaneGeometry(L - 0.12, W - 0.12), water); top.rotation.x = -Math.PI / 2; top.position.y = 0.94; g.add(top);
+  // lámina de auga que verte polo bordo
+  const sheet = new THREE.Mesh(new THREE.PlaneGeometry(L - 0.2, 0.75), MAT.waterJet.clone()); sheet.position.set(0, 0.6, W / 2 + 0.04); g.add(sheet);
+  G.anims.push(t => { sheet.material.opacity = 0.4 + 0.12 * Math.sin(t * 6); });
+  // xardineira de granito ao lado
+  const PL = L + 1.0, PZ = BW / 2 + 1.9;
+  for (const [w, d, x, z] of [[PL, 0.35, 0, PZ - 1.1], [PL, 0.35, 0, PZ + 1.1], [0.35, 2.2, -PL / 2, PZ], [0.35, 2.2, PL / 2, PZ]]) mk(new THREE.BoxGeometry(w, 0.55, d), granite, x, 0.27, z);
+  const soil = new THREE.Mesh(new THREE.PlaneGeometry(PL - 0.3, 1.9), std({ color: 0x3b2a1c, roughness: 1 })); soil.rotation.x = -Math.PI / 2; soil.position.set(0, 0.45, PZ); g.add(soil);
+  const bush = new THREE.IcosahedronGeometry(0.7, 1), bm = std({ color: 0x3f6a2c, roughness: 0.95, flatShading: true });
+  for (let i = 0; i < 5; i++) { const b = mk(bush, bm, -PL / 2 + 0.9 + i * (PL - 1.8) / 4, 0.8, PZ); b.scale.set(RR(0.8, 1.1), RR(0.7, 0.9), 0.8); }
+  addOBB(F.ox, F.oz, BL / 2, BW / 2, F.rot, 0.9, 'fonte');
+  { const [px, pz] = F.pt(0, PZ); addOBB(px, pz, PL / 2, 1.1, F.rot, 0.6, 'xardineira'); }
+  // escultura «Monforte aos ferroviarios» nunha illa con flores (posición OSM)
+  const S = { x: 740, z: -612 }, nr = nearRoad(S.x, S.z, q => q.type === 'car');
+  const yaw = nr.r ? Math.atan2(nr.ux, nr.uz) : 0, sy = terrainH(S.x, S.z);
+  const sg = new THREE.Group(); sg.position.set(S.x, sy, S.z); sg.rotation.y = yaw; scene.add(sg);
+  const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; sg.add(m); return m; };
+  const curbY = std({ color: 0xe0b521, roughness: 0.7 });
+  add(new THREE.BoxGeometry(3.6, 0.18, 6.2), curbY, 0, 0.09, 0);
+  add(new THREE.BoxGeometry(3.3, 0.22, 5.9), std({ color: 0xb9b4aa, roughness: 0.85 }), 0, 0.12, 0);
+  add(new THREE.BoxGeometry(2.0, 0.7, 2.6), granite, 0, 0.55, -0.6);
+  const flowers = std({ color: 0xc8202a, roughness: 0.8 }), leaf = std({ color: 0x2f5a24, roughness: 0.9, flatShading: true });
+  for (let i = 0; i < 26; i++) { const f = add(new THREE.IcosahedronGeometry(0.13, 0), i % 3 ? flowers : leaf, RR(-1.2, 1.2), 0.32, RR(1.0, 2.6)); }
+  // figura de pedra branca (abstracta, evoca un ferroviario coa súa ferramenta)
+  const stoneW = std({ color: 0xe4ded2, roughness: 0.9, flatShading: true });
+  const body = add(new THREE.CylinderGeometry(0.42, 0.62, 1.9, 7), stoneW, 0, 1.85, -0.6);
+  const head = add(new THREE.DodecahedronGeometry(0.33, 0), stoneW, 0.05, 3.0, -0.55);
+  const arm = add(new THREE.BoxGeometry(0.28, 1.2, 0.3), stoneW, 0.55, 2.2, -0.4); arm.rotation.z = -0.5;
+  const tool = add(new THREE.BoxGeometry(0.12, 1.6, 0.12), stoneW, 0.95, 2.3, -0.35); tool.rotation.z = -0.25;
+  const wheel = add(new THREE.TorusGeometry(0.45, 0.1, 6, 16), stoneW, -0.55, 1.35, -0.6); wheel.rotation.y = Math.PI / 2;
+  // cordiline (palmeiriña) detrás
+  for (let i = 0; i < 9; i++) { const l = add(new THREE.ConeGeometry(0.05, 1.3, 4), leaf, -0.9, 1.6, -1.6); l.rotation.set(RR(-0.8, 0.8), 0, RR(-0.8, 0.8)); }
+  addOBB(S.x, S.z, 1.8, 3.1, yaw, 0.6, 'illa');
+  addCircCol0(S.x, S.z - 0, 1.2, 3.4, 'escultura');
 }
