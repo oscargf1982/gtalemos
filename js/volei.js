@@ -91,6 +91,7 @@ const CURRITO_CELS = [
   { id: 'bebe', say: 'Este vai polo meu bebé!', dur: 3.2 },
   { id: 'xeonllos', say: 'Escorregaaaa!', dur: 2.8 },
 ];
+const CURRITO_IDLE = ['Magia!', 'Ponzoña!', 'Runner runner!', 'Algún pececillo para o póker?', 'Sucio Omar, traidor!', 'Lemos–Arenteiro sen min...', 'Ultreia, Sucio Omar...'];
 function shirtTex1() {
   const c = cnv(128, 128), x = c.getContext('2d');
   x.fillStyle = '#f6f6f2'; x.fillRect(0, 0, 128, 128);
@@ -194,7 +195,7 @@ function updateCurrito(dt) {
   } else {
     p.arms = null; p.walk = lerp(p.walk, 0, dt * 6); p.run = 0; p.sit = 0; p.wave = dme < 8 && Math.sin(t * 2) > 0.4;
     if (dme < 9) p.yaw += angDiff(p.yaw, Math.atan2(me.x - p.x, me.z - p.z)) * Math.min(1, dt * 3);
-    n.idleT -= dt; if (n.idleT <= 0) n.run = curritoPick();
+    n.idleT -= dt; if (n.idleT <= 0) { n.run = curritoPick(); if (dme < 18 && R() < 0.35) curritoSay(n, pick(CURRITO_IDLE), 3); }
   }
   p.y = groundH(p.x, p.z) + jumpY;
   // complementos
@@ -219,14 +220,24 @@ function talkCurrito(n) {
   const menu = C(save.curritoWin ? 'Parella! Xa estamos inscritos no Torneo Remember. Que facemos?' : 'Este sábado hai torneo de volei praia aquí no Parque dos Condes. Apúntaste comigo e facemos un remember dos vellos tempos? Ou prefires unha partidiña de cartas?', { choices: [
     { t: save.curritoWin ? 'Uns pases de volei' : 'Apúntome ao torneo! Imos facer un remember', fn: volei },
     { t: 'Unha man de «Olín sin verlas»', fn: () => pokerIntro(C) },
+    { t: 'E o Sucio Omar?', fn: () => [C('Nin mo nomees! Agora estará en Portomarín cunha cuncha na mochila e as botas novas facéndolle burbullas.'), C('O Lemos–Arenteiro, fútbol profesional, entradas collidas... e el, «é que o Camiño chámame, Currito». O Camiño! Chamábao a ponzoña, iso si.')] },
     { t: 'E por que che chaman o Mago?', fn: () => [C('Porque coa bola nas mans fago desaparecer os puntos do rival. E porque coas cartas... bueno, iso xa o verás.')] },
     { t: 'Agora non, Currito', fn: () => [C('Ti verás... Os grandes momentos non esperan! SIUUU!')] },
   ] });
   openDialog(save.curritoWin ? [menu] : [
     C('SIIIUUU! Perdoa, perdoa, é que cando piso a area non o podo evitar. Son Currito, Currito el Mago.'),
-    C('Viches a frecha? E o das orellas? E o avión? Teño todo o repertorio de celebracións do fútbol. O que me falta é parella.'),
+    C('Viches a frecha? E o das orellas? E o avión? Teño todo o repertorio de celebracións do fútbol.'),
+    ...omarLines(C),
     menu,
   ], pokerHide);
+}
+
+function omarLines(C) {
+  return [
+    C('Hoxe tiña plan grande, eh: quedara co SUCIO OMAR para ir ver fútbol profesional, o Lemos contra o Arenteiro. Partidazo!'),
+    C('E que fai o Sucio Omar? Déixame colgado! Marchou facer o Camiño de Santiago. Cuncha, bordón e adeus moi boas.'),
+    C('Así que baixei ao parque a dar uns toques de balón... e a buscar algún pececillo para ganarlle ao póker. Ti non serás un pececillo, non? Je, je. Magia!'),
+  ];
 }
 
 /* ---------- «Olín sin verlas»: unha carta cada un, gaña a máis alta ---------- */
@@ -262,6 +273,7 @@ function pokerIntro(C) {
   const money = G.player.money;
   if (money < 1) return [C('Sen cartos non hai olín, campeón. Volve cando teñas algo no peto.')];
   return [
+    C('Un pececillo! Digo... un rival de nivel. Senta, senta.'),
     C('«Olín sin verlas»: cada un colle unha carta sen mirala, apostamos o mesmo e a carta máis alta, coas regras do póker, lévase o bote. O As é a máis alta.'),
     pokerBetLine(C),
   ];
@@ -273,6 +285,16 @@ function pokerBetLine(C) {
     { t: 'Outra cantidade...', fn: () => [C('Di ti, sen medo:', { choices: [3, 4, 6, 7, 8, 9].map(mk) })] },
     { t: 'Mellor non', fn: () => [C('Covarde! É broma. Cando queiras, a baralla está quente.')] },
   ] });
+}
+function pokerLine(res, me, cu, bet, name) {
+  if (res === 0) return `Empate! ${name(me)} contra ${name(cu)}, mesmo valor. Repartimos o bote e aquí non pasou nada.`;
+  const w = res > 0 ? me : cu, l = res > 0 ? cu : me, ponz = w.r <= 5, runner = w.r - l.r === 1;
+  if (res > 0) return ponz ? `PONZOÑA! Gañarme cun ${name(me)}?! Eu con ${name(cu)}... Iso é ponzoña pura. Leva o bote: +${bet} €.`
+    : runner ? `Runner runner! ${name(me)} contra o meu ${name(cu)}, por unha carta de nada. Lévaste o bote: +${bet} €.`
+      : `Ti tes ${name(me)} e eu ${name(cu)}... Gañaches, +${bet} €. Hoxe a magia está do teu lado.`;
+  return ponz ? `Eu cun ${name(cu)} e ti ${name(me)}... Ponzoña da boa! Ata eu me sorprendo. O bote é meu (-${bet} €).`
+    : runner ? `Runner runner, pececillo! O meu ${name(cu)} contra o teu ${name(me)}. Así se gaña (-${bet} €).`
+      : `Eu teño ${name(cu)} e ti ${name(me)}. MAGIA! O bote é meu. SIUUU! (-${bet} €)`;
 }
 function pokerDeal(C, bet) {
   if (G.player.money < bet) return [C('Iso non o tes, amigo. Aposta menos.'), pokerBetLine(C)];
@@ -294,9 +316,7 @@ function pokerDeal(C, bet) {
       if (res !== 0) addMoney(res * bet);
       if (G.currito && res < 0) { const n = G.currito; n.cel = CURRITO_CELS[0]; n.celT = 0; }
     },
-    C(res > 0 ? `Ti tes ${name(me)} e eu ${name(cu)}... Gañaches! Lévaste o bote: +${bet} €. Isto non é maxia, é sorte!`
-      : res < 0 ? `Eu teño ${name(cu)} e ti ${name(me)}. O bote é meu! SIUUU! (-${bet} €)`
-        : `Empate! ${name(me)} contra ${name(cu)}, mesmo valor. Repartimos o bote e aquí non pasou nada.`),
+    C(pokerLine(res, me, cu, bet, name)),
     C('Outra man?', { choices: [
       { t: `Outra man (${bet} €)`, fn: () => pokerDeal(C, bet) },
       { t: 'Cambiar a aposta', fn: () => [pokerBetLine(C)] },
@@ -360,7 +380,7 @@ function voleyHit() {
     const [tx, tz] = V.pt(RR(-6.8, -2.2), RR(-3.3, 3.3)), T = RR(1.5, 1.8);
     voleyLaunch(b.x, Math.max(b.y, V.ys + 0.9), b.z, tx, tz, V.ys + 1.2, T);
     VG.tgt = { x: tx, z: tz }; VG.to = 'currito';
-    const lines = ['Boa!', 'Iso é!', 'Que mans!', 'Maxia!', 'Remember!', 'Uff, que pase!'];
+    const lines = ['Boa!', 'Iso é!', 'Que mans!', 'Magia!', 'Remember!', 'Ponzoña de pase!', 'Uff, que pase!'];
     if (VG.count >= VG.goal) toast(`${VG.count} pases! Agora Currito...`, 2); else toast(`Pase ${VG.count} de ${VG.goal}`, 1.2);
     if (G.currito && R() < 0.45) curritoSay(G.currito, pick(lines), 1.4);
   } else { VG.cool = 0.5; voleySnd('whiff'); }
@@ -383,7 +403,7 @@ function voleyCurrito(dt, n) {
     if (b.vy < 0 && b.y < V.ys + 1.25 && Math.hypot(b.x - p.x, b.z - p.z) < 2.2) {
       if (VG.count >= VG.goal) { VG.phase = 'win'; VG.timer = 0.6; voleySnd('hit'); return; }
       voleyServeTo({ x: b.x, z: b.z }); b.y = Math.max(b.y, V.ys + 1.1); n.jumpY = 0.15;
-      if (R() < 0.3) curritoSay(n, pick(['Abracadabra!', 'Toma maxia!', 'Vai, que vai!', 'Ollo a esta!', 'Remember!']), 1.4);
+      if (R() < 0.3) curritoSay(n, pick(['Abracadabra!', 'Magia!', 'Vai, que vai!', 'Runner runner!', 'Ollo a esta!', 'Remember!']), 1.4);
     }
     return;
   }
