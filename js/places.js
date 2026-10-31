@@ -111,6 +111,16 @@ function computeLandmarks() {
     const f = AREAS.find(a => a.t === 'fountain' && a.p[0][0] > 600); LM.stFountain = f ? minRect(f.p) : null;
     if (LM.stFountain) { const r = LM.stFountain; G.monumentZones.push([[r.cx - 6, r.cz - 6], [r.cx + 6, r.cz - 6], [r.cx + 6, r.cz + 6], [r.cx - 6, r.cz + 6]]); }
   }
+  // --- Auditorio e Conservatorio Municipal Mestre Ibáñez (fronte ao CEIP Plurilingüe) ---
+  {
+    const b = osmBldg('Edificio Multiúsos de Monforte de Lemos'), C = polyCentroid(b.p);
+    const nr = nearRoad(C[0], C[1], r => r.name === 'Rúa María Emilia Casas Baamonde' && r.type === 'car'), r = nr.r;
+    let nx = C[0] - nr.px, nz = C[1] - nr.pz; const k = nx * nr.ux + nz * nr.uz; nx -= k * nr.ux; nz -= k * nr.uz; [nx, nz] = norm2(nx, nz);
+    const d = r.hw + r.sw + 11.5;
+    LM.cons = makeFrame(nr.px + nx * d, nr.pz + nz * d, Math.atan2(nx, nz));
+    G.monumentZones.push(frameRectPoly(LM.cons, -31, -11.5, 31, 26));
+    G.namedZones.push({ n: 'Auditorio e Conservatorio Mestre Ibáñez', p: frameRectPoly(LM.cons, -31, -11.5, 31, 26) });
+  }
   // --- Torre da Homenaxe e Mosteiro de San Vicente ---
   {
     const t = polyCentroid(osmBldg('Torre da Homenaxe').p), m = polyCentroid(osmBldg('Castelo de Monforte de Lemos').p);
@@ -437,7 +447,8 @@ function buildTrees(scene, Q) {
   // avenidas arboradas
   for (const r of ROADS) if (r.type === 'car' && r.major && r.urban && !r.bridge) for (let s = 10; s < r.len - 6; s += 16) {
     const p = roadPoint(r, s), side = (Math.floor(s / 16) % 2) ? 1 : -1, off = r.hw + Math.max(1.2, r.sw * 0.7), x = p.x - p.uz * side * off, z = p.z + p.ux * side * off;
-    if (!inRoad(x, z, 0.4) && !obbOverlaps(x, z, 0.8, 0.8, 0, 0) && !G.lamps.some(l => Math.abs(l.x - x) < 4 && Math.abs(l.z - z) < 4)) trees.push([x, z, RR(0.7, 0.95)]);
+    const bx = p.x - p.uz * side * (off + 4), bz = p.z + p.ux * side * (off + 4);
+    if (!inRoad(x, z, 0.4) && !obbOverlaps(x, z, 0.8, 0.8, 0, 0) && !G.lamps.some(l => Math.abs(l.x - x) < 4 && Math.abs(l.z - z) < 4) && !G.monumentZones.some(q => inPoly(bx, bz, q))) trees.push([x, z, RR(0.7, 0.95)]);
   }
   // campo: arboredo e carballeiras fóra do núcleo urbano
   const nOut = Q === 'low' ? 500 : Q === 'med' ? 900 : 1400;

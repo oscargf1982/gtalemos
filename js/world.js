@@ -114,6 +114,7 @@ function buildWorld(scene, Q) {
   { const C = LM.station; inFrame(B, scene, C.ox, C.oz, C.rot, (LB, g) => { buildStation(LB, g); buildRailYard(LB, g); buildStationPlaza(LB, g); });
     G.stationCenter = (([x, z]) => ({ x, z }))(C.pt(315, 0)); }
   { const C = LM.ferro; inFrame(B, scene, C.ox, C.oz, C.rot, (LB, g) => buildFerroviario(LB, g)); }
+  { const C = LM.cons; inFrame(B, scene, C.ox, C.oz, C.rot, (LB, g) => buildConservatorio(LB, g)); }
   buildRailsOSM(B, scene, (x, z) => { const [lx, lz] = LM.station.inv(x, z); return lx > 330 && lx < 432 && Math.abs(lz) < 176; });
   lap('monuments');
   buildParkOSM(B, scene);

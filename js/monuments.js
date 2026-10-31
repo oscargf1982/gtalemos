@@ -784,3 +784,84 @@ function buildFerroviario(B, scene) {
   // pavimento do patio dianteiro
   const pv = new THREE.PlaneGeometry(CW + 2 * WW, -zf); pv.rotateX(-Math.PI / 2); xform(pv, 0, 0.06, zf / 2); { const p = pv.attributes.position, uv = pv.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i) / 3, p.getZ(i) / 3); } B.paving.add(pv);
 }
+
+/* ==========================================================
+   AUDITORIO E CONSERVATORIO MUNICIPAL MESTRE IBÁÑEZ
+   (Ronda María Emilia Casas Baamonde, fronte ao CEIP Plurilingüe)
+   corpo de dúas plantas con zócalo de granito e banda de fiestras,
+   volume da sala en ton salmón, escalinata gris con varandas granates
+   e gran alpendre de vigas granates co rótulo. Fachada en z = 0 mirando a −z.
+   ========================================================== */
+function buildConservatorio(B, scene) {
+  const L = 56, D = 24, H0 = 2.4, MAROON = '#7a2630';
+  const maroon = std({ color: new THREE.Color(MAROON), roughness: 0.45, metalness: 0.5 });
+  // --- alzado principal ---
+  const ft = elevTex(L, 9, 16, (x, P, ex) => {
+    x.fillStyle = '#a7a39a'; x.fillRect(0, 0, P.W, P.H); noiseFill(x, P.W, P.H, 0, 8);
+    ashlar(x, P, 0, 0, L, H0 + 0.3, [150, 146, 138], 0.55, {});
+    // fiestras baixas do semisoto
+    for (let i = 0; i < 9; i++) { const cx = 4 + i * 6; if (cx > L - 14) break; glassRect(x, ex, P, cx - 1.1, 0.7, 2.2, 0.9, R() < 0.3, '#f2f2ee'); }
+    // banda de fiestras corridas da planta principal
+    x.fillStyle = '#d9d6cf'; x.fillRect(P.X(0), P.Y(H0 + 3.3), P.S(L - 12), P.S(3.3));
+    for (let cx = 0.6; cx < L - 12.6; cx += 2.4) { glassRect(x, ex, P, cx, H0 + 0.25, 2.2, 2.8, R() < 0.45, '#f4f4f2'); x.fillStyle = '#f4f4f2'; x.fillRect(P.X(cx), P.Y(H0 + 3.05), P.S(2.2), P.S(0.12)); }
+    // portas de vidro da entrada
+    for (const cx of [L * 0.42, L * 0.42 + 2.6]) { x.fillStyle = '#f4f4f2'; x.fillRect(P.X(cx - 1.1), P.Y(H0 + 2.6), P.S(2.2), P.S(2.6)); glassRect(x, ex, P, cx - 0.95, H0 + 0.05, 0.9, 2.4, true, '#f4f4f2'); glassRect(x, ex, P, cx + 0.05, H0 + 0.05, 0.9, 2.4, true, '#f4f4f2'); }
+    // franxa granate baixo a banda e cornixa gris
+    x.fillStyle = MAROON; x.fillRect(0, P.Y(H0 + 0.25), P.S(L - 12), P.S(0.25));
+    x.fillStyle = '#8f8b84'; x.fillRect(0, P.Y(9), P.W, P.S(0.5));
+    // bloque de granito ao extremo dereito, con fiestriñas
+    ashlar(x, P, L - 12, 0, 12, 9, [160, 155, 146], 0.5, { long: true });
+    for (let k = 0; k < 3; k++) for (let j = 0; j < 2; j++) glassRect(x, ex, P, L - 10.5 + k * 3.6, 2.6 + j * 3.2, 1.3, 1.0, R() < 0.3, '#f2f2ee');
+  }, { emissive: true, normal: 1.5 });
+  const sideT = std({ map: (() => { const t = TEX.stone; return t; })(), color: 0xb9b3a8, roughness: 0.85 });
+  elevBox(scene, L, 9, D, { nz: elevMat(ft, 0.7) }, 0, 0, D / 2, 0, sideT);
+  addBoxCol(-L / 2, 0, L / 2, D, 12, 'conservatorio');
+  // --- volume da sala (salmón) e cheminea ---
+  const VW = 34, VD = 16, VH = 7;
+  const vt = elevTex(VW, VH, 8, (x, P) => { x.fillStyle = '#d6b39a'; x.fillRect(0, 0, P.W, P.H); noiseFill(x, P.W, P.H, 0, 6); x.strokeStyle = 'rgba(120,80,60,.35)'; x.lineWidth = 2; for (let i = 1; i < 6; i++) { x.beginPath(); x.moveTo(P.X(i * VW / 6), 0); x.lineTo(P.X(i * VW / 6), P.H); x.stroke(); } x.fillStyle = '#9a7a68'; x.fillRect(0, 0, P.W, P.S(0.3)); }, {});
+  const vm = elevMat(vt, 0); const vs = std({ color: 0xd6b39a, roughness: 0.9 });
+  elevBox(scene, VW, VH, VD, { nz: vm, pz: vm }, 5, 9, D / 2 + 1, 0, vs);
+  const ch = boxGeo(1.4, 4.5, 1.4, [3, 3]); xform(ch, 5 - VW / 2 + 4, 9 + VH + 1.6, D / 2 - 6); B.concrete.add(ch);
+  // --- terraza elevada e escalinata ---
+  const TX0 = -L / 2 + 12.5, TX1 = L / 2 - 4, TD = 4.2, SW = 15, SC = L / 2 - (L * 0.42 + 1.3); // a textura da cara −z vai de +x a −x // centro da escaleira (fronte ás portas)
+  const terr = boxGeo(TX1 - TX0, H0, TD, [3, 3]); xform(terr, (TX0 + TX1) / 2, H0 / 2, -TD / 2); B.concrete.add(terr);
+  const tTop = boxGeo(TX1 - TX0, 0.06, TD); xform(tTop, (TX0 + TX1) / 2, H0 + 0.03, -TD / 2); B.paving.add(tTop);
+  addSWRect(TX0, -TD, TX1, 0, H0);
+  const NST = 13, RISE = H0 / NST, TREAD = 0.34, slate = std({ color: 0x5c6670, roughness: 0.6 });
+  for (let i = 0; i < NST; i++) {
+    const z1 = -TD - i * TREAD - (i >= 7 ? 1.2 : 0), z0 = z1 - TREAD, h = H0 - (i + 1) * RISE + RISE;
+    const st = boxGeo(SW, h, TREAD + 0.02); xform(st, SC, h / 2, (z0 + z1) / 2); B.stone.add(st);
+    addSWRect(SC - SW / 2, z0, SC + SW / 2, z1, h);
+    if (i === 6) { const land = boxGeo(SW, h - RISE * 0.0, 1.2); xform(land, SC, (h) / 2, z0 - 0.6); B.stone.add(land); addSWRect(SC - SW / 2, z0 - 1.2, SC + SW / 2, z0, h - RISE); }
+  }
+  const zStairs = -TD - NST * TREAD - 1.2;
+  // muro lateral da terraza onde non hai escaleira
+  for (const [a, b] of [[TX0, SC - SW / 2], [SC + SW / 2, TX1]]) if (b - a > 0.5) { const w = boxGeo(b - a, H0, 0.4, [3, 3]); xform(w, (a + b) / 2, H0 / 2, -TD - 0.2); B.concrete.add(w); addBoxCol(a, -TD - 0.4, b, -TD, H0 + 1.1, 'muro'); }
+  // --- varandas granates ---
+  const rail = (pts, h = 1.05) => {
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, ay, az] = pts[i], [bx, by, bz] = pts[i + 1], Lg = Math.hypot(bx - ax, bz - az), yaw = Math.atan2(bx - ax, bz - az), pitch = Math.atan2(by - ay, Lg);
+      for (const yy of [h, h * 0.5]) { const r = boxGeo(0.05, 0.05, Math.hypot(Lg, by - ay)); xform(r, (ax + bx) / 2, (ay + by) / 2 + yy, (az + bz) / 2, yaw, -pitch); B.vcol.add(colorize(r, MAROON)); }
+      for (let t = 0; t <= 1.001; t += 1 / Math.max(1, Math.round(Lg / 1.6))) { const p = boxGeo(0.06, h, 0.06); xform(p, lerp(ax, bx, t), lerp(ay, by, t) + h / 2, lerp(az, bz, t)); B.vcol.add(colorize(p, MAROON)); }
+    }
+  };
+  rail([[TX0, H0, -TD + 0.15], [SC - SW / 2, H0, -TD + 0.15]]); rail([[SC + SW / 2, H0, -TD + 0.15], [TX1, H0, -TD + 0.15]]);
+  for (const sx of [SC - SW / 2 + 0.2, SC + SW / 2 - 0.2, SC]) rail([[sx, H0, -TD], [sx, 0, zStairs]], sx === SC ? 0.95 : 1.05);
+  rail([[TX1, H0, -TD + 0.15], [TX1, H0, -0.2]]);
+  // --- gran alpendre: piares redondos granates, vigas, lamas e rótulo ---
+  const CX0 = SC - 13, CX1 = SC + 13, CZ0 = -TD - 3.4, CY = H0 + 4.4;
+  for (const cx of [CX0 + 0.4, SC - 4.6, SC + 4.6, CX1 - 0.4]) { const base = cx === CX0 + 0.4 || cx === CX1 - 0.4 ? 0 : H0; const col = new THREE.CylinderGeometry(0.22, 0.22, CY - base, 12); xform(col, cx, base + (CY - base) / 2, CZ0 + 0.3); B.vcol.add(colorize(col, MAROON)); addCircCol(cx, CZ0 + 0.3, 0.3, CY, 'piar'); }
+  const fascia = new THREE.Mesh(new THREE.BoxGeometry(CX1 - CX0, 1.0, 0.3), maroon); fascia.position.set(SC, CY + 0.5, CZ0); fascia.castShadow = true; scene.add(fascia);
+  const lc = cnv(2048, 80), lx = lc.getContext('2d'); lx.fillStyle = MAROON; lx.fillRect(0, 0, 2048, 80); lx.fillStyle = '#f4efe4'; lx.textAlign = 'center'; lx.textBaseline = 'middle'; lx.font = '600 54px "Times New Roman", Georgia, serif'; lx.fillText('CONSERVATORIO  MPAL.  MESTRE  IBAÑEZ', 1024, 44);
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(CX1 - CX0 - 0.4, 0.9), std({ map: toTex(lc, false), roughness: 0.6 })); label.position.set(SC, CY + 0.5, CZ0 - 0.16); label.rotation.y = Math.PI; scene.add(label);
+  for (const s of [-1, 1]) { const sb = boxGeo(0.3, 0.9, -CZ0 + 0.3); xform(sb, s > 0 ? CX1 : CX0, CY + 0.45, CZ0 / 2); B.vcol.add(colorize(sb, MAROON)); }
+  for (let z = CZ0 + 0.6; z < -0.2; z += 1.1) { const sl = boxGeo(CX1 - CX0, 0.12, 0.45); xform(sl, SC, CY + 0.12, z); B.vcol.add(colorize(sl, z % 2.2 < 1.1 ? '#f2efe8' : MAROON)); }
+  const roof = boxGeo(CX1 - CX0 + 0.3, 0.18, -CZ0 + 0.4); xform(roof, SC, CY + 1.05, CZ0 / 2); B.flat.add(roof);
+  for (let i = 0; i < 4; i++) { const lp = new THREE.SphereGeometry(0.14, 8, 6); xform(lp, SC - 6 + i * 4, CY - 0.05, CZ0 / 2); B.white.add(lp); pushLamp({ x: SC - 6 + i * 4, y: CY - 0.2, z: CZ0 / 2 }); }
+  // pavimento diante e sinal de accesibilidade
+  const pv = new THREE.PlaneGeometry(L + 4, -zStairs + 2); pv.rotateX(-Math.PI / 2); xform(pv, 0, 0.07, (zStairs - 2) / 2); { const p = pv.attributes.position, uv = pv.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i) / 3, p.getZ(i) / 3); } B.paving.add(pv);
+  const sp = boxGeo(0.07, 2.4, 0.07); xform(sp, SC - SW / 2 - 2.5, 1.2, zStairs + 0.5); B.metalDark.add(sp);
+  const ac = cnv(64, 64), ax = ac.getContext('2d'); ax.fillStyle = '#1f5fbf'; ax.fillRect(0, 0, 64, 64); ax.strokeStyle = '#fff'; ax.lineWidth = 5; ax.beginPath(); ax.arc(30, 40, 13, 0.3, 5.5); ax.stroke(); ax.fillStyle = '#fff'; ax.beginPath(); ax.arc(32, 12, 5, 0, 7); ax.fill(); ax.fillRect(29, 18, 6, 18); ax.fillRect(29, 32, 18, 5);
+  const sg = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.6), std({ map: toTex(ac, false) })); sg.position.set(SC - SW / 2 - 2.5, 2.1, zStairs + 0.46); sg.rotation.y = Math.PI; scene.add(sg);
+  G.conservatorio = { stairs: zStairs };
+}
