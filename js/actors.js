@@ -447,7 +447,7 @@ class Crowd {
     M.makeRotationY(p.yaw); M.setPosition(p.x, p.y, p.z);
     if (lie > 0) { A.makeTranslation(0, 0.18 * lie, 0); M.multiply(A); A.makeRotationX(-Math.PI / 2 * lie * (p.fallDir || 1)); M.multiply(A); }
     A.makeScale(sc * (p.fat || 1), sc, sc * (p.fat || 1) * 0.92 + sc * 0.08); M.multiply(A);
-    const hipY = 0.93 - sit * 0.45 + bob, lean = run * 0.18 * w + sit * -0.05;
+    const kneel = p.kneel || 0, hipY = 0.93 - sit * 0.45 - kneel * 0.43 + bob, lean = run * 0.18 * w + sit * -0.05;
     // pelve
     T.copy(M); A.makeTranslation(0, hipY + 0.05, 0); T.multiply(A); mm.hips.setMatrixAt(i, T);
     // torso
@@ -464,9 +464,10 @@ class Crowd {
       if (p.armUp && s === 1) ax = -lerp(0, 2.1, p.armUp);
       if (p.wave && s === 0) { ax = -2.8; az = -0.3 + Math.sin(G.t * 9) * 0.25; }
       if (lie > 0.5) { ax = -2.6; }
+      if (p.arms) { ax = p.arms[s * 3]; az = p.arms[s * 3 + 1]; }
       A.makeRotationX(ax); T.multiply(A); A.makeRotationZ(az); T.multiply(A);
       mm.uarm.setMatrixAt(i * 2 + s, T);
-      A.makeTranslation(0, -0.3, 0); T.multiply(A); A.makeRotationX(-(0.15 + run * 1.1 * w + (p.armUp && s === 1 ? 1.3 * p.armUp : 0) + sit * 0.6)); T.multiply(A);
+      A.makeTranslation(0, -0.3, 0); T.multiply(A); A.makeRotationX(-(p.arms ? p.arms[s * 3 + 2] : 0.15 + run * 1.1 * w + (p.armUp && s === 1 ? 1.3 * p.armUp : 0) + sit * 0.6)); T.multiply(A);
       mm.farm.setMatrixAt(i * 2 + s, T);
     }
     // pernas
@@ -476,7 +477,7 @@ class Crowd {
       const thighA = swing - sit * 1.5;
       A.makeRotationX(-thighA); T.multiply(A); A.makeRotationZ(sg * 0.02); T.multiply(A);
       mm.thigh.setMatrixAt(i * 2 + s, T);
-      const knee = Math.max(0, -Math.cos(ph + (s ? Math.PI : 0))) * (0.5 + run * 0.9) * w + sit * 1.5;
+      const knee = Math.max(0, -Math.cos(ph + (s ? Math.PI : 0))) * (0.5 + run * 0.9) * w + sit * 1.5 + kneel * 1.57;
       A.makeTranslation(0, -0.44, 0); T.multiply(A); A.makeRotationX(knee); T.multiply(A);
       mm.shin.setMatrixAt(i * 2 + s, T);
       A.makeTranslation(0, -0.42, 0); T.multiply(A); A.makeRotationX(-knee * 0.5 + thighA * 0.3 - sit * 0.0); T.multiply(A);

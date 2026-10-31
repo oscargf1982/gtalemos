@@ -57,6 +57,7 @@ function spawnStoryNPCs() {
   spawnSpasic();
   spawnIvan();
   spawnDamian();
+  spawnCurrito();
 }
 function wearFener(p) { p.col.shirt = FENER.yellow; world.crowd.paint(p); repaintArms(p, FENER.navy); }
 
@@ -129,6 +130,7 @@ function talkTo(n) {
   if (n.id === 'mayor') return talkMayor(n);
   if (n.id === 'ivan') return ivanTalk(n);
   if (n.id === 'damian') return damianTalk(n);
+  if (n.id === 'currito') return talkCurrito(n);
   const q = G.quest;
   if (n.id === 'pacho') {
     const hola = P('Que pasa, chorbo! Aúpa Depor!');
@@ -233,6 +235,7 @@ function updateStory(dt) {
   if (n && !G.dialog) setPrompt(`${isTouch ? '★' : 'E'} · Falar con ${n.name}`);
   updateSpasic(dt);
   updateDamian(dt);
+  updateCurrito(dt); updateVoley(dt);
   // obxectivo no HUD se non hai outra misión
   if (!G.mission && !(q.state === 'go' || q.state === 'return')) spasicObjective(dt);
   if (!G.mission && (q.state === 'go' || q.state === 'return')) {
@@ -301,14 +304,21 @@ function spawnSpasic() {
   if (G.quest2.state === 'steal' || G.quest2.state === 'deliver') { G.quest2.state = 'steal'; setTimeout(startRiot, 0); }
 }
 const _hm = new THREE.Matrix4(), _om = new THREE.Matrix4(), _tv3 = new THREE.Vector3();
+// percorrido arredor da fonte, bordeando a pista de volei praia polo lado da fonte
+function spasicPt(a) {
+  let x = SP_LOOP.x + Math.cos(a) * SP_LOOP.rx, z = SP_LOOP.z + Math.sin(a) * SP_LOOP.rz; const V = LM.volei;
+  if (V) { let [lx, lz] = V.inv(x, z); const k = Math.max(0, 1 - Math.max(0, Math.abs(lx) - 13) / 6);
+    if (k > 0) { const side = V.inv(SP_LOOP.x, SP_LOOP.z)[1] > 0 ? 1 : -1; const tz = side * 9; if (side > 0 ? lz < tz : lz > tz) { lz = lerp(lz, tz, k); [x, z] = V.pt(lx, lz); } } }
+  return [x, z];
+}
 function updateSpasic(dt) {
   const n = NPCS.find(x => x.id === 'spasic'); if (!n) return;
   const p = n.p, me = G.player.car || G.player.ped, near = Math.hypot(me.x - p.x, me.z - p.z) < 7.5;
   const target = (near || (G.dialog && p.talking)) ? 0 : 3.4;
   n.speed = lerp(n.speed, target, Math.min(1, dt * 2));
   n.ang += dt * n.speed / 19;
-  const bx = SP_LOOP.x + Math.cos(n.ang) * SP_LOOP.rx, bz = SP_LOOP.z + Math.sin(n.ang) * SP_LOOP.rz;
-  const yaw = Math.atan2(-Math.sin(n.ang) * SP_LOOP.rx, Math.cos(n.ang) * SP_LOOP.rz);
+  const [bx, bz] = spasicPt(n.ang), [bx2, bz2] = spasicPt(n.ang + 0.02);
+  const yaw = Math.atan2(bx2 - bx, bz2 - bz);
   const by = groundH(bx, bz);
   n.bike.position.set(bx, by, bz); n.bike.rotation.set(0, yaw, n.speed < 0.3 ? 0.12 : 0);
   for (const w of n.bike.userData.wheels) w.rotation.x += dt * n.speed / 0.34;

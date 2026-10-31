@@ -3,7 +3,7 @@
    GTA LEMOS 27400 · retratos en miniatura para os diálogos
    (pixel art: Iván Nogal co retrato achegado polo autor; o resto debuxados aquí)
    ========================================================== */
-const PORTRAIT_IMG = { 'Iván Nogal': 'img/ivan.png', 'Damián Selfies': 'img/damian.png' };
+const PORTRAIT_IMG = { 'Iván Nogal': 'img/ivan.png', 'Damián Selfies': 'img/damian.png', 'Currito el Mago': 'img/currito.png' };
 const PORTRAITS = {};
 /* rostro pixelado 32×32 → escalado sen suavizar */
 function pixelFace(o) {

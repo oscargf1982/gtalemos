@@ -151,6 +151,9 @@ function computeLandmarks() {
       if (v > bv) { bv = v; best = [x, z]; }
     }
     LM.parkC = { x: best[0], z: best[1] };
+    // explanada de formigón ao nornoroeste da fonte: pista de volei praia
+    { const b = -20 * Math.PI / 180; LM.volei = makeFrame(best[0] + Math.sin(b) * 30, best[1] - Math.cos(b) * 30, 30 * Math.PI / 180);
+      const vp = frameRectPoly(LM.volei, -11.5, -6.5, 11.5, 6.5); G.monumentZones.push(vp); G.namedZones.push({ n: 'Pista de volei praia', p: vp }); LM.volei.poly = vp; }
     G.namedZones.push({ n: 'Parque dos Condes', p: a.p });
   }
   // --- Ponte Vella ---
@@ -363,7 +366,7 @@ function buildParkOSM(B, scene) {
   // farolas e bancos ao longo dos camiños do parque
   for (const r of ROADS) {
     if (r.type !== 'path') continue; const m = roadPoint(r, r.len / 2); if (!inPoly(m.x, m.z, P)) continue;
-    for (let s = 6; s < r.len - 3; s += 22) { const p = roadPoint(r, s), x = p.x - p.uz * (r.hw + 0.8), z = p.z + p.ux * (r.hw + 0.8); if (inPoly(x, z, P) && Math.hypot(x - cx, z - cz) > 24) { G.parkLampPts.push([x, z]); if (R() < 0.5) bench(B, x + p.ux * 3, terrainH(x, z) + 0.03, z + p.uz * 3, Math.atan2(p.uz, -p.ux)); } }
+    for (let s = 6; s < r.len - 3; s += 22) { const p = roadPoint(r, s), x = p.x - p.uz * (r.hw + 0.8), z = p.z + p.ux * (r.hw + 0.8); if (inPoly(x, z, P) && Math.hypot(x - cx, z - cz) > 24 && !(LM.volei && inPoly(x, z, LM.volei.poly))) { G.parkLampPts.push([x, z]); if (R() < 0.5) bench(B, x + p.ux * 3, terrainH(x, z) + 0.03, z + p.uz * 3, Math.atan2(p.uz, -p.ux)); } }
   }
   // cartel de entrada xunto á rúa máis próxima
   {
@@ -384,7 +387,7 @@ function buildParkOSM(B, scene) {
     inFrame(B, scene, bx, bz, th, (LB, g) => buildEmbarcadoiro(LB, g));
     G.jetty = { x: bx + Math.sin(th) * -1.0, z: bz + Math.cos(th) * -1.0 };
   }
-  for (let i = 0; i < 600 && G.parkPoints.length < 70; i++) { const bb = polyBox(P), x = RR(bb.x0, bb.x1), z = RR(bb.z0, bb.z1); if (inPoly(x, z, P) && riverDistRaw(x, z) > RIVER_HW + 3 && Math.hypot(x - cx, z - cz) > 14.5 && !inStreet(x, z, 0.5)) G.parkPoints.push([x, z]); }
+  for (let i = 0; i < 600 && G.parkPoints.length < 70; i++) { const bb = polyBox(P), x = RR(bb.x0, bb.x1), z = RR(bb.z0, bb.z1); if (inPoly(x, z, P) && riverDistRaw(x, z) > RIVER_HW + 3 && Math.hypot(x - cx, z - cz) > 14.5 && !inStreet(x, z, 0.5) && !(LM.volei && inPoly(x, z, LM.volei.poly))) G.parkPoints.push([x, z]); }
   G.parkCenter = { x: cx, z: cz };
 }
 
@@ -428,6 +431,7 @@ function buildTrees(scene, Q) {
       const x = RR(bb.x0, bb.x1), z = RR(bb.z0, bb.z1);
       if (!inPoly(x, z, a.p) || riverDistRaw(x, z) < RIVER_HW + 5 || inStreet(x, z, 1.5) || inRoad(x, z, 1.5, true)) continue;
       if (LM.parkC && Math.hypot(x - LM.parkC.x, z - LM.parkC.z) < 30) continue;
+      if (LM.volei && inPoly(x, z, frameRectPoly(LM.volei, -14, -9, 14, 9))) continue;
       if (AREAS.some(o => (o.t === 'pitch' || o.t === 'play' || o.t === 'parking') && inPoly(x, z, o.p))) continue;
       trees.push([x, z, RR(0.8, 1.25)]); k++;
     }
@@ -441,6 +445,7 @@ function buildTrees(scene, Q) {
       if (x < MAP.minX || x > MAP.maxX || z < MAP.minZ || z > MAP.maxZ) continue;
       if (BRIDGES.some(b => Math.hypot(x - b.x, z - b.z) < b.half + 4) || inStreet(x, z, 1.5) || inRoad(x, z, 1.5, true) || obbOverlaps(x, z, 1, 1, 0, 0)) continue;
       if (LM.malecon && inPoly(x, z, LM.malecon.poly)) continue;
+      if (LM.volei && inPoly(x, z, frameRectPoly(LM.volei, -14, -9, 14, 9))) continue;
       trees.push([x, z, RR(0.8, 1.25)]);
     }
   }

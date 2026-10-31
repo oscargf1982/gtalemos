@@ -195,7 +195,7 @@ function spawnActors() {
   world.skids = new Skids(scene); world.smoke = new Smoke(scene);
   world.train = new Train(scene);
   // xogador
-  const RESERVE = 96; // veciños extra para obreiros, ciclistas, manifestación e feira
+  const RESERVE = 98; // veciños extra para obreiros, ciclistas, manifestación e feira
   world.crowd = new Crowd(scene, QS.peds + 1 + RESERVE);
   const pp = world.crowd.add({ state: 'player', colors: { shirt: '#7a1f3d', pants: '#22324d', skin: '#e9bc98', hair: '#2a1d14', shoe: '#efefef', sleeve: false } });
   pp.x = G.startPos.x; pp.z = G.startPos.z; pp.yaw = G.startPos.yaw; pp.y = groundH(pp.x, pp.z); pp.scale = 1.02; G.player.ped = pp;
@@ -434,6 +434,7 @@ function updatePlayerCar(dt) {
 function bankPoint(x, z, extra) { const rn = riverNear(x, z), dx = x - rn.px, dz = z - rn.pz, l = Math.hypot(dx, dz) || 1; return [rn.px + dx / l * (RIVER_HW + extra), rn.pz + dz / l * (RIVER_HW + extra)]; }
 function toggleCarForce() { const c = G.player.car; if (!c) return; c.driver = null; G.player.car = null; const p = G.player.ped; p.visible = true; [p.x, p.z] = bankPoint(c.x, c.z, 3); p.y = groundH(p.x, p.z); }
 function interact() {
+  if (G.voley && G.voley.on) { voleyHit(); return; }
   if (storyInteract()) return;
   // comezar misión se estás nun marcador
   for (const m of G.missionMarkers) if (m.near && !G.mission) { startMission(m.def); return; }
