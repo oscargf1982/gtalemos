@@ -200,7 +200,7 @@ function updateCurrito(dt) {
   p.y = groundH(p.x, p.z) + jumpY;
   // complementos
   const sc = p.scale, yaw = p.yaw;
-  world.crowd.meshes.head.getMatrixAt(p.idx, n.headG.matrix); n.headG.matrixWorldNeedsUpdate = true; n.headG.visible = p.visible;
+  pedMatrix('head', p.idx, n.headG.matrix); n.headG.matrixWorldNeedsUpdate = true; n.headG.visible = p.visible;
   if (n.cape) n.cape.rotation.x = 0.12 + (p.run || 0) * 0.75 * (p.walk || 0) + (jumpY > 0.1 ? 0.5 : 0) + Math.sin(t * 5) * 0.03;
   const rx = Math.cos(yaw), rz = -Math.sin(yaw), fx = Math.sin(yaw), fz = Math.cos(yaw);
   n.knees.forEach((k, i) => { const s = i ? 1 : -1, kn = (p.sit || 0); k.position.set(p.x + rx * s * 0.1 * sc + fx * (0.02 + kn * 0.35) * sc, p.y + (0.5 - kn * 0.12 - (p.kneel || 0) * 0.43) * sc, p.z + rz * s * 0.1 * sc + fz * (0.02 + kn * 0.35) * sc); k.rotation.set(kn * 1.2, yaw, 0, 'YXZ'); });

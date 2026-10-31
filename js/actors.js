@@ -444,18 +444,24 @@ class Crowd {
   pose(p) {
     const { M, T, A, B, C } = this, i = p.idx, mm = this.meshes;
     if (!p.visible) { for (const k of PED_PARTS) { const n = k === 'torso' || k === 'hips' || k === 'head' || k === 'hair' ? 1 : 2; for (let s = 0; s < n; s++) mm[k].setMatrixAt(i * n + s, this.zero); } return; }
-    const ph = p.phase, w = p.walk, run = p.run, sit = p.sit, lie = p.lie;
+    // suavizado dos cambios de postura e de xiro (movementos máis fluídos)
+    const sdt = Math.min(G.poseDt || 0.016, 0.05), S = p._sm || (p._sm = { w: p.walk, run: p.run, sit: p.sit, lie: p.lie, arm: p.armUp || 0, kn: p.kneel || 0, yaw: p.yaw });
+    { const k = 1 - Math.exp(-sdt * 10), ky = 1 - Math.exp(-sdt * 16);
+      S.w += (p.walk - S.w) * k; S.run += (p.run - S.run) * k; S.sit += (p.sit - S.sit) * k; S.lie += (p.lie - S.lie) * k * 1.4; S.arm += ((p.armUp || 0) - S.arm) * k; S.kn += ((p.kneel || 0) - S.kn) * k;
+      const dy = angDiff(S.yaw, p.yaw); S.yaw = Math.abs(dy) > 2.6 ? p.yaw : S.yaw + dy * ky; }
+    const ph = p.phase, w = S.w, run = S.run, sit = S.sit, lie = S.lie, armUp = S.arm;
     const amp = lerp(0.5, 0.95, run) * w, sw = Math.sin(ph), bob = Math.abs(Math.cos(ph)) * 0.035 * w * (1 + run);
     const sc = p.scale;
     // base: posición, xiro, caída
-    M.makeRotationY(p.yaw); M.setPosition(p.x, p.y, p.z);
+    M.makeRotationY(S.yaw); M.setPosition(p.x, p.y, p.z);
     if (lie > 0) { A.makeTranslation(0, 0.18 * lie, 0); M.multiply(A); A.makeRotationX(-Math.PI / 2 * lie * (p.fallDir || 1)); M.multiply(A); }
     A.makeScale(sc * (p.fat || 1), sc, sc * (p.fat || 1) * 0.92 + sc * 0.08); M.multiply(A);
-    const kneel = p.kneel || 0, hipY = 0.93 - sit * 0.45 - kneel * 0.43 + bob, lean = run * 0.18 * w + sit * -0.05;
+    const kneel = S.kn, hipY = 0.93 - sit * 0.45 - kneel * 0.43 + bob, lean = run * 0.18 * w + sit * -0.05;
     // pelve
     T.copy(M); A.makeTranslation(0, hipY + 0.05, 0); T.multiply(A); mm.hips.setMatrixAt(i, T);
     // torso
-    const torsoBase = this.C.copy(M); A.makeTranslation(0, hipY + 0.1, 0); torsoBase.multiply(A); A.makeRotationX(lean); torsoBase.multiply(A); A.makeRotationY(Math.sin(ph) * 0.12 * w); torsoBase.multiply(A);
+    const torsoBase = this.C.copy(M); A.makeTranslation(0, hipY + 0.1, 0); torsoBase.multiply(A); A.makeRotationX(lean); torsoBase.multiply(A); A.makeRotationY(Math.sin(ph) * 0.12 * w); torsoBase.multiply(A); A.makeRotationZ(Math.cos(ph) * 0.035 * w); torsoBase.multiply(A);
+    { const br = Math.sin(G.t * 1.9 + i * 0.7) * 0.006 * (1 - w) * (1 - lie); A.makeTranslation(0, br, 0); torsoBase.multiply(A); }
     T.copy(torsoBase); A.makeTranslation(0, 0.27, 0); T.multiply(A); mm.torso.setMatrixAt(i, T);
     // cabeza
     T.copy(torsoBase); A.makeTranslation(0, 0.7, 0.01); T.multiply(A); A.makeRotationY(p.look || 0); T.multiply(A); A.makeRotationX(-lean * 0.6 + (p.nod || 0)); T.multiply(A);
@@ -465,13 +471,13 @@ class Crowd {
       const sg = s ? 1 : -1, swing = (s ? sw : -sw) * amp * 0.9;
       T.copy(torsoBase); A.makeTranslation(sg * 0.235, 0.5, 0); T.multiply(A);
       let ax = swing, az = sg * (0.07 + run * 0.1 * w);
-      if (p.armUp && s === 1) ax = -lerp(0, 2.1, p.armUp);
+      if (armUp > 0.01 && s === 1) ax = -lerp(0, 2.1, armUp);
       if (p.wave && s === 0) { ax = -2.8; az = -0.3 + Math.sin(G.t * 9) * 0.25; }
       if (lie > 0.5) { ax = -2.6; }
       if (p.arms) { ax = p.arms[s * 3]; az = p.arms[s * 3 + 1]; }
       A.makeRotationX(ax); T.multiply(A); A.makeRotationZ(az); T.multiply(A);
       mm.uarm.setMatrixAt(i * 2 + s, T);
-      A.makeTranslation(0, -0.3, 0); T.multiply(A); A.makeRotationX(-(p.arms ? p.arms[s * 3 + 2] : 0.15 + run * 1.1 * w + (p.armUp && s === 1 ? 1.3 * p.armUp : 0) + sit * 0.6)); T.multiply(A);
+      A.makeTranslation(0, -0.3, 0); T.multiply(A); A.makeRotationX(-(p.arms ? p.arms[s * 3 + 2] : 0.15 + run * 1.1 * w + (armUp > 0.01 && s === 1 ? 1.3 * armUp : 0) + Math.max(0, -swing) * 0.35 + sit * 0.6)); T.multiply(A);
       mm.farm.setMatrixAt(i * 2 + s, T);
     }
     // pernas

@@ -296,5 +296,5 @@ function updatePlayerCap() {
   const hg = G.playerCap, p = G.player.ped; if (!hg || !p) return;
   hg.visible = p.visible && !G.player.car;
   if (!hg.visible) return;
-  world.crowd.meshes.head.getMatrixAt(p.idx, hg.matrix); hg.matrixWorldNeedsUpdate = true;
+  pedMatrix('head', p.idx, hg.matrix); hg.matrixWorldNeedsUpdate = true;
 }

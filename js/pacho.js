@@ -222,7 +222,7 @@ function updateStory(dt) {
   const q = G.quest;
   for (const n of NPCS) {
     const p = n.p, h = 1.95 * p.scale;
-    if (n.overlay) { world.crowd.meshes.torso.getMatrixAt(p.idx, n.overlay.matrix); n.overlay.matrixWorldNeedsUpdate = true; n.overlay.visible = p.visible; }
+    if (n.overlay) { pedMatrix('torso', p.idx, n.overlay.matrix); n.overlay.matrixWorldNeedsUpdate = true; n.overlay.visible = p.visible; }
     n.tag.position.set(p.x, p.y + h + 0.35, p.z);
     const has = (n.id === 'pacho' && (q.state === 'none' || q.state === 'return')) || (n.id === 'emre' && q.state === 'go') || (n.id === 'spasic' && G.quest2.state === 'none') || (n.id === 'ivan' && !G.ivanMet);
     n.bub.visible = has && !G.dialog; n.bub.position.set(p.x, p.y + h + 0.95 + Math.sin(G.t * 3) * 0.08, p.z);
@@ -334,7 +334,7 @@ function updateSpasic(dt) {
   p.sit = 0.72; p.walk = n.speed > 0.3 ? 1 : 0.15; p.run = 0; p.phase += dt * n.speed * 2.2; p.armUp = 0.45;
   p.look = near ? clamp(angDiff(yaw, Math.atan2(me.x - p.x, me.z - p.z)), -1, 1) : 0;
   // puro na boca e fume
-  world.crowd.meshes.head.getMatrixAt(p.idx, _hm);
+  pedMatrix('head', p.idx, _hm);
   _om.makeRotationX(Math.PI / 2 - 0.25); _om.setPosition(0.04, -0.045, 0.14); _hm.multiply(_om);
   n.cigar.matrix.copy(_hm); n.cigar.matrixWorldNeedsUpdate = true;
   n.puff -= dt; if (n.puff <= 0) { n.puff = RR(0.25, 0.6); _tv3.set(0, 0.1, 0).applyMatrix4(_hm); world.smoke.emit(_tv3.x, _tv3.y, _tv3.z, RR(-0.1, 0.1), RR(0.3, 0.6), RR(-0.1, 0.1), 0.18, 2.4, 0xd6d6d6, 0.4); }

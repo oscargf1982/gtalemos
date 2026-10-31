@@ -1005,7 +1005,9 @@ function simulate(dt, menu) {
   if (!menu && !pl.car && !G.cine) updatePlayerFoot(dt);
   if (!menu) updateCine(dt);
   if (!menu) updateSajoni(dt);
+  G.poseDt = dt;
   for (const p of peds) world.crowd.pose(p);
+  if (typeof updateHeroes === 'function') updateHeroes();
   world.crowd.flush();
   world.smoke.update(dt);
   // tren

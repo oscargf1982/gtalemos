@@ -144,7 +144,7 @@ function updateSajoni(dt) {
   }
   // tatuaxes, cadea e lentes
   const mm = world.crowd.meshes;
-  for (const k of n.ink) { mm[k.part].getMatrixAt(p.idx * 2 + k.s, k.m.matrix); k.m.matrixWorldNeedsUpdate = true; k.m.visible = p.visible; }
+  for (const k of n.ink) { pedMatrix(k.part, p.idx * 2 + k.s, k.m.matrix); k.m.matrixWorldNeedsUpdate = true; k.m.visible = p.visible; }
   const sc = p.scale, yaw = p.yaw, fx = Math.sin(yaw), fz = Math.cos(yaw);
   n.chain.position.set(p.x + fx * 0.09 * sc, p.y + 1.5 * sc, p.z + fz * 0.09 * sc); n.chain.rotation.set(-1.2, yaw, 0, 'YXZ');
   n.shades.position.set(p.x + fx * 0.115 * sc, p.y + 1.75 * sc + (p.nod || 0) * -0.02, p.z + fz * 0.115 * sc); n.shades.rotation.set(0, yaw, 0);
