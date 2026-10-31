@@ -442,6 +442,7 @@ function interact() {
   if (G.voley && G.voley.on) { voleyHit(); return; }
   if (G.story && storyInteractHook()) return;
   if (plazaHotelsInteract()) return;
+  if (fineInteract()) return;
   if (storyInteract()) return;
   // comezar misión se estás nun marcador
   for (const m of G.missionMarkers) if (m.near && !G.mission) { startMission(m.def); return; }

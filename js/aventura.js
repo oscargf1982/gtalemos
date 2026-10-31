@@ -25,7 +25,7 @@ const STEPS = {
   damian: { t: 'Busca a Damián Selfies, que te fotografou onte', w: 'Colexio Ferroviario (Rúa da Coruña)', tgt: npcPos('damian'), next: 'mayor' },
   mayor: { t: 'Consegue un autógrafo de The Mayor para Damián', w: 'Parque dos Condes, diante de Los Roncolas', tgt: npcPos('mayor'), next: 'spasic' },
   spasic: { t: 'Pregúntalle ao Spasic polas tesoiras douradas do Mayor', w: 'Parque dos Condes (vai en bici arredor da fonte)', tgt: npcPos('spasic'), next: 'puro' },
-  puro: { t: 'Merca un puro do bo para o Spasic', w: 'Gasolineira Lemos (Rúa do Doutor Casares)', tgt: ptPos('gas'), next: 'spasic2' },
+  puro: { t: 'Merca un puro do bo para o Spasic', w: 'Estanco da Praza Dr. Goyanes ou Gasolineira Lemos', tgt: ptPos('gas'), next: 'spasic2' },
   spasic2: { t: 'Cámbialle o puro ao Spasic polas tesoiras', w: 'Parque dos Condes', tgt: npcPos('spasic'), next: 'mayor2' },
   mayor2: { t: 'Devólvelle as tesoiras douradas a The Mayor', w: 'Parque dos Condes', tgt: npcPos('mayor'), next: 'damian2' },
   damian2: { t: 'Leva o autógrafo a Damián Selfies', w: 'Colexio Ferroviario (Rúa da Coruña)', tgt: npcPos('damian'), next: 'sajoni' },
@@ -69,6 +69,7 @@ function advInit() {
   const S = G.story; S.inv = []; S.step = null;
   addExtraDests();
   if (LM.gas) { const [x, z] = LM.gas.pt(0, 4.6); S.points.push({ id: 'gas', x, z }); }
+  if (LM.goy1) { const [x, z] = LM.goy1.pt(2.2, -5.4 + 1.2); S.points.push({ id: 'estanco', x, z }); }
   if (LM.arenal) { const [x, z] = LM.arenal.pt(42, -(ARENAL.fl - 1.0)); S.points.push({ id: 'loto', x, z }); }
   if (G.plazaHotels) { const h = G.plazaHotels[0]; S.points.push({ id: 'river', x: h.x, z: h.z }); }
   // tarxeta de novo obxectivo
@@ -251,6 +252,18 @@ function advVolleyWin(n) {
 function advPoint(id, act) {
   const S = G.story; if (!S || S.phase !== 'play') return act ? false : null;
   const step = S.step, K = isTouch ? '★' : 'E';
+  if (id === 'estanco') {
+    if (step !== 'puro') return act ? false : null;
+    if (!act) return `${K} · Mercar un puro no estanco (3 €)`;
+    if (G.player.money < 3) { openDialog([SP('Estanqueira', 'Tres euros o puro, cariño. Aquí fiado só ao señor alcalde, e iso porque nos arranxa a beirarrúa.')]); return true; }
+    openDialog([
+      A('Boas! Un puro dos gordos. É para un amigo con bici pintada e moita personalidade.'),
+      SP('Estanqueira', 'O Spasic, non? Leva este, que os finos di que «son para xente sen ambición».'),
+      () => { money(-3); take('moedas'); give('puro'); },
+      SP('Estanqueira', 'E dille que me devolva o mechero que levou en 2019.'),
+      () => nextStep()]);
+    return true;
+  }
   if (id === 'gas') {
     if (step !== 'puro') return act ? false : null;
     if (!act) return `${K} · Mercar un puro na gasolineira (3 €)`;

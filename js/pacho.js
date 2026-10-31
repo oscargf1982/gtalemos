@@ -242,6 +242,7 @@ function updateStory(dt) {
   updateAvelino(dt);
   updatePlazaHotels();
   updatePlayerCap();
+  updateFine(dt);
   // obxectivo no HUD se non hai outra misión
   if (!G.mission && !(q.state === 'go' || q.state === 'return')) spasicObjective(dt);
   if (!G.mission && (q.state === 'go' || q.state === 'return')) {
