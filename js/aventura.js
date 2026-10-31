@@ -62,6 +62,11 @@ function addExtraDests() {
   if (LM.gas) { const [x, z] = LM.gas.pt(0, -3); add('Gasolineira Lemos', 'Rúa do Doutor Casares', { x, z }); }
   if (LM.arenal) { const [x, z] = LM.arenal.pt(42, -2); add('Rúa de Concepción Arenal', 'Loterías, Café Bar Lemos e A Fraternal', { x, z }); }
   if (LM.fluvial) { const [x, z] = LM.fluvial.pt(-46, -6); add('Club Fluvial', 'Piscinas e pistas', { x, z }); }
+  if (LM.concello) { const [x, z] = LM.concello.pt(25.8, 36); add('Casa do Concello', 'Praza do Campo de San Antonio', { x, z }); }
+  if (LM.carude) { const [x, z] = LM.carude.pt(0, 16); add('Carud\'e Rock', 'Festival na Praza de Carude', { x, z }); }
+  if (typeof MED !== 'undefined') add('Feira Medieval', 'Praza de España e rúas de San Vicente', { x: MED.plaza[0] - 8, z: MED.plaza[1] + 6 });
+  add('Rúa dos Abeledos', 'A zona catastrófica', { x: -372, z: 99 });
+  add('Rúa de Rosalía de Castro', 'As vacas da estación', { x: 741, z: -650 });
 }
 
 /* ---------- inicio e pasos ---------- */
