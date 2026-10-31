@@ -125,6 +125,7 @@ function computeLandmarks() {
   if (typeof fluvialLandmarks === 'function') fluvialLandmarks();
   if (typeof sajoniLandmarks === 'function') sajoniLandmarks();
   if (typeof arenalLandmarks === 'function') arenalLandmarks();
+  if (typeof ucelersLandmarks === 'function') ucelersLandmarks();
   // --- Torre da Homenaxe e Mosteiro de San Vicente ---
   {
     const t = polyCentroid(osmBldg('Torre da Homenaxe').p), m = polyCentroid(osmBldg('Castelo de Monforte de Lemos').p);

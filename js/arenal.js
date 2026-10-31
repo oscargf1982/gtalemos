@@ -113,7 +113,7 @@ function galleryTex(cols = 4, rows = 3) {
 }
 function arBuild(B, g, b, side, y0) {
   // b: { s0, s1, H, D, front: {t,e}, wall, roof, balconies:[{u,w,y}], galleries:[{u,w,y,h}], extras(fn) }
-  const W = b.s1 - b.s0, sg = side, fl = ARENAL.fl, D = b.D || ARENAL.D, cx = (b.s0 + b.s1) / 2, zf = sg * fl, zc = sg * (fl + D / 2);
+  const W = b.s1 - b.s0, sg = side, fl = b.fl ?? ARENAL.fl, D = b.D || ARENAL.D, cx = (b.s0 + b.s1) / 2, zf = sg * fl, zc = sg * (fl + D / 2);
   const X = u => sg > 0 ? cx + W / 2 - u : cx - W / 2 + u; // u da fachada → x local
   // volume
   const box = boxGeo(W, b.H + 2, D, [Math.round(W / 4), Math.round(b.H / 3)]); xform(box, cx, y0 + b.H / 2 - 1, zc); B.vcol.add(colorize(box, b.wall || '#d8d2c4'));
