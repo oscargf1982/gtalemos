@@ -88,7 +88,7 @@ function initStoryWorld() {
 function nearStoryThing() {
   const S = G.story; if (!S || !S.spots || G.player.car) return null;
   const me = G.player.ped;
-  for (const p of S.points) if (Math.hypot(me.x - p.x, me.z - p.z) < (p.id === 'train' ? 6 : 3)) return { kind: 'point', p };
+  for (const p of S.points) if (Math.hypot(me.x - p.x, me.z - p.z) < (p.id === 'train' ? 6 : 3.8)) return { kind: 'point', p };
   if (S.phase === 'play') for (const s of S.spots) if (Math.hypot(me.x - s.x, me.z - s.z) < 2.6) return { kind: 'sleep', s };
   return null;
 }

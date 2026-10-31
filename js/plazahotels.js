@@ -138,11 +138,14 @@ function updatePlazaHotels() {
   const h = plazaHotelNear(); if (!h || G.dialog || G.dishes) return;
   if (G.story && G.story.phase !== 'play') return;
   const K = isTouch ? '★' : 'E';
+  // na aventura, o Hostal River dá o bocata a cambio de lavar pratos (a calquera hora)
+  if (h.id === 'river' && G.story && G.story.step === 'bocata' && typeof advPoint === 'function') { const pr = advPoint('river', false); if (pr) { setPrompt(pr); return; } }
   setPrompt(night ? `${K} · ${h.name}: ${h.cost ? 'durmir por 20 €' : 'durmir a cambio de lavar pratos'}` : `${h.name} · para durmir, volve a partir das 20:00`);
 }
 function plazaHotelsInteract() {
   const h = plazaHotelNear(); if (!h || G.dialog || G.cine || G.dishes) return false;
   if (G.story && G.story.phase !== 'play') return false;
+  if (h.id === 'river' && G.story && G.story.step === 'bocata' && typeof advPoint === 'function') return advPoint('river', true);
   if (!phNight()) { toast(`${h.name}: as habitacións dánse a partir das 20:00.`); return true; }
   if (h.id === 'lemavos') {
     const RC = (t, e) => ({ who: 'Recepcionista do Lemavos', text: t, ...e });
