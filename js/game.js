@@ -4,9 +4,9 @@
    ========================================================== */
 const $ = id => document.getElementById(id);
 const QUALITY = {
-  high: { pr: 1.5, shadow: 2048, peds: 76, traffic: 24, parked: 40, lights: 6, rain: 3500 },
-  med: { pr: 1.0, shadow: 1024, peds: 48, traffic: 16, parked: 26, lights: 3, rain: 2000 },
-  low: { pr: 0.8, shadow: 0, peds: 26, traffic: 10, parked: 14, lights: 0, rain: 1000 },
+  high: { pr: 1.5, shadow: 2048, peds: 84, traffic: 24, parked: 40, lights: 6, rain: 3500 },
+  med: { pr: 1.0, shadow: 1024, peds: 53, traffic: 16, parked: 26, lights: 3, rain: 2000 },
+  low: { pr: 0.8, shadow: 0, peds: 29, traffic: 10, parked: 14, lights: 0, rain: 1000 },
 };
 let Q = 'high', QS = QUALITY.high;
 let renderer, scene, camera, sky, skyScene, pmrem, envRT, sun, moon, hemi;
@@ -195,7 +195,7 @@ function spawnActors() {
   world.skids = new Skids(scene); world.smoke = new Smoke(scene);
   world.train = new Train(scene);
   // xogador
-  const RESERVE = 112; // veciños extra para obreiros, ciclistas, manifestación e feira
+  const RESERVE = 123; // veciños extra para obreiros, ciclistas, manifestación e feira
   world.crowd = new Crowd(scene, QS.peds + 1 + RESERVE);
   const pp = world.crowd.add({ state: 'player', colors: { shirt: '#7a1f3d', pants: '#22324d', skin: '#e9bc98', hair: '#2a1d14', shoe: '#efefef', sleeve: false } });
   pp.x = G.startPos.x; pp.z = G.startPos.z; pp.yaw = G.startPos.yaw; pp.y = groundH(pp.x, pp.z); pp.scale = 1.02; G.player.ped = pp;

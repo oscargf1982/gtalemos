@@ -135,7 +135,7 @@ function initCarudeCrowd() {
   // seguridade (para a persecución)
   C.staff = [];
   for (let i = 0; i < 2; i++) { const p = carudeTakePed({ shirt: '#f2c21b', pants: '#151515', sleeve: false }); if (p) C.staff.push({ p, lx: i ? 7 : -7, lz: -4.3 }); }
-  const N = 18;
+  const N = 20;
   for (let i = 0; i < N; i++) {
     const p = carudeTakePed({ shirt: '#2b2b2b', sleeve: R() < 0.7 }); if (!p) break;
     const lx = RR(-7.5, 7.5), lz = RR(-3.6, 9);
