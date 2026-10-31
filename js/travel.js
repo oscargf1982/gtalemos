@@ -1,17 +1,17 @@
 'use strict';
 /* ==========================================================
-   LEMOS 27400 · viaxe rápida co Yepes en patinete
+   LEMOS 27400 · viaxe rápida co Pellas en patinete
    ========================================================== */
 const FT_DESTS = []; // enchida por initPlaces() co plano real
 G.cine = null;
 let YEPES = null;
-function initYepes() {
+function initPellas() {
   const C = world.crowd, p = C.peds.find(q => q.state === 'walk' && !q.npc && q !== G.player.ped);
   if (!p) return;
   Object.assign(p, { state: 'npc', home: 'npc', npc: 'yepes', manual: true, immune: true, visible: false, sit: 0, lie: 0, walk: 0, run: 0, edge: null });
   Object.assign(p.col, { shirt: '#5f646b', pants: '#17181b', hair: '#d4202b', skin: '#e3b48f', shoe: '#f2f2f2', sleeve: false }); C.paint(p);
   const veh = makeScooter('#e2452a'); veh.visible = false; G.scene.add(veh);
-  const tag = nameSprite('El Yepes', '#ff8a5c'); tag.visible = false; G.scene.add(tag);
+  const tag = nameSprite('El Pellas', '#ff8a5c'); tag.visible = false; G.scene.add(tag);
   YEPES = { p, veh, tag };
 }
 /* ---------- interface ---------- */
@@ -31,14 +31,14 @@ function quickTravel() { if (G.cine || G.dialog) return; if (document.exitPointe
 function closeTravel() { $('travel').hidden = true; }
 function chooseTravel(i) {
   const d = FT_DESTS[i], pl = G.player;
-  if (pl.wanted > 0) { toast('O Yepes non vén se te busca a policía'); return; }
+  if (pl.wanted > 0) { toast('O Pellas non vén se te busca a policía'); return; }
   if (G.dialog) return;
   if (pl.car) { if (pl.car.speed > 3) { toast('Para o vehículo primeiro'); return; } toggleCar(); }
   closeTravel(); toggleMap(false);
-  startYepes(d);
+  startPellas(d);
 }
 /* ---------- cinemática ---------- */
-function startYepes(dest) {
+function startPellas(dest) {
   if (!YEPES) { teleportTo(dest); return; }
   const me = G.player.ped, Y = YEPES;
   // chega dende o lado da cámara, para ao carón do xogador
@@ -50,7 +50,16 @@ function startYepes(dest) {
   Y.p.visible = true; Y.veh.visible = true; Y.tag.visible = true;
   G.cine = { t: 0, phase: 'arrive', dest, start, stop, yaw, pos: { ...start }, speed: 8, camFrom: camera.position.clone(), look: new THREE.Vector3(me.x, me.y + 1.2, me.z) };
   $('hud').classList.add('cine');
+  const sb = $('skipIntro'); sb.innerHTML = 'Saltar viaxe <kbd>Espazo</kbd>'; sb.hidden = false;
   if (G.sfx.bell) G.sfx.bell(start);
+}
+// saltar a animación da viaxe rápida (Espazo / Intro / botón)
+function skipTravel() {
+  const C = G.cine; if (!C || C.intro) return;
+  if (C.phase !== 'black') teleportTo(C.dest);
+  if (YEPES) { YEPES.p.visible = false; YEPES.veh.visible = false; YEPES.tag.visible = false; }
+  $('fade').classList.remove('on'); G.cine = null; $('hud').classList.remove('cine'); $('skipIntro').hidden = true;
+  if (!C.unfaded) bigMsg(C.dest.n.toUpperCase(), 'Viaxe rápida co Pellas');
 }
 function teleportTo(d) {
   const p = G.player.ped;
@@ -58,7 +67,7 @@ function teleportTo(d) {
   camYaw = (d.yaw || 0) + Math.PI; camPitch = 0.22; camIdle = 0; camera._init = 0;
   setWaypoint(null);
 }
-function placeYepes(x, z, yaw, rider) {
+function placePellas(x, z, yaw, rider) {
   const Y = YEPES, y = groundH(x, z);
   Y.veh.position.set(x, y, z); Y.veh.rotation.set(0, yaw, 0);
   for (const w of Y.veh.userData.wheels) w.rotation.x += (G.cine ? G.cine.speed : 0) * 0.016 / 0.11;
@@ -75,9 +84,9 @@ function updateCine(dt) {
   if (C.phase === 'arrive') {
     const dx = C.stop.x - C.pos.x, dz = C.stop.z - C.pos.z, d = Math.hypot(dx, dz);
     C.speed = Math.max(1.2, Math.min(9, d * 0.9));
-    if (d < 0.15) { C.phase = 'hop'; C.t = 0; toast('El Yepes: «Sube atrás, chorbo! Agárrate ben»', 2.6); }
+    if (d < 0.15) { C.phase = 'hop'; C.t = 0; toast('El Pellas: «Sube atrás, chorbo! Agárrate ben»', 2.6); }
     else { C.pos.x += dx / d * C.speed * dt; C.pos.z += dz / d * C.speed * dt; }
-    placeYepes(C.pos.x, C.pos.z, C.yaw, false);
+    placePellas(C.pos.x, C.pos.z, C.yaw, false);
     me.yaw += angDiff(me.yaw, Math.atan2(C.pos.x - me.x, C.pos.z - me.z)) * Math.min(1, dt * 5);
   } else if (C.phase === 'hop') {
     C.speed = 0;
@@ -85,17 +94,17 @@ function updateCine(dt) {
     if (C.t < 0.05) C.hop0 = { x: me.x, z: me.z, y: me.y };
     me.x = lerp(C.hop0.x, tx, k); me.z = lerp(C.hop0.z, tz, k); me.y = C.hop0.y + Math.sin(k * Math.PI) * 0.45 + k * 0.16; me.yaw += angDiff(me.yaw, C.yaw) * Math.min(1, dt * 8);
     me.walk = k < 1 ? 1 : 0; me.phase += dt * 6;
-    placeYepes(C.stop.x, C.stop.z, C.yaw, false);
+    placePellas(C.stop.x, C.stop.z, C.yaw, false);
     if (C.t > 1.1) { C.phase = 'leave'; C.t = 0; C.pos = { ...C.stop }; if (G.sfx.bell) G.sfx.bell(C.stop); }
   } else if (C.phase === 'leave') {
     C.speed = Math.min(11, C.speed + dt * 6);
     C.pos.x += Math.sin(C.yaw) * C.speed * dt; C.pos.z += Math.cos(C.yaw) * C.speed * dt;
-    placeYepes(C.pos.x, C.pos.z, C.yaw, true);
+    placePellas(C.pos.x, C.pos.z, C.yaw, true);
     if (C.t > 1.3 && !C.faded) { C.faded = true; $('fade').classList.add('on'); }
     if (C.t > 2.1) { C.phase = 'black'; C.t = 0; teleportTo(C.dest); YEPES.p.visible = false; YEPES.veh.visible = false; YEPES.tag.visible = false; }
   } else if (C.phase === 'black') {
-    if (C.t > 0.5 && !C.unfaded) { C.unfaded = true; $('fade').classList.remove('on'); bigMsg(C.dest.n.toUpperCase(), 'Viaxe rápida co Yepes'); }
-    if (C.t > 0.9) { G.cine = null; $('hud').classList.remove('cine'); }
+    if (C.t > 0.5 && !C.unfaded) { C.unfaded = true; $('fade').classList.remove('on'); bigMsg(C.dest.n.toUpperCase(), 'Viaxe rápida co Pellas'); }
+    if (C.t > 0.9) { G.cine = null; $('hud').classList.remove('cine'); $('skipIntro').hidden = true; }
   }
   return true;
 }
@@ -121,7 +130,7 @@ function startArrivalIntro() {
   tr.state = 'arriving'; tr.dir = 1; tr.s = tr.stopS - 330; tr.v = 24; tr.decel = 1.7; tr.holdTime = 22; tr.place();
   me.visible = false;
   G.cine = { intro: true, t: 0, phase: 'train', look: new THREE.Vector3(tr.x, 3, tr.z) };
-  $('hud').classList.add('cine'); $('skipIntro').hidden = false;
+  $('hud').classList.add('cine'); $('skipIntro').innerHTML = 'Saltar intro <kbd>Espazo</kbd>'; $('skipIntro').hidden = false;
   if (G.sfx.trainHorn) G.sfx.trainHorn(tr);
   bigMsg('MONFORTE DE LEMOS', 'Rexional procedente de Ourense · vía 1');
 }
@@ -130,7 +139,7 @@ function endIntro() {
   me.x = p.x; me.z = p.z; me.y = groundH(p.x, p.z); me.yaw = p.yaw; me.visible = true;
   camYaw = p.yaw + Math.PI; camPitch = 0.22; camIdle = 0; camera._init = 0;
   G.cine = null; $('hud').classList.remove('cine'); $('skipIntro').hidden = true; $('fade').classList.remove('on');
-  setTimeout(() => toast('Benvido a Monforte! Iván Nogal, o de Renfe que está aí ao lado, pode axudarche. Pacho espérate na Praza da Compañía (marcada no GPS).', 6), 400);
+  setTimeout(() => toast('Benvido a Monforte! Iván Nogal, o de Renfe que está aí ao lado, pode axudarche. Pancho Camisolas espérate na Praza da Compañía (marcada no GPS).', 6), 400);
   setTimeout(() => toast(isTouch ? 'A túa berlina clásica granate está aparcada aí diante, na Praza da Estación (⇅ para subir)' : 'A túa berlina clásica granate está aparcada aí diante, na Praza da Estación (F para subir)', 5), 6200);
   setTimeout(() => { if (G._worksIntro) toast(G._worksIntro, 5); }, 11800);
   const pa = NPCS.find(n => n.id === 'pacho'); if (pa && G.quest.state === 'none') setWaypoint(pa.p.x, pa.p.z);

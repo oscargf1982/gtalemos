@@ -227,7 +227,7 @@ function spawnActors() {
   spawnStoryNPCs();
   spawnRiders();
   initFair();
-  initYepes();
+  initPellas();
   initMayor();
   initBand();
   initWorks();
@@ -251,7 +251,7 @@ function setupInput() {
     if (e.code === 'Escape' || e.code === 'KeyP') { togglePause(); e.preventDefault(); }
     if (G.paused) return;
     if (G.cine && G.cine.intro) { if (['Space', 'Enter', 'Escape', 'KeyE', 'KeyF'].includes(e.code)) skipIntro(); return; }
-    if (G.cine) return;
+    if (G.cine) { if (['Space', 'Enter'].includes(e.code)) { skipTravel(); e.preventDefault(); } return; }
     if (!$('travel').hidden) { if (e.code === 'Escape') closeTravel(); return; }
     if (G.dialog) { if (['Space', 'KeyE', 'Enter', 'KeyF'].includes(e.code)) { dialogAdvance(); e.preventDefault(); } const m = /^Digit([1-9])$/.exec(e.code) || /^Numpad([1-9])$/.exec(e.code); if (m) choose(+m[1] - 1); return; }
     if (e.code === 'KeyF' || e.code === 'Enter') toggleCar();
@@ -300,7 +300,7 @@ function setupInput() {
   hold('tbHorn', () => { if (G.player.car) G.sfx.horn(G.player.car, 1); }); hold('tbCam', () => cycleCam()); hold('tbMap', () => toggleMap()); hold('tbPause', () => togglePause()); hold('tbAct', () => { if (G.player.car && G.player.car.type === 'taxi') taxiShift(); else interact(); });
   // botóns do menú
   $('btnPlay').onclick = startGame;
-  $('skipIntro').onclick = e => { e.stopPropagation(); skipIntro(); };
+  $('skipIntro').onclick = e => { e.stopPropagation(); if (G.cine && !G.cine.intro) skipTravel(); else skipIntro(); };
   $('dialog').addEventListener('click', () => dialogAdvance()); $('btnResume').onclick = () => togglePause(false);
   $('optQuality').onchange = e => { try { localStorage.setItem('lemosQ', e.target.value); } catch (er) { } $('qNote').hidden = false; };
   $('optTime').onchange = e => { G.hour = +e.target.value; envTimer = 0; lastEnvHour = -99; };

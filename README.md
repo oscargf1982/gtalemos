@@ -15,14 +15,14 @@ Videoxogo 3D de mundo aberto ambientado en **Monforte de Lemos** (Lugo), feito p
 | F | Subir ou baixar do vehículo |
 | E | Falar · comezar misión |
 | C / M | Cámara · mapa con GPS |
-| Y | Viaxe rápida co Yepes |
+| Y | Viaxe rápida co Pellas |
 | H / R | Claxon · radio |
 | V / Esc | Modo foto · pausa |
 
 Tamén funciona con mando e con controis táctiles no móbil (en horizontal).
 
 ## Contido
-Castelo de San Vicente e Torre da Homenaxe, Ponte Vella, Rúa do Cardeal, Colexio da Compañía, Parque dos Condes coa gran fonte, Paseo do Malecón coa Feira do Viño, estación de tren, Campo da Pinguela, Campo da Compañía, Parque Antonio Carballo, quiosco Anchoa e barrio da Estación. Viaxe rápida co Yepes en patinete. The Mayor e o concerto de Los Roncolas na gran fonte do Parque dos Condes. Misións con Pacho, Jusé e o Spasic, taxi, obras diarias e coleccionables.
+Castelo de San Vicente e Torre da Homenaxe, Ponte Vella, Rúa do Cardeal, Colexio da Compañía, Parque dos Condes coa gran fonte, Paseo do Malecón coa Feira do Viño, estación de tren, Campo da Pinguela, Campo da Compañía, Parque Antonio Carballo, quiosco Anchoa e barrio da Estación. Viaxe rápida co Pellas en patinete. The Mayor e o concerto de Los Roncolas na gran fonte do Parque dos Condes. Misións con Pancho Camisolas, Jusé e o Spasic, taxi, obras diarias e coleccionables.
 
 ## Plano
 O plano da cidade (rúas co seu trazado e nome reais, o río Cabe, as vías do tren, parques e edificios) xérase a partir de datos de OpenStreetMap: © colaboradores de [OpenStreetMap](https://www.openstreetmap.org/copyright), licenza ODbL.

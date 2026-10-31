@@ -1,6 +1,6 @@
 'use strict';
 /* ==========================================================
-   LEMOS 27400 · Pacho, diálogos e a misión da camiseta
+   LEMOS 27400 · Pancho Camisolas, diálogos e a misión da camiseta
    ========================================================== */
 const QUEST_KEY = 'lemos27400_pacho';
 G.quest = { state: 'none' };
@@ -50,7 +50,7 @@ function spawnNPC(opts) {
 function repaintArms(p, col) { const c = new THREE.Color(col), m = world.crowd.meshes.uarm; m.setColorAt(p.idx * 2, c); m.setColorAt(p.idx * 2 + 1, c); m.instanceColor.needsUpdate = true; }
 
 function spawnStoryNPCs() {
-  const pacho = spawnNPC({ id: 'pacho', name: 'Pacho', x: LM.compOld(56, 107)[0], z: LM.compOld(56, 107)[1], yaw: LM.comp.yaw(Math.PI), scale: 1.15, fat: 1.55, colors: PACHO_COL });
+  const pacho = spawnNPC({ id: 'pacho', name: 'Pancho Camisolas', x: LM.compOld(56, 107)[0], z: LM.compOld(56, 107)[1], yaw: LM.comp.yaw(Math.PI), scale: 1.15, fat: 1.55, colors: PACHO_COL });
   if (pacho) { pacho.ball = makeBall(); G.scene.add(pacho.ball); if (G.quest.state === 'done') wearFener(pacho.p); }
   spawnNPC({ id: 'emre', name: 'Jusé', x: LM.stationOld(229.5, -222)[0], z: LM.stationOld(229.5, -222)[1], yaw: LM.station.yaw(-Math.PI / 2), scale: 1.0, colors: { shirt: '#f4f4f2', pants: '#1d2a4a', skin: '#e9c2a2', hair: '#3a2a1c', shoe: '#e9e9e9', sleeve: true } });
   const juse = NPCS.find(n => n.id === 'emre'); if (juse) { repaintArms(juse.p, '#d4202b'); addCheckerShirt(juse); }
@@ -121,7 +121,7 @@ function updateDialog(dt) {
 }
 
 /* ---------- conversas ---------- */
-const P = (text, extra) => ({ who: 'Pacho', text, ...extra });
+const P = (text, extra) => ({ who: 'Pancho Camisolas', text, ...extra });
 const E = (text, extra) => ({ who: 'Jusé', text, ...extra });
 const ME = text => ({ who: 'Ti', text });
 function talkTo(n) {
@@ -137,7 +137,7 @@ function talkTo(n) {
     if (q.state === 'none') return openDialog([
       hola,
       P('Ei, ti! Si, ti, o do coche granate. Ven aquí un momentiño.'),
-      P('Son Pacho. Socio do Madrid desde que tiña dentes de leite. Vinte e oito anos sen faltar a un partido na tele do bar.'),
+      P('Son Pancho Camisolas. Socio do Madrid desde que tiña dentes de leite. Vinte e oito anos sen faltar a un partido na tele do bar.'),
       P('Pero teño un problema: o meu cuñado é do Fenerbahçe. De Istambul, ho! Casou coa miña irmá e agora fai as cousas grandes da familia en amarelo e azul.'),
       P('O sábado é o seu aniversario e quero sorprendelo cunha camiseta do Fener. Auténtica, das de Kadıköy, non dunha feira.', {
         choices: [
@@ -158,7 +158,7 @@ function talkTo(n) {
       P('Sabes que? Para que non me vexa con ela antes de tempo, póñoa xa eu. Así a vou quentando.'),
       () => { wearFener(n.p); },
       P('Que ninguén do Madrid me vexa, eh? Toma, por molestarte: catrocentos euros e un bocadillo de raxo cando queiras no Cardeal.'),
-      () => { q.state = 'done'; saveQuest(); addMoney(400); bigMsg('MISIÓN SUPERADA', 'Unha camiseta para Pacho · +400 €'); G.sfx.win(); save.done.pacho = true; persist(); updateMenuStats(); },
+      () => { q.state = 'done'; saveQuest(); addMoney(400); bigMsg('MISIÓN SUPERADA', 'Unha camiseta para Pancho Camisolas · +400 €'); G.sfx.win(); save.done.pacho = true; persist(); updateMenuStats(); },
     ]);
     if (q.state === 'done') return openDialog([hola, pick([
       P('Ao meu cuñado encantoulle a camiseta. Agora quere unha do Madrid. Isto non acaba nunca.'),
@@ -174,7 +174,7 @@ function talkTo(n) {
     return openDialog([
       E('¿Qué? ¿Vienes de parte del calvo ese? ¡Me ha llamado diez veces esta mañana! ¡Diez!'),
       E('¡Y no me toques la camiseta, que es la de Prosinečki! Más respeto.'),
-      ME('Si, son o recadeiro de Pacho. Quedou na Praza da Compañía.'),
+      ME('Si, son o recadeiro de Pancho Camisolas. Quedou na Praza da Compañía.'),
       E('Sí, tengo la camiseta del Fenerbahçe. La compré en Estambul y me costó un ojo de la cara. ¡Y ahora todo el mundo la quiere! ¡No la regalo así como así!', {
         choices: [
           { t: 'Págoche 50 €', disabled: G.player.money < 50 ? 'Non tes cartos dabondo' : null, fn: () => { G.player.money -= 50; save.money = G.player.money; persist(); return [E('Cincuenta euros. Ni uno menos. ¡Y no me mires así, que la camiseta es nueva!'), () => gotShirt()]; } },
@@ -201,11 +201,11 @@ function addCheckerShirt(n) {
 }
 function pachoAccept() {
   return [
-    { t: 'Conta comigo', fn: () => [P('Grande! Hai un croata que trouxo unha do Fener de Istambul e agarda o tren no andén 1 da estación. Chámase Jusé. Ten mal xenio, avísoche.'), P('Fala con el e tráeme a camiseta. Eu espero aquí, vixiando o Escorial galego.'), () => { G.quest.state = 'go'; saveQuest(); toast('Nova misión: Unha camiseta para Pacho'); G.sfx.start(); setWaypoint(229, -222); }] },
-    { t: 'Agora non podo', fn: () => [P('Bo, bo. Aquí estarei, coma sempre. Pacho non se move da Compañía.')] },
+    { t: 'Conta comigo', fn: () => [P('Grande! Hai un croata que trouxo unha do Fener de Istambul e agarda o tren no andén 1 da estación. Chámase Jusé. Ten mal xenio, avísoche.'), P('Fala con el e tráeme a camiseta. Eu espero aquí, vixiando o Escorial galego.'), () => { G.quest.state = 'go'; saveQuest(); toast('Nova misión: Unha camiseta para Pancho Camisolas'); G.sfx.start(); setWaypoint(229, -222); }] },
+    { t: 'Agora non podo', fn: () => [P('Bo, bo. Aquí estarei, coma sempre. Pancho Camisolas non se move da Compañía.')] },
   ];
 }
-function gotShirt() { G.quest.state = 'return'; saveQuest(); toast('Tes a camiseta: volve onde Pacho na Praza da Compañía'); setWaypoint(...LM.compOld(56, 105)); G.sfx.checkpoint(); }
+function gotShirt() { G.quest.state = 'return'; saveQuest(); toast('Tes a camiseta: volve onde Pancho Camisolas na Praza da Compañía'); setWaypoint(...LM.compOld(56, 105)); G.sfx.checkpoint(); }
 
 /* ---------- actualización ---------- */
 function nearNPC() {
@@ -239,8 +239,8 @@ function updateStory(dt) {
   // obxectivo no HUD se non hai outra misión
   if (!G.mission && !(q.state === 'go' || q.state === 'return')) spasicObjective(dt);
   if (!G.mission && (q.state === 'go' || q.state === 'return')) {
-    $('mission').hidden = false; $('mName').textContent = 'Unha camiseta para Pacho';
-    $('mText').textContent = q.state === 'go' ? 'Busca a Jusé no andén 1 da estación' : 'Leva a camiseta a Pacho (Praza da Compañía)';
+    $('mission').hidden = false; $('mName').textContent = 'Unha camiseta para Pancho Camisolas';
+    $('mText').textContent = q.state === 'go' ? 'Busca a Jusé no andén 1 da estación' : 'Leva a camiseta a Pancho Camisolas (Praza da Compañía)';
     $('mTimer').textContent = '';
     const t = q.state === 'go' ? NPCS.find(x => x.id === 'emre').p : NPCS.find(x => x.id === 'pacho').p;
     G.curTarget = { x: t.x, z: t.z, r: 2 };

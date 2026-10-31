@@ -42,11 +42,11 @@ function portraitFor(who) {
   if (PORTRAITS[who]) return PORTRAITS[who];
   if (PORTRAIT_IMG[who]) return PORTRAITS[who] = PORTRAIT_IMG[who];
   const D = {
-    'Pacho': { skin: '#efc3a0', skinD: '#cf9a78', hairStyle: 'bald', shirt: G.quest && G.quest.state === 'done' ? '#f2cf12' : '#f6f6f3', collar: '#d9d9d4', fat: true, smile: true, bg: '#20335a', bg2: '#3a5f9a' },
+    'Pancho Camisolas': { skin: '#efc3a0', skinD: '#cf9a78', hairStyle: 'bald', shirt: G.quest && G.quest.state === 'done' ? '#f2cf12' : '#f6f6f3', collar: '#d9d9d4', fat: true, smile: true, bg: '#20335a', bg2: '#3a5f9a' },
     'Jusé': { skin: '#e9c2a2', skinD: '#c99a7a', hair: '#3a2a1c', shirt: '#d4202b', pattern: 'check', angry: true, stubble: true, bg: '#5a1d22', bg2: '#9a3a3a' },
     'El Spasic': { skin: '#e8b994', skinD: '#c48f6a', hairStyle: 'bald', shirt: '#1d7a3a', stripe: '#f2f2f2', cigar: true, bg: '#1b4a2a', bg2: '#3a7a4a' },
     'The Mayor': { skin: '#e7b996', skinD: '#c48f6a', hair: '#d6d2ca', hairStyle: 'side', shirt: '#4b4f56', lapel: '#3a3d43', tie: '#1f7a3a', collar: '#f4f2ec', moustache: '#d8d4cc', fat: true, smile: true, bg: '#4a3a1a', bg2: '#9a7a3a' },
-    'El Yepes': { skin: '#e3b48f', skinD: '#c08a66', hair: '#2a1d14', cap: '#d4202b', shirt: '#5f646b', smile: true, bg: '#3a2a4a', bg2: '#6a5a8a' },
+    'El Pellas': { skin: '#e3b48f', skinD: '#c08a66', hair: '#2a1d14', cap: '#d4202b', shirt: '#5f646b', smile: true, bg: '#3a2a4a', bg2: '#6a5a8a' },
     'Ti': { skin: '#e9bc98', skinD: '#c99672', hair: '#2a1d14', hairStyle: 'side', shirt: '#7a1f3d', collar: '#5a1428', bg: '#1d2b3a', bg2: '#3a556e' },
   }[who];
   if (!D) return null;
@@ -90,12 +90,12 @@ function ivanTalk(n) {
   const menu = () => I('Que che conto? Escolle un sitio:', {
     choices: [
       { t: 'O Castelo de San Vicente', fn: () => [I('Alí no alto, o monte de San Vicente: a Torre da Homenaxe, medieval, de case trinta metros, e o mosteiro bieito de San Vicente do Pino, que hoxe é Parador.'), I('Dende a muralla vese todo o val de Lemos. Sobe pola Rúa de Santo Domingo ou polo Barrio de San Vicente.'), mark(G.castleGate.x, G.castleGate.z, 'O Castelo'), menu()] },
-      { t: 'O Colexio da Compañía', fn: () => [I('O colexio de Nosa Señora da Antiga, que mandou erguer o cardeal Rodrigo de Castro a finais do século XVI. Chámanlle o Escorial galego.'), I('Agora lévano os Escolapios, e ten unha pinacoteca con cadros de El Greco e de Andrea del Sarto. Por certo: alí anda Pacho, que te busca.'), mark(cx, cz, 'A Compañía'), menu()] },
+      { t: 'O Colexio da Compañía', fn: () => [I('O colexio de Nosa Señora da Antiga, que mandou erguer o cardeal Rodrigo de Castro a finais do século XVI. Chámanlle o Escorial galego.'), I('Agora lévano os Escolapios, e ten unha pinacoteca con cadros de El Greco e de Andrea del Sarto. Por certo: alí anda Pancho Camisolas, que te busca.'), mark(cx, cz, 'A Compañía'), menu()] },
       { t: 'A Ponte Vella e Santa Clara', fn: () => [I('A Ponte Vella cruza o Cabe dende tempos moi antigos; a que vemos hoxe é sobre todo do século XVI.'), I('Á beira está o mosteiro das Clarisas, co Museo de Arte Sacra: hai pezas de ourivaría que deixan coa boca aberta.'), mark(V.x, V.z, 'A Ponte Vella'), menu()] },
       { t: 'A Rúa do Cardeal', fn: () => [I('A rúa dos viños! Peonil, chea de bares e terrazas. Leva o nome do cardeal Rodrigo de Castro.'), I('Coidado coas bicis e os patinetes, que baixan a toda pastilla.'), mark(cd.x, cd.z, 'A Rúa do Cardeal'), menu()] },
       { t: 'O Parque dos Condes', fn: () => [I('Á beira do Cabe, coa gran fonte iluminada e o embarcadoiro. Hoxe tocan Los Roncolas, e o alcalde anda por alí presumindo da fonte.'), mark(pc.x, pc.z, 'O Parque dos Condes'), menu()] },
       { t: 'O Museo do Ferrocarril', fn: () => [I('Iso é o meu! Monforte é cidade ferroviaria dende o século XIX: aquí cruzan as liñas de Galicia coa meseta.'), I('No museo hai locomotoras de vapor e vagóns históricos. Está aquí mesmo, seguindo as vías.'), mark(mx, mz, 'O Museo do Ferrocarril'), menu()] },
-      { t: 'Grazas, xa me arranxo', fn: () => [I('De nada! Se te perdes, xa sabes: preme M para o mapa ou Y para que te leve o Yepes no patinete. Boa estadía en Monforte!')] },
+      { t: 'Grazas, xa me arranxo', fn: () => [I('De nada! Se te perdes, xa sabes: preme M para o mapa ou Y para que te leve o Pellas no patinete. Boa estadía en Monforte!')] },
     ],
   });
   openDialog([
