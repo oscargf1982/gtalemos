@@ -113,6 +113,7 @@ function buildWorld(scene, Q) {
     const pc = C.pt(G.pinguela.x, G.pinguela.z), gt = C.pt(G.pinguela.gate.x, G.pinguela.gate.z); G.pinguela = { x: pc[0], z: pc[1], gate: { x: gt[0], z: gt[1] } }; }
   { const C = LM.station; inFrame(B, scene, C.ox, C.oz, C.rot, (LB, g) => { buildStation(LB, g); buildRailYard(LB, g); buildStationPlaza(LB, g); });
     G.stationCenter = (([x, z]) => ({ x, z }))(C.pt(315, 0)); }
+  { const C = LM.ferro; inFrame(B, scene, C.ox, C.oz, C.rot, (LB, g) => buildFerroviario(LB, g)); }
   buildRailsOSM(B, scene, (x, z) => { const [lx, lz] = LM.station.inv(x, z); return lx > 330 && lx < 432 && Math.abs(lz) < 176; });
   lap('monuments');
   buildParkOSM(B, scene);

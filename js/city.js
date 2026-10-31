@@ -233,7 +233,7 @@ function buildPlayground(B, cx, cz, rot) {
 }
 
 /* ---------- Edificios de OSM (planta real) ---------- */
-const OSM_SKIP = new Set(['Castelo de Monforte de Lemos', 'Igrexa de San Vicente do Pino', 'Torre da Homenaxe', 'Torre Pequena', 'Colexio da Nosa Señora da Antiga', 'Convento das Clarisas', 'Monforte de Lemos']);
+const OSM_SKIP = new Set(['Castelo de Monforte de Lemos', 'Igrexa de San Vicente do Pino', 'Torre da Homenaxe', 'Torre Pequena', 'Colexio da Nosa Señora da Antiga', 'Convento das Clarisas', 'Monforte de Lemos', 'Colexio Privado Ferroviario']);
 function buildOSMBuildings(B, F) {
   for (const b of OSM.bldgs) {
     const P = b.p; if (P.length < 3) continue;

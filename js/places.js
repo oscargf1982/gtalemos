@@ -83,6 +83,17 @@ function computeLandmarks() {
     G.namedZones.push({ n: 'Praza da Estación', p: frameRectPoly(F, 300, -60, 321, 60) });
     G.namedZones.push({ n: 'Museo do Ferrocarril', p: frameRectPoly(F, 380, -190, 440, -80) });
   }
+  // --- Colexio Privado Ferroviario, na Rúa da Coruña ---
+  {
+    const b = osmBldg('Colexio Privado Ferroviario'), C = polyCentroid(b.p);
+    const nr = nearRoad(C[0], C[1], r => r.name === 'Rúa da Coruña'), r = nr.r;
+    let nx = C[0] - nr.px, nz = C[1] - nr.pz; [nx, nz] = norm2(nx, nz); // da rúa cara ao colexio
+    const k = nx * nr.ux + nz * nr.uz; nx -= k * nr.ux; nz -= k * nr.uz; [nx, nz] = norm2(nx, nz);
+    const d = r.hw + r.sw + 5.6; // a reixa queda na beira da beirarrúa
+    LM.ferro = makeFrame(nr.px + nx * d, nr.pz + nz * d, Math.atan2(nx, nz));
+    G.monumentZones.push(frameRectPoly(LM.ferro, -18, -5.5, 18, 17));
+    G.namedZones.push({ n: 'Colexio Ferroviario', p: frameRectPoly(LM.ferro, -18, -5.5, 18, 17) });
+  }
   // --- Torre da Homenaxe e Mosteiro de San Vicente ---
   {
     const t = polyCentroid(osmBldg('Torre da Homenaxe').p), m = polyCentroid(osmBldg('Castelo de Monforte de Lemos').p);

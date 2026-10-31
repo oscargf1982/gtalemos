@@ -692,3 +692,95 @@ function buildGrandFountain(B, scene, cx, cz) {
     sprayT -= 0.016; if (sprayT <= 0 && world.smoke && G.started !== undefined) { sprayT = 0.12; const h = 13 * jets[0].m.scale.y; world.smoke.emit(cx + RR(-0.4, 0.4), 0.55 + h, cz + RR(-0.4, 0.4), RR(-0.6, 0.6), RR(-0.6, 0.2), RR(-0.6, 0.6), 0.9, 1.6, G.night > 0.5 ? 0xffd090 : 0xf2f7fa, 0.35); }
   });
 }
+
+/* ==========================================================
+   COLEXIO PRIVADO FERROVIARIO (Rúa da Coruña)
+   muros encalados branco-azulados, esquinais de granito dentados,
+   recercados de granito e carpintaría de madeira, frontón escalonado
+   co rótulo e o escudo, alpendre de madeira sobre piares de granito
+   e alas laterais con pináculos. Fachada local en z = 0 mirando a −z.
+   ========================================================== */
+function buildFerroviario(B, scene) {
+  const WALL = '#e6edf0', GR = '#cdb393', GRD = '#a98e6c', WOOD = '#8a4a22';
+  const quoins = (x, P, x0, y0, h, side) => { // esquinais dentados
+    for (let y = y0, k = 0; y < y0 + h; y += 0.7, k++) { const w = k % 2 ? 1.0 : 0.6; x.fillStyle = GR; x.fillRect(P.X(side < 0 ? x0 : x0 - w), P.Y(y + 0.66), P.S(w), P.S(0.66)); x.fillStyle = 'rgba(80,60,40,.25)'; x.fillRect(P.X(side < 0 ? x0 : x0 - w), P.Y(y + 0.02), P.S(w), 2); }
+  };
+  const frame = (x, ex, P, cx, y0, w, h, lit, ears = true) => { // recercado de granito con orellas
+    const m = 0.45; x.fillStyle = GR; x.fillRect(P.X(cx - w / 2 - m), P.Y(y0 + h + m), P.S(w + 2 * m), P.S(h + 2 * m));
+    if (ears) { x.fillRect(P.X(cx - w / 2 - m - 0.25), P.Y(y0 + h + m), P.S(w + 2 * m + 0.5), P.S(0.5)); x.fillRect(P.X(cx - w / 2 - m - 0.25), P.Y(y0 - m + 0.4), P.S(w + 2 * m + 0.5), P.S(0.4)); }
+    x.fillStyle = GRD; x.fillRect(P.X(cx - w / 2 - m - 0.3), P.Y(y0 - m + 0.05), P.S(w + 2 * m + 0.6), P.S(0.18));
+    glassRect(x, ex, P, cx - w / 2, y0, w, h, lit, WOOD);
+    x.strokeStyle = WOOD; x.lineWidth = P.S(0.09); x.strokeRect(P.X(cx - w / 2), P.Y(y0 + h), P.S(w), P.S(h));
+  };
+  const wallBase = (x, P, w, h) => { x.fillStyle = WALL; x.fillRect(0, 0, P.W, P.H); noiseFill(x, P.W, P.H, 0, 6); x.fillStyle = GR; x.fillRect(0, P.Y(0.9), P.W, P.S(0.9)); x.fillStyle = 'rgba(0,0,0,.15)'; x.fillRect(0, P.Y(0.9), P.W, 2); };
+  // --- corpo central (16 × 14 m) ---
+  const CW = 16, CH = 14, CD = 15;
+  const ct = elevTex(CW, CH, 22, (x, P, ex) => {
+    wallBase(x, P, CW, CH);
+    quoins(x, P, 0, 0.9, CH - 1.6, -1); quoins(x, P, CW, 0.9, CH - 1.6, 1);
+    // planta baixa (portal tras o alpendre) e laterais
+    frame(x, ex, P, 2.6, 1.6, 1.4, 2.0, R() < 0.5); frame(x, ex, P, CW - 2.6, 1.6, 1.4, 2.0, R() < 0.5);
+    x.fillStyle = GR; x.fillRect(P.X(CW / 2 - 1.8), P.Y(3.6), P.S(3.6), P.S(3.6)); x.fillStyle = '#5a2f17'; x.fillRect(P.X(CW / 2 - 1.2), P.Y(3.1), P.S(2.4), P.S(3.1));
+    x.fillStyle = '#3a1e0e'; x.fillRect(P.X(CW / 2 - 0.04), P.Y(3.1), P.S(0.08), P.S(3.1));
+    // primeiro andar: ventás laterais e tripla central
+    frame(x, ex, P, 3.0, 5.6, 1.4, 2.2, R() < 0.5); frame(x, ex, P, CW - 3.0, 5.6, 1.4, 2.2, R() < 0.5);
+    x.fillStyle = GR; x.fillRect(P.X(CW / 2 - 3.3), P.Y(8.3), P.S(6.6), P.S(3.0)); x.fillRect(P.X(CW / 2 - 1.0), P.Y(8.8), P.S(2.0), P.S(0.6));
+    for (const dx of [-2.1, 0, 2.1]) glassRect(x, ex, P, CW / 2 + dx - 0.75, 5.6, 1.5, 2.3, R() < 0.5, WOOD);
+    // frontón escalonado, rótulo e escudo
+    x.strokeStyle = GR; x.lineWidth = P.S(0.5); x.lineJoin = 'miter'; x.beginPath();
+    x.moveTo(P.X(0.8), P.Y(9.3)); x.lineTo(P.X(3.8), P.Y(9.3)); x.lineTo(P.X(3.8), P.Y(10.6)); x.lineTo(P.X(5.2), P.Y(10.6)); x.quadraticCurveTo(P.X(CW / 2), P.Y(11.6), P.X(CW - 5.2), P.Y(10.6)); x.lineTo(P.X(CW - 3.8), P.Y(10.6)); x.lineTo(P.X(CW - 3.8), P.Y(9.3)); x.lineTo(P.X(CW - 0.8), P.Y(9.3)); x.stroke();
+    x.strokeRect(P.X(CW / 2 - 2.2), P.Y(10.8), P.S(4.4), P.S(1.2));
+    shield(x, P, CW / 2, 10.2, 0.75, '#c9a440');
+    x.fillStyle = '#9a2a24'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `800 ${Math.round(P.S(0.62))}px "Barlow Condensed", "Arial Narrow", sans-serif`; x.fillText('COLEXIO P. FERROVIARIO', P.X(CW / 2), P.Y(8.85));
+    frame(x, ex, P, 2.9, 10.6, 1.5, 1.2, R() < 0.4, false); frame(x, ex, P, CW - 2.9, 10.6, 1.5, 1.2, R() < 0.4, false);
+    // ménsulas de madeira baixo o beiril
+    x.fillStyle = '#6b3a1c'; for (let px = 0.4; px < CW; px += 0.9) x.fillRect(P.X(px), P.Y(CH), P.S(0.28), P.S(0.45));
+  }, { emissive: true, normal: 1.5 });
+  const side = std({ color: 0xe2e9ec, roughness: 0.9 });
+  elevBox(scene, CW, CH, CD, { nz: elevMat(ct, 0.8) }, 0, 0, CD / 2, 0, side);
+  const cr = hipRoof(CW, CD, 3.6, 4, 1.1); xform(cr, 0, CH, CD / 2); B.tile.add(cr);
+  addBoxCol(-CW / 2, 0, CW / 2, CD, CH + 4, 'ferroviario');
+  // --- alas laterais (9 × 12 m), adiantadas 1,5 m ---
+  const WW = 9, WH = 12, WD = 16;
+  for (const s of [-1, 1]) {
+    const wt = elevTex(WW, WH, 22, (x, P, ex) => {
+      wallBase(x, P, WW, WH);
+      quoins(x, P, 0, 0.9, WH - 1.2, -1); quoins(x, P, WW, 0.9, WH - 1.2, 1);
+      // gran ventá arqueada na planta baixa
+      x.fillStyle = GR; archPath(x, P, WW / 2, 1.0, 4.4, 4.6); x.fill();
+      x.save(); archPath(x, P, WW / 2, 1.3, 3.6, 4.0); x.clip(); glassRect(x, ex, P, WW / 2 - 1.8, 1.3, 3.6, 4.0, R() < 0.5, WOOD);
+      x.strokeStyle = WOOD; x.lineWidth = P.S(0.08); for (const dx of [-0.9, 0.9]) { x.beginPath(); x.moveTo(P.X(WW / 2 + dx), P.Y(1.3)); x.lineTo(P.X(WW / 2 + dx), P.Y(5.3)); x.stroke(); } x.restore();
+      // ventá alta con balcón de granito
+      x.fillStyle = GR; x.fillRect(P.X(WW / 2 - 2.0), P.Y(7.0), P.S(4.0), P.S(0.5)); x.fillRect(P.X(WW / 2 - 1.6), P.Y(7.4), P.S(0.4), P.S(0.5)); x.fillRect(P.X(WW / 2 + 1.2), P.Y(7.4), P.S(0.4), P.S(0.5));
+      frame(x, ex, P, WW / 2, 7.4, 2.0, 2.6, R() < 0.5);
+      moulding(x, P, 0, WW, WH - 0.8, 0.5, GR);
+    }, { emissive: true, normal: 1.5 });
+    const cx = s * (CW / 2 + WW / 2);
+    elevBox(scene, WW, WH, WD, { nz: elevMat(wt, 0.8) }, cx, 0, WD / 2 - 1.5, 0, side);
+    const wr = hipRoof(WW, WD, 2.8, 4, 0.6); xform(wr, cx, WH, WD / 2 - 1.5); B.tile.add(wr);
+    addBoxCol(cx - WW / 2, -1.5, cx + WW / 2, WD - 1.5, WH + 3, 'ferroviario');
+    // pináculos de granito nas esquinas dianteiras
+    for (const px of [cx - WW / 2 + 0.6, cx + WW / 2 - 0.6]) {
+      const base = boxGeo(1.2, 1.2, 1.2, [3, 3]); xform(base, px, WH + 0.6, -0.9); B.stone.add(base);
+      const ob = new THREE.ConeGeometry(0.62, 2.4, 4); xform(ob, px, WH + 2.4, -0.9, Math.PI / 4); B.stone.add(ob);
+    }
+  }
+  // --- alpendre: piares de granito, vigas e ménsulas de madeira, tellado de tella ---
+  const PW = 7.6, PD = 4.4, PH = 3.9;
+  for (const s of [-1, 1]) { const p = boxGeo(0.75, PH, 0.75, [3, 3]); xform(p, s * (PW / 2 - 0.5), PH / 2, -PD + 0.4); B.stone.add(p); const cap = boxGeo(1.0, 0.3, 1.0, [3, 3]); xform(cap, s * (PW / 2 - 0.5), PH + 0.1, -PD + 0.4); B.stone.add(cap); addCircCol(s * (PW / 2 - 0.5), -PD + 0.4, 0.45, PH, 'piar'); }
+  const beam = boxGeo(PW + 0.4, 0.45, 0.35); xform(beam, 0, PH + 0.45, -PD + 0.3); B.wood.add(beam);
+  for (const s of [-1, 1]) { const sb = boxGeo(0.35, 0.45, PD); xform(sb, s * (PW / 2), PH + 0.45, -PD / 2); B.wood.add(sb); }
+  for (let i = 0; i < 9; i++) { const c = boxGeo(0.22, 0.32, 0.6); xform(c, -PW / 2 + 0.3 + i * (PW - 0.6) / 8, PH + 0.1, -PD + 0.05); B.wood.add(c); }
+  const ceil = boxGeo(PW + 0.4, 0.1, PD); xform(ceil, 0, PH + 0.68, -PD / 2); B.wood.add(ceil);
+  const pr = hipRoof(PW + 0.4, PD + 0.4, 1.0, 4, 0.5); xform(pr, 0, PH + 0.72, -PD / 2); B.tile.add(pr);
+  const lantern = new THREE.SphereGeometry(0.18, 10, 8); xform(lantern, 0, PH - 0.3, -PD / 2); B.white.add(lantern); pushLamp({ x: 0, y: PH - 0.3, z: -PD / 2 });
+  // --- reixa de ferro diante ---
+  const zf = -PD - 0.9, bars = [];
+  for (let x0 = -(CW / 2 + WW) + 0.3; x0 < CW / 2 + WW - 0.2; x0 += 0.18) { if (Math.abs(x0) < 1.6) continue; bars.push(x0); }
+  const barG = new THREE.CylinderGeometry(0.018, 0.018, 1.5, 5), im = new THREE.InstancedMesh(barG, MAT.metalDark, bars.length), o = new THREE.Object3D();
+  bars.forEach((bx, i) => { o.position.set(bx, 0.75, zf); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }); scene.add(im);
+  for (const y of [0.2, 1.3]) for (const s of [-1, 1]) { const rl = boxGeo(CW / 2 + WW - 1.6, 0.05, 0.05); xform(rl, s * ((CW / 2 + WW + 1.6) / 2), y, zf); B.metalDark.add(rl); }
+  for (const s of [-1, 1]) { addBoxCol(s > 0 ? 1.6 : -(CW / 2 + WW), zf - 0.1, s > 0 ? CW / 2 + WW : -1.6, zf + 0.1, 1.5, 'reixa'); const gp = boxGeo(0.3, 1.9, 0.3, [3, 3]); xform(gp, s * 1.6, 0.95, zf); B.stone.add(gp); }
+  // pavimento do patio dianteiro
+  const pv = new THREE.PlaneGeometry(CW + 2 * WW, -zf); pv.rotateX(-Math.PI / 2); xform(pv, 0, 0.06, zf / 2); { const p = pv.attributes.position, uv = pv.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i) / 3, p.getZ(i) / 3); } B.paving.add(pv);
+}
