@@ -185,6 +185,8 @@ function storyFaint() {
     openDialog([
       { who: 'Enfermeira', text: 'Espertaches! Atopáronte tirado nun banco, conxelado. Estás no Hospital Comarcal de Monforte.' },
       { who: 'Enfermeira', text: 'Dúas noites seguidas ao raso, Avelino... E a carteira, baleira outra vez. Así non se pode.' },
+      { who: 'The Mayor', text: 'Vaia, vaia! Pasaba eu a inaugurar a máquina de café da planta e mire quen está aquí. Dúas noites ao raso! Nin na Xunta se ve tanta resistencia ao frío.' },
+      { who: 'The Mayor', text: 'E recorde: nesta aventura eu teño o bastón de mando, vostede ten unha carteira baleira e o botón de gardar partida... ese xa o atopou tarde. GAME OVER. Desexa volver intentalo?' },
       { who: 'Enfermeira', text: 'Que fas agora?', choices: [
         { t: 'Volver a intentalo dende a última noite baixo teito', fn: () => [() => storyRetry()] },
         { t: 'Volver ao menú', fn: () => [() => location.reload()] },

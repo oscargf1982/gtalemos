@@ -165,20 +165,20 @@ function advTalk(n) {
   if (id === 'mayor') {
     if (step === 'mayor') { openDialog([
       A('Señor alcalde! Un autógrafo, por favor. Non é para min, é para un influencer. Ben... para un rapaz con móbil.'),
-      M('Autógrafos? AUTÓGRAFOS? Como vou asinar nada se perdín as miñas tesoiras douradas!'),
-      M('Sen elas non podo inaugurar nada. E un alcalde que non inaugura... é un señor cun traxe gris!'),
+      M('Autógrafos? AUTÓGRAFOS? Vaia, vaia! Alguén atopou o botón de «Modo Fan». Lamento informarlle de que, sen as miñas tesoiras douradas, este alcalde non asina nin a lista da compra.'),
+      M('Sen elas non podo inaugurar nada! E un alcalde que non inaugura é, simplemente, un señor de traxe gris esperando o autobús. Que traxedia! Que aventura de pena!'),
       SP('Señora maior', 'Ai, fillo... onte vin ao do puro da bicicleta pescando na fonte cunha cana feita cun paraugas. Algo brillante sacou.'),
-      M('O Spasic! Ese home colecciona todo o que brilla. Se mas recuperas, asínoche o que queiras. Ata a factura da luz.'),
+      M('O Spasic! Por todos os tentáculos morados! Ese home colecciona todo o que brilla coa paixón dun concelleiro de urbanismo. Recupere as tesoiras e asínolle o que queira. Ata a factura da luz.'),
       () => nextStep()]); return true; }
     if (step === 'mayor2' && has('tesoiras')) { openDialog([
-      M('AS MIÑAS TESOIRAS! Ven aquí, mozo! Fotógrafos, fotógrafos! Que saia isto na portada: «O Mayor recupera as tesoiras grazas a un veciño exemplar».'),
+      M('AS MIÑAS TESOIRAS! Fotógrafos, fotógrafos! Flash, máis flash! Que saia na portada: «O Mayor recupera as tesoiras douradas grazas a un veciño exemplar».'),
       A('Son de Cee.'),
-      M('«...a un veciño exemplar de Cee, cidade irmá de Monforte dende hoxe mesmo». Toma, o autógrafo. Con rúbrica de tres voltas.'),
+      M('Corrixo: «...a un veciño exemplar de Cee, cidade irmá de Monforte dende hoxe mesmo, por decreto e sen pasar polo Pleno». Tome o autógrafo: rúbrica de tres voltas e un floreo. Logro desbloqueado.'),
       () => { take('tesoiras'); give('autografo'); nextStep(); }]); return true; }
     if (step === 'mayor3' && has('botella')) { openDialog([
       A('Señor alcalde, que me daría por unha botella de auténtico viño do peleón da cea UCL?'),
-      M('O... o PELEÓN? Da colleita da cea? Non me digas máis! É o meu viño favorito dende que era concelleiro de festas!'),
-      M('Cincuenta euros! E unha praza co teu nome... ben, unha placa... ben, un pósit na porta do Concello.'),
+      M('O... o PELEÓN? Da colleita da cea UCL? Silencio! Nin unha palabra máis! Ese viño é patrimonio inmaterial deste alcalde dende que era concelleiro de festas.'),
+      M('Ofrézolle cincuenta euros e unha praza co seu nome. Ben... unha placa. Ben... un pósit na porta do Concello. Se o despega o vento, ese é xa un asunto da Xunta.'),
       A('Os cincuenta chegan. O pósit gárdeo para cando sexa famoso.'),
       () => { take('botella'); money(50); nextStep(); }]); return true; }
     return false;

@@ -134,13 +134,13 @@ function initBand() {
   initEntourage();
 }
 const MAYOR_LINES = [
-  'Esta fonte é obra miña! Ben, do meu mandato.',
-  'Douscentos chorros e luces de cores. Iso é política!',
-  'Votádeme outra vez e poño outra igual no Malecón!',
-  'Mirade que auga máis limpa. Inaugureina eu, con tesoiras douradas.',
-  'Os de Lugo morren de envexa. Que lles den!',
-  'Esta noite acéndese en vermello, verde e azul. Que espectáculo!',
-  'Ese grupo, Los Roncolas, tamén os trouxen eu. Sen min, silencio.',
+  'Contemplen a fonte! Douscentos chorros e nin un só concelleiro mollado.',
+  'Esta fonte é obra miña. Os méritos, meus. As facturas, do mandato anterior.',
+  'Silencio, cidadáns! Aquí eu teño o bastón de mando e vostedes, entradas de balde.',
+  'Os de Lugo morren de envexa. Que garden partida e o intenten outra vez!',
+  'Luces vermellas, verdes e azuis! Nin nos ordenadores da Xunta hai tanta cor.',
+  'Los Roncolas? Trouxen eu. Sen min, isto sería un parque con banda sonora de grilos.',
+  'Votádeme outra vez e desbloqueo outra fonte no Malecón. Logro garantido!',
 ];
 function initMayor() {
   if (!LM.parkC) return;
@@ -174,13 +174,13 @@ function mayorSay(n, text) {
 function talkMayor(n) {
   const M = t => ({ who: 'The Mayor', text: t });
   openDialog([
-    M('Ah, un cidadán! Ou cidadá. Ou turista. Vota en Monforte? Non? Igual, benvido!'),
-    M('Ves esta marabilla? A gran fonte do Parque dos Condes. Idea miña. Bueno, o proxecto era dun enxeñeiro, pero a idea... miña.'),
+    M('Vaia, vaia! Un cidadán achégase sen cita previa. Vota vostede en Monforte? Non? Tanto ten: o voto non se pide, a admiración si.'),
+    M('Contemple esta marabilla: a gran fonte do Parque dos Condes. O proxecto foi dun enxeñeiro, a idea foi miña e os aplausos, por suposto, tamén.'),
     M(pick(MAYOR_LINES), {
       choices: [
-        { t: 'É moi bonita, señor alcalde', fn: () => [M('Grazas, grazas! Toma, unha chapa conmemorativa. E dez euros para un viño no Cardeal.'), () => { if (!save.mayorTip) { save.mayorTip = true; addMoney(10); persist(); } }] },
-        { t: 'E canto custou?', fn: () => [M('Ehhh... iso é información reservada. Mira, un paxaro! E escoita, Los Roncolas tocan xa!')] },
-        { t: 'Para o próximo mandato, unha ponte no Malecón?', fn: () => [M('Shhh! Non digas iso en voz alta, que están os da Asociación na beira. Non á ponte, non á ponte... de momento.')] },
+        { t: 'É moi bonita, señor alcalde', fn: () => [M('Magnífico! Por fin alguén con puntos de intelixencia suficientes. Tome: unha chapa conmemorativa e dez euros para un viño no Cardeal. Non o comente no Pleno.'), () => { if (!save.mayorTip) { save.mayorTip = true; addMoney(10); persist(); } }] },
+        { t: 'E canto custou?', fn: () => [M('Ah, a curiosidade! Ese vicio milenario que algúns practican coa destreza dun inspector de Facenda. Esa información está gardada nun disquete... que, casualmente, non atopo.'), M('Mire, un paxaro! E escoite: Los Roncolas comezan xa. Siga a música e deixe as contas para os contables.')] },
+        { t: 'Para o próximo mandato, unha ponte no Malecón?', fn: () => [M('Shhh! Baixe a voz, que están os da Asociación na beira e teñen o botón de protestar sempre activado.'), M('Non á ponte, non á ponte... de momento. En política, como nas aventuras gráficas, os obxectos úsanse no capítulo axeitado.')] },
       ],
     }),
   ]);
