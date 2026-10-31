@@ -14,6 +14,7 @@ const CW = (t, extra) => ({ who: 'Camareiro do UCELERS', text: t, ...extra });
 
 /* ---------- menú: modo libre e modo historia con contrasinal ---------- */
 function initModes() {
+  initPlayerCap();
   if (typeof addExtraDests === 'function') addExtraDests();
   const play = $('btnPlay'); play.textContent = 'Modo libre';
   const sb = document.createElement('button'); sb.className = 'btn'; sb.id = 'btnStory'; sb.innerHTML = 'A historia de<br>Avelino Villar'; sb.style.lineHeight = '0.95';
@@ -264,4 +265,32 @@ function updateAvelino(dt) {
       (S.cold ? '<span class="cold">Tiritando: noite ao raso (non podes correr)</span><br>' : '') +
       (night && S.phase === 'play' ? '<span class="warn">Busca onde durmir!</span>' : (S.debt <= 0 && S.ticket ? '<span class="ok">Colle o tren na vía 1!</span>' : ''))
       : 'Vai ao UCELERS, Rúa de Chantada 48');
+}
+
+/* ---------- gorra verde de Biona para a personaxe xogable ---------- */
+function initPlayerCap() {
+  if (G.playerCap || !world.crowd || !G.player.ped) return;
+  const hg = new THREE.Group(); hg.matrixAutoUpdate = false; G.scene.add(hg);
+  const green = std({ color: 0x1f9a4a, roughness: 0.75 });
+  const crown = new THREE.Mesh(new THREE.SphereGeometry(0.128, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), green); crown.scale.set(1, 0.82, 1.04); crown.position.y = 0.025; crown.castShadow = true; hg.add(crown);
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.129, 0.129, 0.03, 18, 1, true), green); band.position.y = 0.012; hg.add(band);
+  const visorG = new THREE.CylinderGeometry(0.115, 0.115, 0.012, 18, 1, false, -Math.PI * 0.42, Math.PI * 0.84); visorG.scale(1, 1, 1.35);
+  const visor = new THREE.Mesh(visorG, green); visor.position.set(0, 0.012, 0.035); visor.rotation.x = 0.12; hg.add(visor);
+  const btn = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 6), green); btn.position.y = 0.13; hg.add(btn);
+  // logotipo dianteiro: óvalo branco con «Biona» en vermello
+  const c = cnv(128, 80), x = c.getContext('2d');
+  x.fillStyle = '#1f9a4a'; x.fillRect(0, 0, 128, 80);
+  x.fillStyle = '#f6f4ee'; x.beginPath(); x.ellipse(64, 42, 58, 30, 0, 0, 7); x.fill(); x.strokeStyle = '#d4202b'; x.lineWidth = 3; x.stroke();
+  x.fillStyle = '#1f9a4a'; for (const k of [-12, 0, 12]) { x.beginPath(); x.arc(64 + k, 13, 6, 0, 7); x.fill(); }
+  x.fillStyle = '#d4202b'; x.font = 'italic 700 30px Georgia, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('Biona', 64, 40);
+  x.fillStyle = '#1f9a4a'; x.fillRect(22, 56, 84, 5); x.fillStyle = '#d4202b'; x.fillRect(26, 62, 76, 5);
+  const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.115, 0.072), std({ map: toTex(c, false), roughness: 0.8, transparent: true, polygonOffset: true, polygonOffsetFactor: -2 }));
+  logo.position.set(0, 0.075, 0.118); logo.rotation.x = -0.45; hg.add(logo);
+  G.playerCap = hg;
+}
+function updatePlayerCap() {
+  const hg = G.playerCap, p = G.player.ped; if (!hg || !p) return;
+  hg.visible = p.visible && !G.player.car;
+  if (!hg.visible) return;
+  world.crowd.meshes.head.getMatrixAt(p.idx, hg.matrix); hg.matrixWorldNeedsUpdate = true;
 }

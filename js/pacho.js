@@ -124,7 +124,7 @@ function updateDialog(dt) {
 /* ---------- conversas ---------- */
 const P = (text, extra) => ({ who: 'Pancho Camisolas', text, ...extra });
 const E = (text, extra) => ({ who: 'Jusé', text, ...extra });
-const ME = text => ({ who: 'Ti', text });
+const ME = text => ({ who: G.story ? 'Avelino' : 'Ti', text });
 function talkTo(n) {
   if (G.dialog) return;
   if (G.story && typeof advTalk === 'function' && advTalk(n)) return;
@@ -241,6 +241,7 @@ function updateStory(dt) {
   updateCurrito(dt); updateVoley(dt);
   updateAvelino(dt);
   updatePlazaHotels();
+  updatePlayerCap();
   // obxectivo no HUD se non hai outra misión
   if (!G.mission && !(q.state === 'go' || q.state === 'return')) spasicObjective(dt);
   if (!G.mission && (q.state === 'go' || q.state === 'return')) {
