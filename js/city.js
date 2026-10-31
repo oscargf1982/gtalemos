@@ -245,7 +245,7 @@ function buildOSMBuildings(B, F) {
     const lv = b.lv || (b.b === 'church' || b.b === 'chapel' ? 3 : b.b === 'industrial' || b.b === 'retail' ? 2 : b.b === 'apartments' ? 5 : 3);
     const H = b.h || (b.b === 'church' ? 14 : 3.6 + Math.max(0, lv - 1) * 3.1);
     let y0 = 1e9; for (const [x, z] of P) y0 = Math.min(y0, terrainH(x, z)); y0 = Math.max(0, y0);
-    const style = b.b === 'church' || b.b === 'chapel' || b.a === 'manor' ? 3 : b.b === 'industrial' || b.b === 'retail' ? 5 : RI(0, 6);
+    const style = b.b === 'church' || b.b === 'chapel' || b.a === 'manor' || (b.y && b.y < 1930) ? 3 : b.b === 'industrial' || b.b === 'retail' ? 5 : RI(0, 6);
     // paredes
     const pos = [], uv = [], idx = []; let acc = 0, vi = 0;
     const ccw = (() => { let a = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) a += (P[j][0] - P[i][0]) * (P[j][1] + P[i][1]); return a > 0; })();
@@ -265,7 +265,10 @@ function buildOSMBuildings(B, F) {
     const rg = new THREE.ShapeGeometry(sh); rg.rotateX(-Math.PI / 2); rg.translate(0, y0 + H + 0.02, 0);
     const ru = rg.attributes.uv, rp = rg.attributes.position; for (let i = 0; i < ru.count; i++) ru.setXY(i, rp.getX(i) / 4, rp.getZ(i) / 4);
     (b.b === 'industrial' || b.b === 'retail' || style === 5 ? B.flat : B.tile).add(rg);
-    const r = minRect(P); addOBB(r.cx, r.cz, r.w / 2, r.d / 2, -r.ang, H + 2, b.b === 'church' ? 'igrexa' : 'edif', y0 - 2);
+    const r = minRect(P);
+    if (b.cat && polyArea(P) < r.w * r.d * 0.82) { // planta en L/U: colisión parede a parede para non invadir a rúa
+      for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.3) continue; addOBB((a[0] + c[0]) / 2, (a[1] + c[1]) / 2, L / 2, 0.25, -Math.atan2(c[1] - a[1], c[0] - a[0]), H + 4, 'edif', y0 - 2); }
+    } else addOBB(r.cx, r.cz, r.w / 2, r.d / 2, -r.ang, H + 2, b.b === 'church' ? 'igrexa' : 'edif', y0 - 2);
     G.buildingsList.push({ cx, cz, poly: P, H, y0, name: b.n });
     if (b.n) G.namedZones.push({ n: b.n, p: P });
   }
@@ -274,6 +277,7 @@ function buildOSMBuildings(B, F) {
 /* ---------- Edificios ao longo das rúas (onde OSM non ten plantas) ---------- */
 const OLDTOWN = { x: -40, z: 290, r: 260 };
 function buildFrontage(B, F, Q) {
+  if (OSM.catastro) { G.nFrontage = 0; return; } // cos edificios do Catastro xa están todas as fachadas reais
   const density = Q === 'low' ? 0.55 : Q === 'med' ? 0.8 : 1;
   let n = 0;
   const lotOK = (cx, cz, hx, hz, rot) => {
