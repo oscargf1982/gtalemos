@@ -117,6 +117,7 @@ function buildWorld(scene, Q) {
   { const C = LM.cons; inFrame(B, scene, C.ox, C.oz, C.rot, (LB, g) => buildConservatorio(LB, g)); }
   buildClubFluvial(B, scene);
   buildSajoniSpot(B, scene);
+  buildArenal(B, scene);
   if (LM.volei) { const V = LM.volei; inFrame(B, scene, V.ox, V.oz, V.rot, (LB, g) => buildVoleiCourt(LB, g)); }
   buildRailsOSM(B, scene, (x, z) => { const [lx, lz] = LM.station.inv(x, z); return lx > 330 && lx < 432 && Math.abs(lz) < 176; });
   lap('monuments');
