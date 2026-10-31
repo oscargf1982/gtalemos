@@ -195,7 +195,7 @@ function spawnActors() {
   world.skids = new Skids(scene); world.smoke = new Smoke(scene);
   world.train = new Train(scene);
   // xogador
-  const RESERVE = 123; // veciños extra para obreiros, ciclistas, manifestación e feira
+  const RESERVE = 195; // veciños extra para obreiros, ciclistas, manifestación e feira
   world.crowd = new Crowd(scene, QS.peds + 1 + RESERVE);
   const pp = world.crowd.add({ state: 'player', colors: { shirt: '#7a1f3d', pants: '#22324d', skin: '#e9bc98', hair: '#2a1d14', shoe: '#efefef', sleeve: false } });
   pp.x = G.startPos.x; pp.z = G.startPos.z; pp.yaw = G.startPos.yaw; pp.y = groundH(pp.x, pp.z); pp.scale = 1.02; G.player.ped = pp;
@@ -227,6 +227,7 @@ function spawnActors() {
   spawnStoryNPCs();
   spawnRiders();
   initFair();
+  if (typeof buildMedieval === 'function') buildMedieval();
   initPellas();
   initMayor();
   initBand();
@@ -1063,7 +1064,7 @@ function simulate(dt, menu) {
   }
   // peóns
   for (const p of peds) { if (p === pl.ped) continue; pedThink(p, dt, world); }
-  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
+  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); updateMedieval(dt); updateAbeledos(dt); updateCows(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
   if (!menu && !pl.car && !G.cine) updatePlayerFoot(dt);
   if (!menu) updateCine(dt);
   if (!menu) updateSajoni(dt);
@@ -1072,6 +1073,7 @@ function simulate(dt, menu) {
   if (typeof updateHeroes === 'function') updateHeroes();
   if (typeof virginiaOverlays === 'function') virginiaOverlays();
   if (typeof carudeOverlays === 'function') carudeOverlays();
+  if (typeof medTunics === 'function') medTunics();
   world.crowd.flush();
   world.smoke.update(dt);
   // tren
