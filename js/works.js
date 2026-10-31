@@ -76,12 +76,15 @@ function makeCone() {
 /* ---------- escoller a rúa do día ---------- */
 function worksCandidates() {
   const out = [];
-  for (const n of NODES) for (const e of n.edges) {
-    const r = e.road;
-    if (r.type !== 'car' || r.spiral || r.name === 'Subida ao Castelo' || e.len < 40 || n.id > e.to.id) continue;
-    let bridge = false; for (let t = 0; t <= 1; t += 0.05) if (bridgeAt(lerp(n.x, e.to.x, t), lerp(n.z, e.to.z, t))) { bridge = true; break; }
-    if (bridge) continue;
-    out.push({ a: n, e });
+  for (const r of ROADS) {
+    if (r.type !== 'car' || !r.urban || r.bridge || r.cls === 'service' || r.w < 6) continue;
+    for (let i = 0; i < r.pts.length - 1; i++) {
+      const a = r.pts[i], b = r.pts[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (L < 45) continue;
+      let bridge = false; for (let t = 0; t <= 1; t += 0.05) if (bridgeAt(lerp(a[0], b[0], t), lerp(a[1], b[1], t))) { bridge = true; break; }
+      if (bridge) continue;
+      out.push({ a: { x: a[0], z: a[1] }, e: { to: { x: b[0], z: b[1] }, len: L, road: r } });
+    }
   }
   return out;
 }
@@ -129,8 +132,7 @@ function buildWorks(seed) {
     const sg = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.15), WORKS_MAT.sign); place(sg, along + end * 3.5, -r.hw + 0.9, end > 0 ? 0 : Math.PI); sg.position.y += 1.7;
     const post = box(0.07, 1.6, 0.07, WORKS_MAT.steel); place(post, along + end * 3.5, -r.hw + 0.9); post.position.y += 0.8;
     const ban = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 0.55), WORKS_MAT.cut); place(ban, along + end * 0.05, 0, end > 0 ? 0 : Math.PI); ban.position.y += 1.55;
-    const [bx0, bz0] = P(along - end * 0.4, -r.hw), [bx1, bz1] = P(along + end * 0.4, r.hw);
-    const o = addBoxCol(Math.min(bx0, bx1), Math.min(bz0, bz1), Math.max(bx0, bx1), Math.max(bz0, bz1), 1.4, 'obras'); W.cols.push(o);
+    const [bcx, bcz] = P(along, 0), o = addOBB(bcx, bcz, 0.4, r.hw, Math.atan2(-uz, ux), 1.4, 'obras'); W.cols.push(o);
     const [sx, sz] = P(along + end * 2, 0); W.stops.push({ x: sx, z: sz });
     for (let k = 1; k <= 5; k++) place(makeCone(), along + end * (2 + k * 2.2), lerp(-r.hw + 1, 0, k / 5) * (k % 2 ? 1 : 1));
   }
@@ -152,8 +154,11 @@ function buildWorks(seed) {
     W.workers.push(p);
   });
   // corta a rúa no grafo (os dous sentidos)
-  for (const e of A.edges) if (e.to === Bn) { e.blocked = true; W.edges.push(e); }
-  for (const e of Bn.edges) if (e.to === A) { e.blocked = true; W.edges.push(e); }
+  for (const n of NODES) for (const e of n.edges) {
+    if (e.road !== r) continue;
+    const ex = (n.x + e.to.x) / 2 - mx, ez = (n.z + e.to.z) / 2 - mz;
+    if (Math.abs(ex * ux + ez * uz) < zone / 2 + 15 && Math.abs(-ex * uz + ez * ux) < 2) { e.blocked = true; W.edges.push(e); }
+  }
   G.works = W;
   // o tráfico que ía por esa rúa recalcula
   for (const v of world.vehicles) {

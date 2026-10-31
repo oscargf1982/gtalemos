@@ -65,48 +65,56 @@ function makeTent(col, label) {
 const PROTEST_SIGNS = [['NON Á PONTE'], ['NON Á PONTE', 'Salvemos o Malecón'], ['NON Á PONTE NOVA'], ['O MALECÓN NON SE TOCA'], ['NON Á PONTE', 'Veciñanza de Monforte'], ['MÁIS RÍO, MENOS FORMIGÓN']];
 const WINE_STALLS = [['ADEGA VAL DE LEMOS', '#7a1f3d'], ['MENCÍA · RIBEIRA SACRA', '#5a1428'], ['ADEGAS DO SIL', '#2f5a3a'], ['GODELLO E MENCÍA', '#8a5a1c'], ['VIÑOS DE AMANDI', '#24425e']];
 function initFair() {
-  const Z = ZONES.malecon, scene = G.scene;
+  const M = LM.malecon, L = M.path.len, scene = G.scene;
   const F = { protesters: [], signs: [], vendors: [], buyers: [], group: new THREE.Group() };
-  /* o río queda ao oeste (Z.x0); o paseo medra cara ao leste */
-  const RX = Z.x0, zm = (Z.z0 + Z.z1) / 2;
-  F.px0 = RX + 3; F.px1 = RX + 10; F.bigX = RX + 6.5; F.zm = zm;
-  scene.add(F.group);
-  // pavimento do paseo
-  const pv = new THREE.PlaneGeometry(Z.x1 - Z.x0 - 2, Z.z1 - Z.z0); pv.rotateX(-Math.PI / 2);
-  const uv = pv.attributes.uv, pp = pv.attributes.position; for (let i = 0; i < uv.count; i++) uv.setXY(i, pp.getX(i) / 4, pp.getZ(i) / 4);
-  const pm = new THREE.Mesh(pv, new THREE.MeshStandardMaterial({ map: TEX.cobble, normalMap: TEX.cobbleN, roughness: 0.75, polygonOffset: true, polygonOffsetFactor: -2 }));
-  pm.position.set((Z.x0 + Z.x1) / 2 + 1, 0.04, (Z.z0 + Z.z1) / 2); pm.receiveShadow = true; F.group.add(pm);
-  // arco de entrada da feira
-  const banner = new THREE.Mesh(new THREE.PlaneGeometry(14, 1.4), new THREE.MeshStandardMaterial({ map: textTex('FEIRA DO VIÑO DE MONFORTE', { w: 1024, h: 110, bg: '#7a1f3d', fg: '#ffd75e', size: 72, border: '#ffd75e' }), roughness: 0.7, side: THREE.DoubleSide }));
-  const ax = (Z.x0 + Z.x1) / 2 + 1, az = Z.z1 - 1.5; banner.position.set(ax, 4.6, az); F.group.add(banner);
-  for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 5.2, 10), MAT.metalDark); p.position.set(ax + s * 7, 2.6, az); p.castShadow = true; F.group.add(p); addCircCol0(ax + s * 7, az, 0.2, 5); }
-  // carpas de venda ambulante (fronte cara ao paseo e ao río, oeste)
+  scene.add(F.group); worksMats();
+  const at = (s, off) => maleconAt(s, off), bank = s => Math.max(6.5, maleconBank(s) - 1.2);
+  const yawRiver = q => Math.atan2(q.nx, q.nz), yawLand = q => Math.atan2(-q.nx, -q.nz);
+  // rúa pechada ao tráfico durante a feira: barreiras nos extremos e grafo cortado
+  for (const [s, dir] of [[2, 1], [L - 2, -1]]) for (const o of [-2.2, 0, 2.2]) { const q = at(s, o), b = makeBarrier(); b.position.set(q.x, groundH(q.x, q.z), q.z); b.rotation.y = Math.atan2(q.ux, q.uz) + Math.PI / 2 - Math.PI / 2 + (dir > 0 ? 0 : Math.PI); F.group.add(b); }
+  for (const s of [2, L - 2]) { const q = at(s, 0); addOBB(q.x, q.z, 0.4, 3.4, Math.atan2(-q.uz, q.ux), 1.4, 'feira'); }
+  if (M.road) for (const n of NODES) for (const e of n.edges) if (e.road.name === 'Paseo do Malecón') { const mx = (n.x + e.to.x) / 2, mz = (n.z + e.to.z) / 2, h = nearestOnPath(M.path, mx, mz); if (h.d < 4 && h.s > 1 && h.s < L - 1) e.blocked = true; }
+  // arco de entrada da feira (lado da Ponte Vella)
+  {
+    const q = at(L - 6, 0), yaw = Math.atan2(q.ux, q.uz);
+    const banner = new THREE.Mesh(new THREE.PlaneGeometry(9, 1.3), new THREE.MeshStandardMaterial({ map: textTex('FEIRA DO VIÑO DE MONFORTE', { w: 1024, h: 110, bg: '#7a1f3d', fg: '#ffd75e', size: 72, border: '#ffd75e' }), roughness: 0.7, side: THREE.DoubleSide }));
+    banner.position.set(q.x, groundH(q.x, q.z) + 4.6, q.z); banner.rotation.y = yaw; F.group.add(banner);
+    for (const o of [-4.6, 4.6]) { const r = at(L - 6, o), p = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 5.2, 10), MAT.metalDark); p.position.set(r.x, groundH(r.x, r.z) + 2.6, r.z); p.castShadow = true; F.group.add(p); addCircCol0(r.x, r.z, 0.2, 5); }
+  }
+  // carpas de viño na calzada (lado de terra), mirando cara ao río
   const C = world.crowd, take = () => C.peds.find(q => q.state === 'walk' && !q.npc && q !== G.player.ped);
   const reserve = (p, extra) => { Object.assign(p, { state: 'npc', home: 'npc', npc: 'feira', manual: true, immune: true, visible: true, sit: 0, lie: 0, walk: 0, run: 0, edge: null }, extra); };
   WINE_STALLS.forEach(([label, col], i) => {
-    const tz = Z.z0 + 7 + i * 9, tx = Z.x1 - 4.5;
-    const t = makeTent(col, label); t.position.set(tx, 0.04, tz); t.rotation.y = -Math.PI / 2; F.group.add(t);
-    addBoxCol(tx - 1.6, tz - 2.0, tx + 1.6, tz + 2.0, 2.6, 'carpa');
-    const v = take(); if (v) { reserve(v, {}); v.x = tx + 0.6; v.z = tz + RR(-0.8, 0.8); v.y = 0.04; v.yaw = -Math.PI / 2; v.col.shirt = pick(['#f2efe6', '#7a1f3d', '#2a2a2e']); C.paint(v); v.ph = R() * 6; F.vendors.push(v); }
-    for (let k = 0; k < 2; k++) { const b = take(); if (!b) break; reserve(b, {}); b.x = tx - 2.6 - R() * 0.8; b.z = tz + (k ? 0.8 : -0.8); b.y = 0.04; b.yaw = Math.PI / 2 + RR(-0.3, 0.3); b.ph = R() * 6; F.buyers.push(b); }
+    const s = L - 14 - i * 11; if (s < 8) return;
+    const q = at(s, -1.4), y = groundH(q.x, q.z);
+    const t = makeTent(col, label); t.position.set(q.x, y + 0.02, q.z); t.rotation.y = yawRiver(q); F.group.add(t);
+    addOBB(q.x, q.z, 1.8, 1.5, Math.atan2(-q.uz, q.ux), 2.6, 'carpa');
+    const v = take(); if (v) { reserve(v, {}); const w = at(s + RR(-0.8, 0.8), -2.0); v.x = w.x; v.z = w.z; v.y = groundH(w.x, w.z); v.yaw = yawRiver(q); v.col.shirt = pick(['#f2efe6', '#7a1f3d', '#2a2a2e']); C.paint(v); v.ph = R() * 6; F.vendors.push(v); }
+    for (let k = 0; k < 2; k++) { const b = take(); if (!b) break; reserve(b, {}); const w = at(s + (k ? 0.8 : -0.8), 1.6 + R() * 0.8); b.x = w.x; b.z = w.z; b.y = groundH(w.x, w.z); b.yaw = yawLand(q) + RR(-0.3, 0.3); b.ph = R() * 6; F.buyers.push(b); }
   });
-  // manifestación: xente apiñada ao longo da beira con pancartas
+  // manifestación: na beira e na calzada, coas pancartas
   const signMats = PROTEST_SIGNS.map(([t, sub]) => new THREE.MeshStandardMaterial({ map: signTex(t, sub), roughness: 0.9, side: THREE.DoubleSide }));
   const stick = new THREE.CylinderGeometry(0.025, 0.025, 1.3, 6), stickM = new THREE.MeshStandardMaterial({ color: 0x8a6a45, roughness: 0.9 });
+  const sEnd = Math.max(14, L - 14 - WINE_STALLS.length * 11);
+  F.sRange = [4, sEnd]; F.at = at; F.bank = bank;
   const N = 22;
   for (let i = 0; i < N; i++) {
     const p = take(); if (!p) break;
-    reserve(p, {}); p.hx = RR(F.px0, F.px1); p.hz = RR(Z.z0 + 12, Z.z1 - 5); p.x = p.hx; p.z = p.hz; p.y = groundH(p.x, p.z); p.ph = R() * 6; p.yaw = -Math.PI / 2 + RR(-0.6, 0.6);
+    reserve(p, {}); p.hs = RR(F.sRange[0], F.sRange[1]); p.ho = RR(-2, bank(p.hs) - 0.5); const q = at(p.hs, p.ho); p.x = q.x; p.z = q.z; p.y = groundH(p.x, p.z); p.ph = R() * 6; p.yaw = yawLand(q) + RR(-0.6, 0.6);
     F.protesters.push(p);
-    if (i % 3 !== 2) { // dous de cada tres levan pancarta
+    if (i % 3 !== 2) {
       const g = new THREE.Group(); const board = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.82), signMats[i % signMats.length]); board.position.y = 0.7; board.castShadow = true; g.add(board);
       const st = new THREE.Mesh(stick, stickM); st.position.y = 0; g.add(st); F.group.add(g); F.signs.push({ g, p });
     }
   }
-  // gran pancarta colectiva
-  const big = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 1.2), new THREE.MeshStandardMaterial({ map: bannerTex('NON Á PONTE', 'Asociación Salvemos o Malecón · Monforte'), roughness: 0.9, side: THREE.DoubleSide }));
-  big.position.set(F.bigX, 1.9, zm); big.rotation.y = Math.PI / 2; F.group.add(big); F.big = big;
-  for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.4, 6), stickM); p.position.set(F.bigX, 1.2, zm + s * 3.6); F.group.add(p); }
+  // gran pancarta colectiva, de cara á rúa
+  {
+    const sm = (F.sRange[0] + F.sRange[1]) / 2, q = at(sm, Math.min(4, bank(sm) - 1.5)), y = groundH(q.x, q.z);
+    const big = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 1.2), new THREE.MeshStandardMaterial({ map: bannerTex('NON Á PONTE', 'Asociación Salvemos o Malecón · Monforte'), roughness: 0.9, side: THREE.DoubleSide }));
+    big.position.set(q.x, y + 1.9, q.z); big.rotation.y = Math.atan2(q.ux, q.uz) + Math.PI / 2; F.group.add(big); F.big = big;
+    for (const s2 of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.4, 6), stickM); p.position.set(q.x + q.ux * s2 * 3.6, y + 1.2, q.z + q.uz * s2 * 3.6); F.group.add(p); }
+    F.bigX = q.x; F.zm = q.z;
+  }
   G.fair = F;
 }
 function updateFair(dt) {
@@ -114,11 +122,11 @@ function updateFair(dt) {
   const t = G.t;
   for (const p of F.protesters) {
     // camiñan devagar, paran, berran consignas e axitan as pancartas
-    if (!p.tgt || p.tt <= 0) { p.tgt = [clamp(p.hx + RR(-2.5, 2.5), F.px0, F.px1), clamp(p.hz + RR(-3, 3), ZONES.malecon.z0 + 10, ZONES.malecon.z1 - 4)]; p.tt = RR(2, 6); }
+    if (!p.tgt || p.tt <= 0) { const ts = clamp(p.hs + RR(-4, 4), F.sRange[0], F.sRange[1]), to = clamp(p.ho + RR(-1.5, 1.5), -2, F.bank(ts) - 0.5), q = F.at(ts, to); p.tgt = [q.x, q.z]; p.tt = RR(2, 6); }
     p.tt -= dt;
     const dx = p.tgt[0] - p.x, dz = p.tgt[1] - p.z, d = Math.hypot(dx, dz);
     if (d > 0.4) { p.yaw += angDiff(p.yaw, Math.atan2(dx, dz)) * Math.min(1, dt * 4); p.x += dx / d * 0.7 * dt; p.z += dz / d * 0.7 * dt; p.walk = lerp(p.walk, 0.6, dt * 4); p.phase += dt * 3; }
-    else { p.walk = lerp(p.walk, 0, dt * 4); p.yaw += angDiff(p.yaw, -Math.PI / 2 + Math.sin(p.ph) * 0.5) * dt; }
+    else { p.walk = lerp(p.walk, 0, dt * 4); p.yaw += angDiff(p.yaw, Math.atan2(F.bigX - p.x, F.zm - p.z) + Math.PI + Math.sin(p.ph) * 0.8) * dt; }
     p.y = groundH(p.x, p.z);
     p.armUp = 0.85 + 0.15 * Math.sin(t * 4 + p.ph); p.nod = Math.max(0, Math.sin(t * 5 + p.ph)) * 0.18;
   }

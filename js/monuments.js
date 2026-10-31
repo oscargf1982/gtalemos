@@ -366,13 +366,13 @@ function buildCompanhia2(B, scene) {
    máis amplos, tallamares augas arriba; Santa Clara diante do extremo norte
    ========================================================== */
 function buildPonteVella(B, b) {
-  const zc = b.c, width = b.hw * 2, half = RIVER_HW + 2.5, len = half * 2 + 2;
+  const zc = b.c, width = b.hw * 2, half = b.half || RIVER_HW + 2.5, len = half * 2 + 2, KS = (half - 2.5) / RIVER_HW;
   const deck = u => 1.5 * Math.max(0, 1 - u * u);
   // vans: [centro (local), luz] — simétricos, máis amplos no centro; os extremos cegados
-  const spans = [[-12.6, 2.6, true], [-8.4, 3.8], [-3.1, 5.2], [3.1, 5.2], [8.4, 3.8], [12.6, 2.6, true]];
+  const spans = [[-12.6, 2.6, true], [-8.4, 3.8], [-3.1, 5.2], [3.1, 5.2], [8.4, 3.8], [12.6, 2.6, true]].map(([c, sp, bl]) => [c * KS, sp * Math.min(KS, 1.6), bl]);
   const shape = new THREE.Shape(), N = 28;
   shape.moveTo(-len / 2, -3.6); shape.lineTo(-len / 2, 0.05);
-  for (let i = 1; i <= N; i++) { const z = -len / 2 + len * i / N; shape.lineTo(z, deck(z / (RIVER_HW + 2)) - 0.06); }
+  for (let i = 1; i <= N; i++) { const z = -len / 2 + len * i / N; shape.lineTo(z, deck(z / (half - 0.5)) - 0.06); }
   shape.lineTo(len / 2, -3.6);
   for (const [c, sp, blind] of spans) {
     if (blind) continue;
@@ -394,7 +394,7 @@ function buildPonteVella(B, b) {
     }
   }
   // tallamares triangulares augas arriba (oeste) e contrafortes augas abaixo
-  const piers = [-10.6, -5.9, 0, 5.9, 10.6];
+  const piers = [-10.6, -5.9, 0, 5.9, 10.6].map(v => v * KS);
   for (const pz of piers) {
     const cut = new THREE.CylinderGeometry(1.5, 1.5, 4.2, 3, 1); xform(cut, b.x - b.hw - 0.6, -1.6, zc - pz, Math.PI / 2 * 3, 0, 0, 1, 1, 1.4); B.stone.add(cut);
     const cap = new THREE.ConeGeometry(1.5, 1.4, 3); xform(cap, b.x - b.hw - 0.6, 1.1, zc - pz, Math.PI / 2 * 3, 0, 0, 1, 1, 1.4); B.stone.add(cap);
@@ -403,7 +403,7 @@ function buildPonteVella(B, b) {
   // parapetos que seguen o lombo
   for (const s of [-1, 1]) {
     for (let i = 0; i < N; i++) {
-      const z0 = -len / 2 + len * i / N, z1 = -len / 2 + len * (i + 1) / N, y0 = deck(z0 / (RIVER_HW + 2)), y1 = deck(z1 / (RIVER_HW + 2));
+      const z0 = -len / 2 + len * i / N, z1 = -len / 2 + len * (i + 1) / N, y0 = deck(z0 / (half - 0.5)), y1 = deck(z1 / (half - 0.5));
       const seg = boxGeo(0.6, 1.05, len / N + 0.05, [3, 3]); xform(seg, b.x + s * (b.hw - 0.3), (y0 + y1) / 2 + 0.5, zc + (z0 + z1) / 2, 0, -Math.atan2(y1 - y0, len / N));
       B.stone.add(seg);
       const top = boxGeo(0.75, 0.14, len / N + 0.05, [3, 3]); xform(top, b.x + s * (b.hw - 0.3), (y0 + y1) / 2 + 1.08, zc + (z0 + z1) / 2, 0, -Math.atan2(y1 - y0, len / N));
@@ -492,7 +492,7 @@ function buildEmbarcadoiro(B, scene) {
    PASARELA DE MADEIRA (ponte peonil recente sobre o Cabe)
    ========================================================== */
 function buildWoodBridge(B, b) {
-  const zc = b.c, half = RIVER_HW + 2.5, w = b.hw * 2;
+  const zc = b.c, half = b.half || RIVER_HW + 2.5, w = b.hw * 2;
   const N = 16;
   for (let i = 0; i < N; i++) {
     const z0 = -half + 2 * half * i / N, z1 = -half + 2 * half * (i + 1) / N, y0 = bridgeDeck(b, b.x, zc + z0), y1 = bridgeDeck(b, b.x, zc + z1);
@@ -514,7 +514,7 @@ function buildRailYard(B, scene) {
   const extra = [387.5, 400.5, 407, 413.5, 420];
   const sleepers = [];
   for (const tx of extra) {
-    const z0 = -95, z1 = 330, Lz = z1 - z0, zc = (z0 + z1) / 2;
+    const z0 = -95, z1 = 178, Lz = z1 - z0, zc = (z0 + z1) / 2;
     const bal = boxGeo(3.4, 0.35, Lz, [3, 3]); xform(bal, tx, 0.05, zc); B.ballast.add(bal);
     for (const s of [-1, 1]) { const rl = boxGeo(0.08, 0.16, Lz); xform(rl, tx + s * 0.834, 0.3, zc); B.rail.add(rl); }
     for (let z = z0; z < z1; z += 0.9) sleepers.push([tx, z]);
@@ -540,7 +540,7 @@ function buildRailYard(B, scene) {
     }
   }
   // pórticos de sinalización e catenaria
-  for (let z = -120; z < 300; z += 60) {
+  for (let z = -120; z < 178; z += 60) {
     for (const x of [338, 424]) { const p = new THREE.CylinderGeometry(0.18, 0.22, 7.5, 8); xform(p, x, 3.75, z); B.metalDark.add(p); }
     const beam = boxGeo(86, 0.35, 0.35); xform(beam, 381, 7.2, z); B.metalDark.add(beam);
   }
@@ -567,7 +567,7 @@ function buildGlows(scene) {
    torres de iluminación e o escenario do sorteo da moto
    ========================================================== */
 function buildPinguela(B, scene) {
-  const cx = -195, cz = 278, PW = 56, PD = 36;
+  const cx = -195, cz = 278, PW = 92, PD = 58;
   // céspede con franxas e liñas
   const c = cnv(1024, 660), x = c.getContext('2d'), sx = 1024 / PW, sz = 660 / PD;
   for (let i = 0; i < 14; i++) { x.fillStyle = i % 2 ? '#3f7a2c' : '#4a8a33'; x.fillRect(i * 1024 / 14, 0, 1024 / 14 + 1, 660); }
@@ -590,7 +590,7 @@ function buildPinguela(B, scene) {
   }
   const X0 = cx - PW / 2 - 3, X1 = cx + PW / 2 + 3, Z0 = cz - PD / 2 - 3, Z1 = cz + PD / 2 + 3;
   // bancada sur (graderío de formigón con cuberta) mirando ao norte
-  const bx0 = cx - 26, bx1 = cx + 26, bz = Z1 + 0.8;
+  const bx0 = cx - 40, bx1 = cx + 40, bz = Z1 + 0.8;
   for (let k = 0; k < 6; k++) { const g = boxGeo(bx1 - bx0, 0.45, 1.0, [3, 3]); xform(g, cx, 0.22 + k * 0.45, bz + k * 0.9); B.concrete.add(g); const st = boxGeo(bx1 - bx0, 0.08, 0.5); xform(st, cx, 0.5 + k * 0.45, bz + k * 0.9 - 0.2); B.vcol.add(colorize(st, k % 2 ? '#b8332f' : '#e9e4d6')); }
   const back = boxGeo(bx1 - bx0, 3.5, 0.4, [3, 3]); xform(back, cx, 1.75, bz + 5.6); B.concrete.add(back);
   const roof = boxGeo(bx1 - bx0 + 1, 0.2, 7, [3, 3]); xform(roof, cx, 6.2, bz + 2.6); B.metalDark.add(roof);
@@ -622,6 +622,7 @@ function buildPinguela(B, scene) {
   for (const s of [-1, 1]) { const pole = new THREE.CylinderGeometry(0.06, 0.06, 4, 8); xform(pole, sx0 + s * 4.2, 3, stz - 1.6); B.metalDark.add(pole); }
   const ban = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 1.4), std({ map: textTex('GRAN SORTEO · MOTO', { w: 1024, h: 170, bg: '#7a1f3d', fg: '#ffd75e', size: 104, border: '#ffd75e' }), roughness: .7, side: THREE.DoubleSide }));
   ban.position.set(sx0, 4.3, stz - 1.6); scene.add(ban);
+  const ban2 = ban.clone(); ban2.rotation.y = Math.PI; ban2.position.z -= 0.02; scene.add(ban2);
   const tongo = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.9), std({ map: textTex('TONGO!', { w: 512, h: 170, bg: '#f4f1e8', fg: '#c0201f', size: 120 }), roughness: .9, side: THREE.DoubleSide }));
   tongo.position.set(cx + 8, 1.7, cz - 3); tongo.rotation.y = 0.4; scene.add(tongo); G.tongoSign = tongo; tongo.visible = false;
   // cordón arredor do sitio da moto

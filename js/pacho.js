@@ -50,9 +50,9 @@ function spawnNPC(opts) {
 function repaintArms(p, col) { const c = new THREE.Color(col), m = world.crowd.meshes.uarm; m.setColorAt(p.idx * 2, c); m.setColorAt(p.idx * 2 + 1, c); m.instanceColor.needsUpdate = true; }
 
 function spawnStoryNPCs() {
-  const pacho = spawnNPC({ id: 'pacho', name: 'Pacho', x: 56, z: 107, yaw: Math.PI, scale: 1.15, fat: 1.55, colors: PACHO_COL });
+  const pacho = spawnNPC({ id: 'pacho', name: 'Pacho', x: LM.compOld(56, 107)[0], z: LM.compOld(56, 107)[1], yaw: LM.comp.yaw(Math.PI), scale: 1.15, fat: 1.55, colors: PACHO_COL });
   if (pacho) { pacho.ball = makeBall(); G.scene.add(pacho.ball); if (G.quest.state === 'done') wearFener(pacho.p); }
-  spawnNPC({ id: 'emre', name: 'Jusé', x: 229.5, z: -222, yaw: -Math.PI / 2, scale: 1.0, colors: { shirt: '#f4f4f2', pants: '#1d2a4a', skin: '#e9c2a2', hair: '#3a2a1c', shoe: '#e9e9e9', sleeve: true } });
+  spawnNPC({ id: 'emre', name: 'Jusé', x: LM.stationOld(229.5, -222)[0], z: LM.stationOld(229.5, -222)[1], yaw: LM.station.yaw(-Math.PI / 2), scale: 1.0, colors: { shirt: '#f4f4f2', pants: '#1d2a4a', skin: '#e9c2a2', hair: '#3a2a1c', shoe: '#e9e9e9', sleeve: true } });
   const juse = NPCS.find(n => n.id === 'emre'); if (juse) { repaintArms(juse.p, '#d4202b'); addCheckerShirt(juse); }
   spawnSpasic();
 }
@@ -123,6 +123,7 @@ const ME = text => ({ who: 'Ti', text });
 function talkTo(n) {
   if (G.dialog) return;
   if (n.id === 'spasic') return talkSpasic(n);
+  if (n.id === 'mayor') return talkMayor(n);
   const q = G.quest;
   if (n.id === 'pacho') {
     const hola = P('Que pasa, chorbo! Aúpa Depor!');
@@ -197,7 +198,7 @@ function pachoAccept() {
     { t: 'Agora non podo', fn: () => [P('Bo, bo. Aquí estarei, coma sempre. Pacho non se move da Compañía.')] },
   ];
 }
-function gotShirt() { G.quest.state = 'return'; saveQuest(); toast('Tes a camiseta: volve onde Pacho na Praza da Compañía'); setWaypoint(56, 105); G.sfx.checkpoint(); }
+function gotShirt() { G.quest.state = 'return'; saveQuest(); toast('Tes a camiseta: volve onde Pacho na Praza da Compañía'); setWaypoint(...LM.compOld(56, 105)); G.sfx.checkpoint(); }
 
 /* ---------- actualización ---------- */
 function nearNPC() {
@@ -247,7 +248,7 @@ const SPASIC_KEY = 'lemos27400_spasic';
 G.quest2 = { state: 'none' };
 try { const s = JSON.parse(localStorage.getItem(SPASIC_KEY)); if (s && s.state) G.quest2.state = s.state; } catch (e) { }
 function saveQuest2() { try { localStorage.setItem(SPASIC_KEY, JSON.stringify({ state: G.quest2.state })); } catch (e) { } }
-const SP_LOOP = { x: PARKC.x, z: PARKC.z, rx: 22, rz: 16 };
+const SP_LOOP = { x: 0, z: 0, rx: 36, rz: 36 }; // centrado na fonte ao iniciar
 const S = (text, extra) => ({ who: 'El Spasic', text, ...extra });
 
 function stripeTex() {
@@ -285,6 +286,7 @@ function makeCigar() {
   g.matrixAutoUpdate = false; return g;
 }
 function spawnSpasic() {
+  SP_LOOP.x = LM.parkC.x; SP_LOOP.z = LM.parkC.z;
   const n = spawnNPC({ id: 'spasic', name: 'El Spasic', x: SP_LOOP.x + SP_LOOP.rx, z: SP_LOOP.z, yaw: 0, scale: 1.04, colors: { skin: '#e8b994', hair: '#e8b994', shirt: '#1d7a3a', pants: '#1d7a3a', shoe: '#f2f2f2', sleeve: false } });
   if (!n) return;
   n.p.manual = true; n.ang = 0; n.speed = 0;
@@ -360,7 +362,7 @@ function startRiot() {
   // axentes de uniforme arredor da moto
   free.slice(nRiot, nRiot + 3).forEach((q, k) => { Object.assign(q, { state: 'guard', home: 'guard', visible: true }); q.col.shirt = '#1c2c56'; q.col.pants = '#1c2c56'; q.col.shoe = '#0e0e0e'; q.col.sleeve = false; C.paint(q); const a = k / 3 * 6.28; q.x = spot.x + Math.cos(a) * 3; q.z = spot.z + Math.sin(a) * 2.6; q.y = groundH(q.x, q.z); G.riotPeds.push(q); });
   // coches patrulla coas luces acesas
-  G.riotCops = [spawnVehicle('policia', -204, 316, Math.PI / 2), spawnVehicle('policia', -183, 320, -Math.PI / 2 + 0.3)];
+  G.riotCops = [spawnVehicle('policia', ...LM.ping.pt(-204, 316), LM.ping.yaw(Math.PI / 2)), spawnVehicle('policia', ...LM.ping.pt(-183, 320), LM.ping.yaw(-Math.PI / 2 + 0.3))];
   for (const v of G.riotCops) { v.sirenOn = true; v.sleep = true; }
 }
 function motoStolen() {

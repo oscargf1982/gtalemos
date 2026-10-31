@@ -43,6 +43,7 @@ button, select { font: inherit; }
 .menu-panel { pointer-events: auto; width: min(440px, 100%); padding-block: max(28px, env(safe-area-inset-top, 0px)) 28px; padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px; overflow-y: auto;
   background: linear-gradient(90deg, #0d1013f2 0%, #0d1013d9 70%, #0d101300 100%); }
 .menu-panel .wordmark { font-size: clamp(64px, 12vw, 116px); text-shadow: 0 4px 30px #000a; }
+.osm-credit { font-size: 12px; opacity: .7; margin: 0; } .osm-credit a { color: inherit; }
 .kicker { font-family: var(--hud); font-weight: 600; letter-spacing: .22em; text-transform: uppercase; font-size: 13px; color: var(--sodium); }
 .lede { font-size: 15px; line-height: 1.5; color: var(--granite-dim); max-width: 34ch; margin: 0; }
 .btn { appearance: none; border: 0; cursor: pointer; text-align: left; font-family: var(--display); font-weight: 800; font-size: 30px; letter-spacing: .02em; text-transform: uppercase; padding: 10px 16px 8px; color: var(--granite); background: var(--wine); box-shadow: 0 0 0 1px #ffffff14 inset; transition: background .15s, transform .15s; }
@@ -214,7 +215,7 @@ button, select { font: inherit; }
   <div class="menu-panel" id="menuMain" hidden>
     <div class="kicker">Mundo aberto · Monforte de Lemos</div>
     <div class="wordmark"><span class="gta">GTA</span>Lemos<br><span class="num">27400</span></div>
-    <p class="lede">Conduce, camiña e fai recados entre o Castelo de San Vicente, a Ponte Vella, os bares da Rúa do Cardeal, o Parque dos Condes e a estación de tren.</p>
+    <p class="lede">Monforte de Lemos co seu plano real: conduce, camiña e fai recados entre o Castelo de San Vicente, a Ponte Vella, os bares da Rúa do Cardeal, o Parque dos Condes e a estación de tren.</p>
     <button class="btn" id="btnPlay">Xogar</button>
     <button class="btn" id="btnResume" hidden>Continuar</button>
     <button class="btn ghost" id="btnReset" hidden>Endereitar o coche</button>
@@ -246,6 +247,7 @@ button, select { font: inherit; }
       <span class="k"><kbd>★</kbd></span><span>Comezar misión</span>
       <span class="k"><kbd>Arrastrar</kbd></span><span>Xirar a cámara</span>
     </div>
+    <p class="osm-credit">Plano da cidade: datos © colaboradores de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL).</p>
     <div class="credit">Proxecto para concurso local de deseño de videoxogos. Cidade recreada a escala reducida; vehículos e marcas inventados.</div>
   </div>
 </div>
@@ -297,11 +299,15 @@ button, select { font: inherit; }
 </div>
 
 <script src="vendor/three.min.js"></script>
+<script src="js/osmdata.js"></script>
 <script src="js/core.js"></script>
 <script src="js/world.js"></script>
 <script src="js/monuments.js"></script>
+<script src="js/city.js"></script>
+<script src="js/places.js"></script>
 <script src="js/actors.js"></script>
 <script src="js/pacho.js"></script>
+<script src="js/band.js"></script>
 <script src="js/riders.js"></script>
 <script src="js/works.js"></script>
 <script src="js/fair.js"></script>

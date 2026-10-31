@@ -235,12 +235,20 @@ class Vehicle {
     this.yaw += this.r * dt;
     this.x += this.vx * dt; this.z += this.vz * dt;
     // chan e saltos
+    // as rodas pegadas ao chan: bordos, lombos de pontes e costas non fan saltar o coche;
+    // só cae se o chan baixa de golpe máis dun metro (un muro, un barranco)
     const gy = groundH(this.x, this.z);
-    const ny = this.y + this.vy * dt - GRAV * dt * dt * 0.5;
-    if (ny <= gy + 0.001) {
-      if (!this.onGround && this.vy < -4) { this.landJolt = Math.min(1, -this.vy / 10); if (G.sfx) G.sfx.thud(Math.min(1, -this.vy / 12), this); }
-      this.vy = clamp((gy - this.y) / dt, -3, 12); this.y = gy; this.onGround = true;
-    } else { this.y = ny; this.vy -= GRAV * dt; this.onGround = ny - gy < 0.08; }
+    if (this.onGround) {
+      const drop = this.y - gy;
+      if (drop < 1.0) { this.y = gy; this.vy = 0; }
+      else { this.onGround = false; this.vy = 0; this.y -= GRAV * dt * dt * 0.5; }
+    } else {
+      const ny = this.y + this.vy * dt - GRAV * dt * dt * 0.5;
+      if (ny <= gy + 0.001) {
+        if (this.vy < -4) { this.landJolt = Math.min(1, -this.vy / 10); if (G.sfx) G.sfx.thud(Math.min(1, -this.vy / 12), this); }
+        this.vy = 0; this.y = gy; this.onGround = true;
+      } else { this.y = ny; this.vy -= GRAV * dt; }
+    }
     // auga
     if (inRiver(this.x, this.z) && this.y < -0.4) { if (!this.inWater && G.sfx) G.sfx.splash(this); this.inWater = (this.inWater || 0) + dt; this.y = Math.max(this.y, -1.6 - Math.min(this.inWater, 2) * 0.5); }
     // inclinación segundo o terreo
@@ -282,7 +290,9 @@ class Vehicle {
     this.sleep = false;
   }
   sync(dt) {
-    this.root.position.set(this.x, this.y, this.z);
+    // suspensión: a carrocería suaviza os chanzos (bordos, xuntas)
+    this.visY = this.onGround && this.visY !== undefined && Math.abs(this.visY - this.y) < 0.6 ? lerp(this.visY, this.y, Math.min(1, (dt || 0.016) * 14)) : this.y;
+    this.root.position.set(this.x, this.visY, this.z);
     this.root.rotation.set(0, 0, 0); this.root.rotation.order = 'YXZ';
     this.root.rotation.y = this.yaw; this.root.rotation.x = -this.pitch; this.root.rotation.z = this.roll;
     if (this.t.moto) { this.lean = lerp(this.lean || 0, clamp(this.latAcc * 0.075, -0.6, 0.6), 0.15); this.root.rotation.z = this.roll - this.lean; }
@@ -304,12 +314,10 @@ class Vehicle {
 G.trainBox = null;
 function trainPush(p, r) {
   const b = G.trainBox; if (!b) return false;
-  if (p.x > b.x0 - r && p.x < b.x1 + r && p.z > b.z0 - r && p.z < b.z1 + r) {
-    const cx = (b.x0 + b.x1) / 2; p.x = p.x < cx ? b.x0 - r : b.x1 + r; return true;
-  }
+  const dx = p.x - b.x, dz = p.z - b.z, al = dx * b.ux + dz * b.uz, ac = -dx * b.uz + dz * b.ux;
+  if (Math.abs(al) < b.half + r && Math.abs(ac) < b.hw + r) { const sgn = ac < 0 ? -1 : 1, d = (b.hw + r) * sgn - ac; p.x += -b.uz * d; p.z += b.ux * d; return true; }
   return false;
 }
-
 /* contacto entre vehículos */
 const _ca = [], _cb = [];
 function collideVehicles(list) {
@@ -480,13 +488,14 @@ class Crowd {
 
 /* ---------- Comportamento dos peóns ---------- */
 G.AREAS = {};
+function pedOffset(r) { return r.type === 'path' ? 0.45 : r.type === 'ped' ? Math.max(0.6, r.hw - 1.5) : r.type === 'track' ? r.hw + 0.6 : r.hw + (r.sw ? r.sw / 2 : 0.9); }
 function randomAreaPoint(area) {
   if (area === 'park') return pick(G.parkPoints);
-  if (area === 'cardeal') return [RR(9, 15), RR(17, 74)];
+  if (area === 'cardeal') { const P = LM.cardeal, q = P.at(RR(3, P.len - 3)), o = RR(-2.5, 2.5); return [q.x - q.uz * o, q.z + q.ux * o]; }
   if (area === 'castle') { const a = R() * 6.28, r = RR(6, 30); return [HILL.x + Math.sin(a) * r, HILL.z + Math.cos(a) * r]; }
-  if (area === 'plaza') return [RR(-12, 85), RR(90, 120)];
-  if (area === 'station') return [RR(226, 234), RR(-270, -186)];
-  if (area === 'paseo') { for (let k = 0; k < 20; k++) { const i = RI(0, RIVER.length - 2), a = RIVER[i], b = RIVER[i + 1], tx = b[0] - a[0], tz = b[1] - a[1], L = Math.hypot(tx, tz) || 1, s = R() < 0.5 ? -1 : 1, x = a[0] + tz / L * s * (RIVER_HW + 3), z = a[1] - tx / L * s * (RIVER_HW + 3); if (x > MAP.minX + 10 && x < MAP.maxX - 10 && z > MAP.minZ + 10 && z < MAP.maxZ - 10) return [x, z]; } return [-60, 40]; }
+  if (area === 'plaza') return LM.compOld(RR(-12, 85), RR(90, 120));
+  if (area === 'station') return LM.stationOld(RR(226, 234), RR(-270, -186));
+  if (area === 'paseo') { const M = LM.malecon, q = M.path.at(RR(0, M.path.len)), o = RR(4, 7); return [q.x - q.uz * M.side * o, q.z + q.ux * M.side * o]; }
   return [0, 0];
 }
 function pedThink(p, dt, world) {
@@ -505,10 +514,10 @@ function pedThink(p, dt, world) {
     case 'walk': {
       if (!p.edge) { const n = nearestNode(p.x, p.z); p.from = n; p.edge = pick(n.edges); p.side = R() < 0.5 ? -1 : 1; }
       const A = p.from, Bn = p.edge.to, dx = Bn.x - A.x, dz = Bn.z - A.z, L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L;
-      const off = (p.edge.road.hw || 4) + (p.edge.road.type === 'ped' ? -1.5 : SIDEWALK / 2) + (p.lane || 0);
+      const off = pedOffset(p.edge.road) + (p.lane || 0);
       const rx = -uz * p.side, rz = ux * p.side;
       const tx = Bn.x + rx * off, tz = Bn.z + rz * off;
-      if (Math.hypot(tx - p.x, tz - p.z) < 1.2) { const opts = Bn.edges.filter(e => e.to !== A && !e.road.spiral); p.from = Bn; p.edge = opts.length ? pick(opts) : pick(Bn.edges); if (R() < 0.3) p.side *= -1; }
+      if (Math.hypot(tx - p.x, tz - p.z) < 1.2) { const opts = Bn.edges.filter(e => e.to !== A && e.road.type !== 'track' && (e.road.urban || e.road.type === 'path')); p.from = Bn; p.edge = opts.length ? pick(opts) : pick(Bn.edges); if (R() < 0.3) p.side *= -1; }
       steerPed(p, tx, tz, p.walkSpeed || 1.35, dt);
       break;
     }
@@ -710,25 +719,36 @@ class Train {
       const ws = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.9), glass); ws.position.set(0, 3.0, s * (this.len / 2 + 0.6)); ws.rotation.y = s > 0 ? 0 : Math.PI; ws.rotation.x = -0.4 * 1; this.g.add(ws);
       const hl = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.18), VMAT.head); hl.position.set(0, 1.6, s * (this.len / 2 + 0.75)); hl.rotation.y = s > 0 ? 0 : Math.PI; this.g.add(hl);
     }
-    this.x = G.tracks[0]; this.z = (G.stationZ || 0) - 900; this.v = 0; this.state = 'away'; this.timer = 25; this.dir = 1; this.g.position.set(this.x, 0.38, this.z);
+    // percorrido real da liña (OSM) e parada na vía 1 da estación
+    const P = TRAIN_PATH, cum = [0]; for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+    this.P = P; this.cum = cum; this.L = cum[cum.length - 1];
+    const st = G.stationStop || { x: P[0][0], z: P[0][1] }; let bs = 0, bd = 1e9;
+    for (let s = 0; s < this.L; s += 1) { const q = this.at(s), d = Math.hypot(q.x - st.x, q.z - st.z); if (d < bd) { bd = d; bs = s; } }
+    this.stopS = bs; this.s = bs - 900; this.v = 0; this.state = 'away'; this.timer = 25; this.dir = 1; this.place();
     this.nextDeparture = null;
   }
+  at(s) { const P = this.P, C = this.cum; s = clamp(s, 0, this.L); let k = 1; while (k < P.length - 1 && C[k] < s) k++; const a = P[k - 1], b = P[k], L = (C[k] - C[k - 1]) || 1, t = (s - C[k - 1]) / L; return { x: a[0] + (b[0] - a[0]) * t, z: a[1] + (b[1] - a[1]) * t, ux: (b[0] - a[0]) / L, uz: (b[1] - a[1]) / L }; }
+  place() {
+    const q = this.at(this.s), q0 = this.at(this.s - this.len / 2), q1 = this.at(this.s + this.len / 2);
+    let ux = q1.x - q0.x, uz = q1.z - q0.z; const l = Math.hypot(ux, uz) || 1; ux /= l; uz /= l;
+    this.x = q.x; this.z = q.z; this.yaw = Math.atan2(ux, uz) + (this.dir > 0 ? 0 : Math.PI);
+    this.g.position.set(q.x, Math.max(0, terrainH(q.x, q.z)) + 0.38, q.z); this.g.rotation.y = this.yaw;
+    G.trainBox = Math.abs(this.s - this.stopS) < 650 ? { x: q.x, z: q.z, ux, uz, half: this.len / 2 + 1, hw: 1.5 } : null;
+  }
   update(dt) {
-    const stopZ = G.stationZ || 0, Z0 = stopZ;
+    const S0 = this.stopS;
     switch (this.state) {
-      case 'away': this.timer -= dt; if (this.timer <= 0) { this.dir = R() < 0.5 ? 1 : -1; this.z = Z0 - this.dir * 700; this.v = 24; this.state = 'arriving'; if (G.sfx) G.sfx.trainHorn(this); } break;
+      case 'away': this.timer -= dt; if (this.timer <= 0) { this.dir = R() < 0.5 ? 1 : -1; this.s = S0 - this.dir * 700; this.v = 24; this.state = 'arriving'; if (G.sfx) G.sfx.trainHorn(this); } break;
       case 'arriving': {
-        const dist = (stopZ - this.z) * this.dir; const vT = Math.sqrt(Math.max(0, 2 * 0.55 * dist));
+        const dist = (S0 - this.s) * this.dir; const vT = Math.sqrt(Math.max(0, 2 * 0.55 * dist));
         this.v = Math.min(this.v, vT); if (dist < 0.3) { this.v = 0; this.state = 'stopped'; this.timer = this.holdTime || 30; this.holdTime = 0; }
         break;
       }
       case 'stopped': this.timer -= dt; if (this.timer <= 0) { this.state = 'departing'; if (G.sfx) G.sfx.trainHorn(this); if (G.onTrainDepart) G.onTrainDepart(); } break;
-      case 'departing': this.v = Math.min(30, this.v + 0.7 * dt); if (Math.abs(this.z - Z0) > 720) { this.state = 'away'; this.timer = RR(40, 70); } break;
+      case 'departing': this.v = Math.min(30, this.v + 0.7 * dt); if (Math.abs(this.s - S0) > 720) { this.state = 'away'; this.timer = RR(40, 70); } break;
     }
-    this.z += this.v * this.dir * dt;
-    this.g.position.z = this.z; this.g.rotation.y = this.dir > 0 ? 0 : Math.PI;
-    G.trainBox = Math.abs(this.z - Z0) < 600 ? { x0: this.x - 1.5, x1: this.x + 1.5, z0: this.z - this.len / 2 - 1, z1: this.z + this.len / 2 + 1 } : null;
-    // atropelo de vehículos/peóns: empurrón forte
+    this.s += this.v * this.dir * dt;
+    this.place();
     return this.v;
   }
 }

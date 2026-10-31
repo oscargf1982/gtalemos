@@ -3,17 +3,9 @@
    LEMOS 27400 · bicis e patinetes a toda velocidade polo Cardeal
    ========================================================== */
 const RIDERS = [];
-/* traxecto: Ponte Vella (oeste→leste) e logo Rúa do Cardeal (norte→sur) */
-const RIDE_PATH = [[-104, 10], [-40, 10], [5, 10], [12, 17], [12, 46], [12, 75]];
-const RIDE_LEN = (() => { let L = 0; for (let i = 1; i < RIDE_PATH.length; i++) L += Math.hypot(RIDE_PATH[i][0] - RIDE_PATH[i - 1][0], RIDE_PATH[i][1] - RIDE_PATH[i - 1][1]); return L; })();
-function ridePoint(s) {
-  s = clamp(s, 0, RIDE_LEN);
-  for (let i = 1; i < RIDE_PATH.length; i++) {
-    const a = RIDE_PATH[i - 1], b = RIDE_PATH[i], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (s <= L || i === RIDE_PATH.length - 1) { const t = clamp(s / L, 0, 1), tx = (b[0] - a[0]) / L, tz = (b[1] - a[1]) / L; return { x: lerp(a[0], b[0], t), z: lerp(a[1], b[1], t), tx, tz }; }
-    s -= L;
-  }
-}
+/* traxecto: tramo peonil real da Rúa do Cardeal (OSM), nos dous sentidos */
+let RIDE_LEN = 0;
+function ridePoint(s) { const q = LM.cardeal.at(s); return { x: q.x, z: q.z, tx: q.ux, tz: q.uz }; }
 function makeScooter(col) {
   const g = new THREE.Group(), body = new THREE.MeshStandardMaterial({ color: new THREE.Color(col), roughness: 0.35, metalness: 0.4 }), dark = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.6 });
   const deck = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.06, 0.82), body); deck.position.set(0, 0.13, 0); g.add(deck);
@@ -25,6 +17,7 @@ function makeScooter(col) {
   g.traverse(o => { if (o.isMesh) o.castShadow = true; }); g.userData.wheels = wheels; return g;
 }
 function spawnRiders() {
+  RIDE_LEN = LM.cardeal.len;
   const C = world.crowd, free = C.peds.filter(q => q.state === 'walk' && !q.npc && q !== G.player.ped);
   const kinds = ['bike', 'scooter', 'bike', 'scooter', 'scooter'];
   const n = Math.min(kinds.length, Math.max(2, free.length - 6));
@@ -34,7 +27,7 @@ function spawnRiders() {
     const veh = kind === 'bike' ? makeBike() : makeScooter(pick(['#1aa6d8', '#f2f2f0', '#e2452a', '#1f1f22', '#3dbb6a']));
     if (kind === 'bike') veh.scale.setScalar(1.0);
     G.scene.add(veh);
-    const r = { p, kind, veh, s: RR(0, RIDE_LEN), dir: R() < 0.5 ? 1 : -1, speed: kind === 'bike' ? RR(8, 10.5) : RR(9, 12), lane: RR(-1.6, 1.6), ph: R() * 6, wait: 0, bellT: 0, cur: 0 };
+    const r = { p, kind, veh, s: RR(0, RIDE_LEN), dir: R() < 0.5 ? 1 : -1, speed: kind === 'bike' ? RR(8, 10.5) : RR(9, 12), lane: RR(-1.2, 1.2), ph: R() * 6, wait: 0, bellT: 0, cur: 0 };
     RIDERS.push(r);
   }
 }
@@ -47,14 +40,14 @@ function updateRiders(dt) {
     else {
       r.cur = lerp(r.cur, r.speed, Math.min(1, dt * 1.5));
       r.s += r.dir * r.cur * dt;
-      if (r.s >= RIDE_LEN) { r.s = RIDE_LEN; r.dir = -1; r.wait = RR(0.5, 3); r.lane = RR(-1.6, 1.6); }
-      if (r.s <= 0) { r.s = 0; r.dir = 1; r.wait = RR(0.5, 3); r.lane = RR(-1.6, 1.6); }
+      if (r.s >= RIDE_LEN) { r.s = RIDE_LEN; r.dir = -1; r.wait = RR(0.5, 3); r.lane = RR(-1.2, 1.2); }
+      if (r.s <= 0) { r.s = 0; r.dir = 1; r.wait = RR(0.5, 3); r.lane = RR(-1.2, 1.2); }
     }
     const P = ridePoint(r.s), tx = P.tx * r.dir, tz = P.tz * r.dir, nx = -tz, nz = tx;
     // fan eses entre a xente; esquivan un pouco ao xogador, pero non sempre a tempo
     let weave = Math.sin(G.t * 0.9 + r.ph) * 0.9;
     if (onFoot) { const dx = me.x - P.x, dz = me.z - P.z, ahead = dx * tx + dz * tz, lat = dx * nx + dz * nz; if (ahead > 0 && ahead < 6 && Math.abs(lat - r.lane) < 1.4) weave -= Math.sign(lat - r.lane || 1) * 0.35; }
-    const off = clamp(r.lane + weave, -2.6, 2.6);
+    const off = clamp(r.lane + weave * 0.7, -1.8, 1.8);
     const x = P.x + nx * off, z = P.z + nz * off, y = groundH(x, z), yaw = Math.atan2(tx, tz);
     r.veh.position.set(x, y, z); r.veh.rotation.set(0, yaw, -weave * 0.08 * (r.cur / 10));
     for (const w of r.veh.userData.wheels) w.rotation.x += dt * r.cur / (r.kind === 'bike' ? 0.34 : 0.11);

@@ -21,95 +21,117 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const sstep = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); };
 const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
 
-/* ---------- Xeografía ----------
-   Trazado tomado do plano MetroMinuto de Monforte (Concello) e do mapa turístico:
-   norte real = -z, escala ≈ 0,65 m de xogo por metro real. */
-const MAP = { minX: -330, maxX: 340, minZ: -320, maxZ: 340 };
-const HILL = { x: 100, z: -81, top: 36, r0: 38, r1: 78 };
-const RIVER_HW = 12;
-/* o Cabe: chega do nordés (Ribas Altas), baixa de norte a sur polo oeste do centro,
-   pasa entre o Parque dos Condes (beira oeste) e o colexio da Compañía (beira leste)
-   e despois xira cara ao suroeste (A Pinguela, Ourense) — segundo as vistas aéreas */
-const RIVER = (() => {
-  const ctrl = [[200, -760], [140, -600], [97, -526], [-78, -461], [-130, -390], [-65, -292], [-26, -221], [-32, -130], [-36, -32], [-39, 65], [-45, 124], [-50, 182], [-66, 238], [-96, 280], [-132, 322], [-190, 370], [-300, 430], [-450, 500], [-650, 590], [-900, 700]];
-  const out = [];
-  for (let i = 0; i < ctrl.length - 1; i++) {
-    const p0 = ctrl[Math.max(0, i - 1)], p1 = ctrl[i], p2 = ctrl[i + 1], p3 = ctrl[Math.min(ctrl.length - 1, i + 2)];
-    const L = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]), n = Math.max(1, Math.ceil(L / 5));
-    for (let k = 0; k < n; k++) { const t = k / n, t2 = t * t, t3 = t2 * t; out.push([0, 1].map(j => 0.5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3))); }
+/* ---------- Xeografía: datos reais de OpenStreetMap (js/osmdata.js) ----------
+   Metros reais. x = leste, z = sur (norte = -z). Orixe: 42.5245 N, 7.5130 O.
+   © colaboradores de OpenStreetMap (ODbL). */
+const MAP = { minX: OSM.crop[0], minZ: OSM.crop[1], maxX: OSM.crop[2], maxZ: OSM.crop[3] };
+const HILL = { x: 185, z: 68, top: 30, r0: 55, r1: 150 };
+const RIVER_HW = 12; // ancho nominal; riverDist devolve a distancia normalizada ao ancho real de cada tramo
+const RIVER = OSM.river.map(p => [p[0], p[1]]);
+const RIVER_W = OSM.river.map(p => p[2]);
+function riverRaw(x, z) { // distancia á beira (negativa dentro)
+  let bd = 1e12, bh = RIVER_HW;
+  for (let i = 0; i < RIVER.length - 1; i++) {
+    const a = RIVER[i], b = RIVER[i + 1];
+    if ((x < a[0] - 80 && x < b[0] - 80) || (x > a[0] + 80 && x > b[0] + 80) || (z < a[1] - 80 && z < b[1] - 80) || (z > a[1] + 80 && z > b[1] + 80)) continue;
+    const dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx * dx + dz * dz || 1;
+    let t = ((x - a[0]) * dx + (z - a[1]) * dz) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t;
+    const px = a[0] + dx * t - x, pz = a[1] + dz * t - z, d = px * px + pz * pz;
+    if (d < bd) { bd = d; bh = lerp(RIVER_W[i], RIVER_W[i + 1], t); }
   }
-  out.push(ctrl[ctrl.length - 1]);
+  return Math.sqrt(bd) - bh;
+}
+function riverDistRaw(x, z) { return riverRaw(x, z) + RIVER_HW; }
+const ZONES = {};               // polígonos con nome (parques, monumentos...) enchidos ao construír o mundo
+const AREAS = OSM.areas;
+/* polígonos */
+function inPoly(x, z, P) { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; }
+function polyBox(P) { let x0 = 1e9, z0 = 1e9, x1 = -1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); } return { x0, z0, x1, z1 }; }
+function polyCentroid(P) { let a = 0, cx = 0, cz = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const f = P[j][0] * P[i][1] - P[i][0] * P[j][1]; a += f; cx += (P[j][0] + P[i][0]) * f; cz += (P[j][1] + P[i][1]) * f; } a *= 0.5; return a ? [cx / (6 * a), cz / (6 * a)] : P[0]; }
+function polyArea(P) { let a = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) a += P[j][0] * P[i][1] - P[i][0] * P[j][1]; return Math.abs(a / 2); }
+/* rectángulo de área mínima: { cx, cz, w (ao longo de ang), d, ang } con ang = atan2(uz, ux) */
+function minRect(P) {
+  let best = null;
+  for (let i = 0; i < P.length; i++) {
+    const a = P[i], b = P[(i + 1) % P.length], ang = Math.atan2(b[1] - a[1], b[0] - a[0]), c = Math.cos(ang), s = Math.sin(ang);
+    let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9;
+    for (const q of P) { const u = q[0] * c + q[1] * s, v = -q[0] * s + q[1] * c; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); }
+    const A = (u1 - u0) * (v1 - v0);
+    if (!best || A < best.A) { const uc = (u0 + u1) / 2, vc = (v0 + v1) / 2; best = { A, ang, w: u1 - u0, d: v1 - v0, cx: uc * c - vc * s, cz: uc * s + vc * c }; }
+  }
+  return best;
+}
+/* marcos de referencia: un monumento deseñado en coordenadas locais colócase no plano real */
+function makeFrame(ox, oz, rot) { const c = Math.cos(rot), s = Math.sin(rot); return { ox, oz, rot, pt: (x, z) => [ox + x * c + z * s, oz - x * s + z * c], yaw: a => a + rot, inv: (x, z) => { const dx = x - ox, dz = z - oz; return [dx * c - dz * s, dx * s + dz * c]; } }; }
+function frameAt(lx, lz, wx, wz, rot) { const c = Math.cos(rot), s = Math.sin(rot); return makeFrame(wx - (lx * c + lz * s), wz - (-lx * s + lz * c), rot); }
+
+/* ---------- Rúas (OpenStreetMap) ---------- */
+const SIDEWALK = 2.4;
+const PED_OVERRIDE = { 'A Ponte Vella': 'ped' };
+const ROADS = OSM.roads.map((o, i) => {
+  let type = o.k === 'track' ? 'track' : o.k;
+  if (PED_OVERRIDE[o.n]) type = PED_OVERRIDE[o.n];
+  const pts = o.p, w = type === 'ped' && o.n === 'A Ponte Vella' ? 7.5 : o.w;
+  let len = 0; const cum = [0]; for (let k = 1; k < pts.length; k++) { len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]); cum.push(len); }
+  return { id: i, name: o.n, cls: o.c, type, w, hw: w / 2, sw: type === 'car' ? o.sw : 0, pts, cum, len, br: !!o.br, ow: o.ow || 0, steps: !!o.st, major: ['trunk', 'primary', 'secondary', 'tertiary'].includes(o.c) };
+});
+/* punto e tanxente a unha distancia s ao longo dunha rúa */
+function roadPoint(r, s) {
+  const P = r.pts, C = r.cum; s = clamp(s, 0, r.len);
+  let k = 1; while (k < P.length - 1 && C[k] < s) k++;
+  const a = P[k - 1], b = P[k], L = (C[k] - C[k - 1]) || 1, t = (s - C[k - 1]) / L, ux = (b[0] - a[0]) / L, uz = (b[1] - a[1]) / L;
+  return { x: a[0] + (b[0] - a[0]) * t, z: a[1] + (b[1] - a[1]) * t, ux, uz };
+}
+/* polilínea desprazada lateralmente (+ = esquerda: nx = -uz, nz = ux) */
+function offsetLine(P, off) {
+  const out = [];
+  for (let i = 0; i < P.length; i++) {
+    const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)], c = P[i];
+    let ux = 0, uz = 0;
+    if (i > 0) { const dx = c[0] - P[i - 1][0], dz = c[1] - P[i - 1][1], L = Math.hypot(dx, dz) || 1; ux += dx / L; uz += dz / L; }
+    if (i < P.length - 1) { const dx = P[i + 1][0] - c[0], dz = P[i + 1][1] - c[1], L = Math.hypot(dx, dz) || 1; ux += dx / L; uz += dz / L; }
+    const L = Math.hypot(ux, uz) || 1; ux /= L; uz /= L;
+    // miter limitado
+    let k = 1; if (i > 0 && i < P.length - 1) { const dx = c[0] - P[i - 1][0], dz = c[1] - P[i - 1][1], L1 = Math.hypot(dx, dz) || 1; const cosh = (dx / L1) * ux + (dz / L1) * uz; k = 1 / Math.max(0.5, cosh); }
+    out.push([c[0] - uz * off * k, c[1] + ux * off * k]);
+  }
   return out;
-})();
-function riverDistRaw(x, z) { let bd = 1e12; for (let i = 0; i < RIVER.length - 1; i++) { const a = RIVER[i], b = RIVER[i + 1]; if (Math.abs(a[0] - x) > 60 || Math.abs(a[1] - z) > 60) continue; const dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx * dx + dz * dz; let t = ((x - a[0]) * dx + (z - a[1]) * dz) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t; const px = a[0] + dx * t - x, pz = a[1] + dz * t - z; bd = Math.min(bd, px * px + pz * pz); } return Math.sqrt(bd); }
-/* punto do río onde o cruza unha liña (para colocar pontes) */
-function riverCross(dir, k, a0, a1) { let best = 1e9, bt = a0; for (let t = a0; t <= a1; t += 0.5) { const d = dir === 'ns' ? riverDistRaw(k, t) : riverDistRaw(t, k); if (d < best) { best = d; bt = t; } } return bt; }
-const RAIL = { x0: 228, x1: 326, platformX: 237.5 };
-const ZONES = {
-  park: { x0: -172, x1: -50, z0: 88, z1: 250 },          // beira oeste, ao suroeste do colexio
-  campoComp: { x0: -32, x1: 52, z0: 176, z1: 228 },      // campo de fútbol ao sur do colexio
-  carballo: { x0: 109, x1: 180, z0: 88, z1: 150 },       // Parque de Antonio Carballo (leste)
-  cardeal: { x0: 7.5, x1: 16.5, z0: 14, z1: 76 },
-  companhia: { x0: -20, x1: 92, z0: 84, z1: 172 },
-  station: { x0: 200, x1: 340 },
-  pinguela: { x0: -230, x1: -160, z0: 254, z1: 310 },
-  clara: { x0: -112, x1: -55, z0: -28, z1: 3 },
-  malecon: { x0: -22, x1: -1, z0: -55, z1: -4 },        // beira leste, río arriba da Ponte Vella, ao pé do monte
-};
-const PARKC = { x: -112, z: 168 }; // gran fonte do Parque dos Condes
-function inPark(x, z) { const P = ZONES.park; return x > P.x0 && x < P.x1 && z > P.z0 && z < P.z1 && riverDistRaw(x, z) > RIVER_HW + 2.5; }
+}
+/* recorta unha polilínea polos dous extremos */
+function trimLine(P, t0, t1) {
+  let L = 0; const cum = [0]; for (let i = 1; i < P.length; i++) { L += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); cum.push(L); }
+  if (t0 + t1 >= L - 0.3) return null;
+  const at = s => { let k = 1; while (k < P.length - 1 && cum[k] < s) k++; const a = P[k - 1], b = P[k], f = (s - cum[k - 1]) / ((cum[k] - cum[k - 1]) || 1); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; };
+  const out = [at(t0)]; for (let i = 0; i < P.length; i++) if (cum[i] > t0 && cum[i] < L - t1) out.push(P[i]); out.push(at(L - t1)); return out;
+}
+/* extremos: grao de cada unión e ancho máximo das outras rúas */
+const JUNC = new Map(); // clave "x,z" -> [{ r, end }]
+const jkey = (x, z) => Math.round(x * 2) + ',' + Math.round(z * 2);
+for (const r of ROADS) for (const end of [0, 1]) { const p = end ? r.pts[r.pts.length - 1] : r.pts[0], k = jkey(p[0], p[1]); let a = JUNC.get(k); if (!a) JUNC.set(k, a = []); a.push({ r, end }); }
+function juncAt(r, end) { const p = end ? r.pts[r.pts.length - 1] : r.pts[0]; return JUNC.get(jkey(p[0], p[1])) || []; }
+/* recorte das beirarrúas/pasos nun extremo: medio ancho máximo das outras rúas con coches */
+function endTrim(r, end) { let m = 0; for (const o of juncAt(r, end)) if (o.r !== r && (o.r.type === 'car' || o.r.type === 'ped')) m = Math.max(m, o.r.hw + o.r.sw); return m; }
 
-/* ---------- Rúas (nomes do plano) ---------- */
-const SIDEWALK = 3;
-const ROADS = [];
-function NS(x, z0, z1, w = 12, type = 'car', name) { ROADS.push({ dir: 'ns', x, z0, z1, w, hw: w / 2, type, x0: x - w / 2, x1: x + w / 2, zz0: z0, zz1: z1, name }); }
-function EW(z, x0, x1, w = 12, type = 'car', name) { ROADS.push({ dir: 'ew', z, x0: x0, x1: x1, w, hw: w / 2, type, zz0: z - w / 2, zz1: z + w / 2, name }); }
-EW(-170, -330, 196, 12, 'car', 'Ronda Emilia Casas');
-EW(-65, -330, 5, 11, 'car', 'Rúa do Concello');
-EW(10, -114, 12, 9, 'ped', 'Ponte Vella');
-NS(12, 10, 78, 9, 'ped', 'Rúa do Cardeal');
-EW(78, -330, 190, 12, 'car', 'Avenida de Galicia');
-EW(318, -260, 190, 12, 'car', 'Estrada da Pinguela');
-NS(-220, -320, 200, 12, 'car', 'Avenida de Ourense');
-NS(-120, -320, 78, 11, 'car', 'Rúa Chantada');
-NS(100, 7, 78, 8, 'car', 'Subida ao Castelo');
-NS(100, 78, 318, 11, 'car', 'Rúa Roberto Baamonde');
-NS(190, -300, 318, 12, 'car', 'Rúa Leopoldo Calvo Sotelo');
-/* barrio da Estación (vista aérea): Rúa da Coruña dende o Cabe á praza, Curros Enríquez e Severo Ochoa */
-EW(-228, -8, 110, 11, 'car', 'Rúa da Coruña');
-EW(-228, 110, 190, 11, 'car', 'Rúa Rosalía de Castro');
-EW(-199, 40, 190, 9, 'car', 'Rúa Curros Enríquez');
-NS(140, -300, -228, 10, 'car', 'Rúa Severo Ochoa');
-// rect real de cada rúa
-for (const r of ROADS) { if (r.dir === 'ns') { r.rx0 = r.x - r.hw; r.rx1 = r.x + r.hw; r.rz0 = r.z0; r.rz1 = r.z1; } else { r.rx0 = r.x0; r.rx1 = r.x1; r.rz0 = r.z - r.hw; r.rz1 = r.z + r.hw; } }
+/* zona urbana (onde hai edificios ao longo das rúas) — contorno debuxado sobre o plano */
+const URBAN = [[-1090, 1330], [-1000, 1060], [-760, 1010], [-600, 880], [-560, 640], [-600, 420], [-470, 260], [-360, -20], [-170, -230], [60, -380], [330, -600], [560, -760], [930, -760], [930, -280], [760, 60], [600, 330], [500, 600], [300, 760], [0, 840], [-280, 990], [-560, 1180], [-760, 1360]];
+function isUrban(x, z) { return inPoly(x, z, URBAN); }
+for (const r of ROADS) { const m = roadPoint(r, r.len / 2); r.urban = isUrban(m.x, m.z); if (!r.urban) r.sw = 0; }
 
-/* Pontes: onde cada rúa cruza o Cabe */
+/* Pontes: rúas marcadas como ponte en OSM que cruzan o Cabe */
 const BRIDGES = [];
 (function () {
-  const BR = (x, z) => riverDistRaw(x, z);
   for (const r of ROADS) {
-    let best = 1e9, bt = 0; const a0 = r.dir === 'ns' ? r.z0 : r.x0, a1 = r.dir === 'ns' ? r.z1 : r.x1;
-    for (let t = a0; t <= a1; t += 1) { const d = r.dir === 'ns' ? BR(r.x, t) : BR(t, r.z); if (d < best) { best = d; bt = t; } }
-    if (best > 4) continue;
-    const hw = r.type === 'ped' ? 5.2 : r.hw + SIDEWALK + 0.2, type = r.type === 'ped' ? 'vella' : 'road';
-    BRIDGES.push(r.dir === 'ns' ? { dir: 'ns', x: r.x, c: bt, hw, type } : { dir: 'ew', z: r.z, c: bt, hw, type });
+    if (!r.br) continue;
+    let md = 1e9; for (let s = 0; s <= r.len; s += 1) { const p = roadPoint(r, s), d = riverRaw(p.x, p.z); if (d < md) md = d; }
+    if (md > 2) continue; // pontes sobre regatos ou estradas: chan normal
+    const a = r.pts[0], b = r.pts[r.pts.length - 1], dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz) || 1;
+    const type = r.name === 'A Ponte Vella' ? 'vella' : (r.type === 'car' ? 'road' : 'wood');
+    const hw = type === 'vella' ? 5.0 : type === 'road' ? r.hw + r.sw + 0.4 : Math.max(1.6, r.hw + 0.3);
+    const b2 = { r, type, x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2, ux: dx / L, uz: dz / L, half: L / 2 + 0.5, hw, rot: Math.atan2(dx / L, dz / L) };
+    if (r.name === 'Ponte do Parque dos Condes') b2.park = true;
+    r.bridge = b2; BRIDGES.push(b2);
   }
-  BRIDGES.push({ dir: 'ew', z: 150, c: riverCross('ew', 150, -90, -10), hw: 2.2, type: 'wood', park: true }); // pasarela parque–colexio
-  BRIDGES.push({ dir: 'ew', z: -110, c: riverCross('ew', -110, -80, 10), hw: 1.9, type: 'wood' });
 })();
-/* Estrada en espiral ao castelo */
-const SPIRAL = [];
-(function () {
-  const turns = 1.05, n = 64;
-  for (let i = 0; i <= n; i++) {
-    const t = i / n; const th = -t * turns * Math.PI * 2; const r = lerp(HILL.r1 - 4, HILL.r0 + 4, t);
-    SPIRAL.push([HILL.x + Math.sin(th) * r, HILL.z + Math.cos(th) * r]);
-  }
-  const last = SPIRAL[SPIRAL.length - 1], th = Math.atan2(last[0] - HILL.x, last[1] - HILL.z);
-  SPIRAL.push([HILL.x + Math.sin(th) * 28, HILL.z + Math.cos(th) * 28]);
-  SPIRAL.unshift([HILL.x, HILL.z + HILL.r1 + 10]);
-})();
-
 /* ---------- Marco local: constrúe un monumento nas súas coordenadas de deseño
    e colócao xirado/desprazado no mundo (xeometría, colisións, beirarrúas, luces) ---------- */
 G._frame = null;
@@ -136,30 +158,16 @@ function hillRaw(x, z) {
   const t = (d - HILL.r0) / (HILL.r1 - HILL.r0);
   return HILL.top * (1 - t * t * (3 - 2 * t));
 }
-/* a estrada do castelo vai cortada na ladeira: chan plano ao longo da espiral */
-let SPH = null;
-function hillH(x, z) {
-  const h = hillRaw(x, z);
-  const d0 = Math.hypot(x - HILL.x, z - HILL.z); if (d0 > HILL.r1 + 8 || d0 < HILL.r0 - 6) return h;
-  if (!SPH) SPH = SPIRAL.map(([a, b]) => hillRaw(a, b));
-  let bd = 1e9, bh = 0;
-  for (let i = 0; i < SPIRAL.length - 1; i++) {
-    const a = SPIRAL[i], b = SPIRAL[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx * dx + dz * dz;
-    let t = ((x - a[0]) * dx + (z - a[1]) * dz) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t;
-    const px = a[0] + dx * t - x, pz = a[1] + dz * t - z, d = px * px + pz * pz;
-    if (d < bd) { bd = d; bh = lerp(SPH[i], SPH[i + 1], t); }
-  }
-  const w = 1 - sstep(5.5, 11, Math.sqrt(bd));
-  return lerp(h, bh, w);
-}
+function hillH(x, z) { return hillRaw(x, z); }
+const TRAIN_PATH = OSM.train;
+function trainDist(x, z) { let bd = 1e12; for (let i = 0; i < TRAIN_PATH.length - 1; i++) { const a = TRAIN_PATH[i], b = TRAIN_PATH[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx * dx + dz * dz || 1; let t = ((x - a[0]) * dx + (z - a[1]) * dz) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t; const px = a[0] + dx * t - x, pz = a[1] + dz * t - z; bd = Math.min(bd, px * px + pz * pz); } return Math.sqrt(bd); }
 function outerH(x, z) {
-  // fóra da cidade o terreo sobe cara ás montañas da Ribeira Sacra
-  let dx = Math.max(MAP.minX - x, 0, x - MAP.maxX), dz = Math.max(MAP.minZ - z, 0, z - MAP.maxZ);
-  if (x > RAIL.x0 - 6 && x < RAIL.x1 + 6) dz = 0; // corredor ferroviario chan
-  if (x > RAIL.x0 - 6 && x < RAIL.x1 + 6 && x > MAP.maxX) dx = 0;
+  // fóra da cidade o terreo sobe cara ás montañas da Ribeira Sacra (agás o corredor do tren)
+  const dx = Math.max(MAP.minX - x, 0, x - MAP.maxX), dz = Math.max(MAP.minZ - z, 0, z - MAP.maxZ);
   const d = Math.hypot(dx, dz);
   if (d <= 0) return 0;
-  return Math.pow(d, 1.25) * 0.12 + Math.max(0, noise2(x, z)) * Math.min(d, 60) * 0.25;
+  const h = Math.pow(d, 1.25) * 0.12 + Math.max(0, noise2(x, z)) * Math.min(d, 60) * 0.25;
+  return h * sstep(10, 40, trainDist(x, z));
 }
 function terrainH(x, z) {
   let h = Math.max(hillH(x, z), outerH(x, z));
@@ -167,40 +175,91 @@ function terrainH(x, z) {
   if (dz < RIVER_HW + 0.5) h = -3.2 * (1 - sstep(RIVER_HW - 6, RIVER_HW + 0.5, dz)) + h * sstep(RIVER_HW - 6, RIVER_HW + 0.5, dz);
   return h;
 }
+/* pontes en calquera ángulo: coordenadas locais (ao longo, a través) */
+function bridgeLocal(b, x, z) { const dx = x - b.x, dz = z - b.z; return [dx * b.ux + dz * b.uz, -dx * b.uz + dz * b.ux]; }
 function bridgeAt(x, z) {
   for (const b of BRIDGES) {
-    const along = b.dir === 'ns' ? z - b.c : x - b.c, across = b.dir === 'ns' ? x - b.x : z - b.z;
-    if (Math.abs(across) < b.hw && Math.abs(along) < (b.half || RIVER_HW + 2.5)) return b;
+    if (Math.abs(x - b.x) > b.half + b.hw || Math.abs(z - b.z) > b.half + b.hw) continue;
+    const [along, across] = bridgeLocal(b, x, z);
+    if (Math.abs(across) < b.hw && Math.abs(along) < b.half) return b;
   }
   return null;
 }
 function bridgeDeck(b, x, z) {
-  const u = (b.dir === 'ns' ? z - b.c : x - b.c) / ((b.half || RIVER_HW + 2.5) - 0.5);
-  if (b.type === 'vella') return 0.05 + 1.5 * Math.max(0, 1 - u * u);
-  if (b.type === 'park') return 0.05 + 1.0 * Math.max(0, 1 - u * u);
-  if (b.type === 'wood') return 0.12 + 0.9 * Math.max(0, 1 - u * u);
-  return 0.06;
+  const u = bridgeLocal(b, x, z)[0] / (b.half - 0.5);
+  const base = Math.max(0, lerp(b.y0 || 0, b.y1 || 0, clamp(u * 0.5 + 0.5, 0, 1)));
+  if (b.type === 'vella') return base + 0.05 + 1.5 * Math.max(0, 1 - u * u);
+  if (b.type === 'wood') return base + 0.12 + 0.9 * Math.max(0, 1 - u * u);
+  return base + 0.06;
 }
 /* altura do chan para físicas (inclúe pontes e beirarrúas) */
 function groundH(x, z) {
   const b = bridgeAt(x, z);
   if (b) return bridgeDeck(b, x, z);
-  let h = terrainH(x, z);
-  if (h === 0) h = onSidewalk(x, z) || 0;
-  return h;
+  return terrainH(x, z) + (onSidewalk(x, z) || 0);
 }
 function inRiver(x, z) { return riverDist(x, z) < RIVER_HW - 2 && !bridgeAt(x, z); }
 
-/* ---------- Beirarrúas ---------- */
-const SW_RECTS = []; // rects de beirarrúa (para chan e peóns)
-function inRoad(x, z, pad = 0) {
-  for (const r of ROADS) if (x > r.rx0 - pad && x < r.rx1 + pad && z > r.rz0 - pad && z < r.rz1 + pad) return r;
+/* ---------- Rúas e beirarrúas: consultas espaciais ---------- */
+const SW_RECTS = []; // rects de beirarrúa extra (monumentos)
+const SEGS = [];
+let ROADGRID = null;
+function initRoadGrid() {
+  ROADGRID = new Grid(32);
+  for (const r of ROADS) for (let i = 0; i < r.pts.length - 1; i++) {
+    const a = r.pts[i], b = r.pts[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-6;
+    const sg = { r, ax: a[0], az: a[1], bx: b[0], bz: b[1], ux: (b[0] - a[0]) / L, uz: (b[1] - a[1]) / L, L, s0: r.cum[i] };
+    SEGS.push(sg); const m = r.hw + r.sw + 6;
+    ROADGRID.insert(sg, Math.min(a[0], b[0]) - m, Math.min(a[1], b[1]) - m, Math.max(a[0], b[0]) + m, Math.max(a[1], b[1]) + m);
+  }
+}
+/* rúa máis próxima: { r, d (distancia ao eixe), s (lonxitude), side (+1 esquerda / -1 dereita), ux, uz } */
+const _rn2 = { r: null, d: 1e9, s: 0, side: 1, ux: 1, uz: 0, px: 0, pz: 0 };
+function nearRoad(x, z, filter) {
+  _rn2.r = null; _rn2.d = 1e9;
+  const c = ROADGRID && ROADGRID.get(x, z); if (!c) return _rn2;
+  for (const sg of c) {
+    if (filter && !filter(sg.r)) continue;
+    let t = (x - sg.ax) * sg.ux + (z - sg.az) * sg.uz; t = t < 0 ? 0 : t > sg.L ? sg.L : t;
+    const px = sg.ax + sg.ux * t, pz = sg.az + sg.uz * t, d = Math.hypot(x - px, z - pz);
+    if (d < _rn2.d) { _rn2.r = sg.r; _rn2.d = d; _rn2.s = sg.s0 + t; _rn2.ux = sg.ux; _rn2.uz = sg.uz; _rn2.px = px; _rn2.pz = pz; _rn2.side = ((x - px) * -sg.uz + (z - pz) * sg.ux) >= 0 ? 1 : -1; }
+  }
+  return _rn2;
+}
+/* ¿está o punto sobre a calzada dalgunha rúa (con marxe)? devolve a rúa */
+function inRoad(x, z, pad = 0, withPaths = false) {
+  const c = ROADGRID && ROADGRID.get(x, z); if (!c) return null;
+  for (const sg of c) {
+    const r = sg.r; if (!withPaths && (r.type === 'path' || r.type === 'track')) continue;
+    let t = (x - sg.ax) * sg.ux + (z - sg.az) * sg.uz; t = t < 0 ? 0 : t > sg.L ? sg.L : t;
+    const dx = x - sg.ax - sg.ux * t, dz = z - sg.az - sg.uz * t, lim = r.hw + pad;
+    if (dx * dx + dz * dz < lim * lim) return r;
+  }
+  return null;
+}
+/* calzada + beirarrúa */
+function inStreet(x, z, pad = 0) {
+  const c = ROADGRID && ROADGRID.get(x, z); if (!c) return null;
+  for (const sg of c) {
+    const r = sg.r; if (r.type === 'path' || r.type === 'track') continue;
+    let t = (x - sg.ax) * sg.ux + (z - sg.az) * sg.uz; t = t < 0 ? 0 : t > sg.L ? sg.L : t;
+    const dx = x - sg.ax - sg.ux * t, dz = z - sg.az - sg.uz * t, lim = r.hw + r.sw + pad;
+    if (dx * dx + dz * dz < lim * lim) return r;
+  }
   return null;
 }
 function onSidewalk(x, z) {
-  const c = G.swGrid && G.swGrid.get(x, z); if (!c) return false;
-  for (const s of c) if (x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1) return s.h || 0.15;
-  return 0;
+  if (G.swGrid) { const c = G.swGrid.get(x, z); if (c) for (const s of c) if (x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1) { if (s.obb) { const dx = x - s.x, dz = z - s.z; if (Math.abs(dx * s.c - dz * s.s) > s.hx || Math.abs(dx * s.s + dz * s.c) > s.hz) continue; } return s.h || 0.15; } }
+  const c = ROADGRID && ROADGRID.get(x, z); if (!c) return 0;
+  let on = false;
+  for (const sg of c) {
+    const r = sg.r; if (r.type === 'path' || r.type === 'track') continue;
+    let t = (x - sg.ax) * sg.ux + (z - sg.az) * sg.uz; const tt = t < 0 ? 0 : t > sg.L ? sg.L : t;
+    const d = Math.hypot(x - sg.ax - sg.ux * tt, z - sg.az - sg.uz * tt);
+    if (d < r.hw) return 0;                         // calzada doutra rúa
+    if (r.sw > 0 && d < r.hw + r.sw && t > -0.5 && t < sg.L + 0.5 && !r.bridge) on = true;
+  }
+  return on ? 0.15 : 0;
 }
 
 /* ---------- Grade espacial ---------- */
@@ -226,25 +285,43 @@ class Grid {
   }
 }
 const RSEG = new Grid(40);
-for (let i = 0; i < RIVER.length - 1; i++) { const a = RIVER[i], b = RIVER[i + 1]; RSEG.insert(i, Math.min(a[0], b[0]) - 32, Math.min(a[1], b[1]) - 32, Math.max(a[0], b[0]) + 32, Math.max(a[1], b[1]) + 32); }
-const _rn = { d: 999, px: 0, pz: 0, tx: 1, tz: 0 };
+for (let i = 0; i < RIVER.length - 1; i++) { const a = RIVER[i], b = RIVER[i + 1]; RSEG.insert(i, Math.min(a[0], b[0]) - 48, Math.min(a[1], b[1]) - 48, Math.max(a[0], b[0]) + 48, Math.max(a[1], b[1]) + 48); }
+initRoadGrid();
+const _rn = { d: 999, px: 0, pz: 0, tx: 1, tz: 0, hw: RIVER_HW };
 function riverNear(x, z) {
   const c = RSEG.get(x, z); let bd = 1e12, bi = -1, bt = 0;
   if (c) for (const i of c) { const a = RIVER[i], b = RIVER[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx * dx + dz * dz; let t = ((x - a[0]) * dx + (z - a[1]) * dz) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t; const px = a[0] + dx * t, pz = a[1] + dz * t, d = (x - px) * (x - px) + (z - pz) * (z - pz); if (d < bd) { bd = d; bi = i; bt = t; } }
   if (bi < 0) { _rn.d = 999; return _rn; }
   const a = RIVER[bi], b = RIVER[bi + 1], dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz);
-  _rn.d = Math.sqrt(bd); _rn.px = a[0] + dx * bt; _rn.pz = a[1] + dz * bt; _rn.tx = dx / L; _rn.tz = dz / L; return _rn;
+  const hw = lerp(RIVER_W[bi], RIVER_W[bi + 1], bt);
+  _rn.d = Math.sqrt(bd) - hw + RIVER_HW; _rn.hw = hw; _rn.px = a[0] + dx * bt; _rn.pz = a[1] + dz * bt; _rn.tx = dx / L; _rn.tz = dz / L; return _rn;
 }
 function riverDist(x, z) { return riverNear(x, z).d; }
 G.colGrid = new Grid(24);
 G.swGrid = new Grid(24);
 const COLLIDERS = [];
 function addBoxCol(x0, z0, x1, z1, h = 30, tag, base = -5) {
-  if (G._frame) { if (!frameAxis()) { const [cx, cz] = fpt((x0 + x1) / 2, (z0 + z1) / 2); return addCircCol0(cx, cz, Math.min(x1 - x0, z1 - z0) / 2, h, tag, base); } [x0, z0, x1, z1] = frameRect(x0, z0, x1, z1); }
+  if (G._frame) { if (!frameAxis()) { const [cx, cz] = fpt((x0 + x1) / 2, (z0 + z1) / 2); return addOBB(cx, cz, Math.abs(x1 - x0) / 2, Math.abs(z1 - z0) / 2, G._frame.rot, h, tag, base); } [x0, z0, x1, z1] = frameRect(x0, z0, x1, z1); }
   const o = { k: 'b', x0, z0, x1, z1, h, tag, base }; COLLIDERS.push(o); G.colGrid.insert(o, x0, z0, x1, z1); return o; }
+/* caixa orientada: local (lx, lz) -> mundo (x + lx·c + lz·s, z − lx·s + lz·c) */
+function addOBB(x, z, hx, hz, rot, h = 30, tag, base = -5) {
+  const c = Math.cos(rot), s = Math.sin(rot), ex = Math.abs(hx * c) + Math.abs(hz * s), ez = Math.abs(hx * s) + Math.abs(hz * c);
+  const o = { k: 'o', x, z, hx, hz, c, s, rot, h, tag, base, x0: x - ex, x1: x + ex, z0: z - ez, z1: z + ez };
+  COLLIDERS.push(o); G.colGrid.insert(o, o.x0, o.z0, o.x1, o.z1); return o;
+}
+function obbLocal(o, x, z) { const dx = x - o.x, dz = z - o.z; return [dx * o.c - dz * o.s, dx * o.s + dz * o.c]; }
 function addCircCol(x, z, r, h = 30, tag, base = -5) { [x, z] = fpt(x, z); return addCircCol0(x, z, r, h, tag, base); }
 function addCircCol0(x, z, r, h = 30, tag, base = -5) { const o = { k: 'c', x, z, r, h, tag, base }; COLLIDERS.push(o); G.colGrid.insert(o, x - r, z - r, x + r, z + r); return o; }
-function addSidewalk(x0, z0, x1, z1) { if (G._frame) [x0, z0, x1, z1] = frameRect(x0, z0, x1, z1); const s = { x0, z0, x1, z1 }; SW_RECTS.push(s); G.swGrid.insert(s, x0, z0, x1, z1); }
+function addSWRect(x0, z0, x1, z1, h = 0.15) {
+  let o;
+  if (G._frame && !frameAxis()) {
+    const [cx, cz] = fpt((x0 + x1) / 2, (z0 + z1) / 2), rot = G._frame.rot, c = Math.cos(rot), sn = Math.sin(rot), hx = Math.abs(x1 - x0) / 2, hz = Math.abs(z1 - z0) / 2;
+    const ex = Math.abs(hx * c) + Math.abs(hz * sn), ez = Math.abs(hx * sn) + Math.abs(hz * c);
+    o = { obb: true, x: cx, z: cz, hx, hz, c, s: sn, h, x0: cx - ex, x1: cx + ex, z0: cz - ez, z1: cz + ez };
+  } else { if (G._frame) [x0, z0, x1, z1] = frameRect(x0, z0, x1, z1); o = { x0, z0, x1, z1, h }; }
+  SW_RECTS.push(o); G.swGrid.insert(o, o.x0, o.z0, o.x1, o.z1); return o;
+}
+function addSidewalk(x0, z0, x1, z1) { return addSWRect(x0, z0, x1, z1, 0.15); }
 
 /* Resolve círculo vs colisores: devolve normal acumulada ou null */
 const _q = [];
@@ -265,6 +342,17 @@ function collideCircle(p, r, yLevel, out) {
         } else { nx = dx / d; nz = dz / d; pen = r - d; }
         p.x += nx * pen; p.z += nz * pen; out.x += nx; out.z += nz; out.pen = Math.max(out.pen, pen); hit = true;
       }
+    } else if (o.k === 'o') {
+      const [lx, lz] = obbLocal(o, p.x, p.z), cx = clamp(lx, -o.hx, o.hx), cz = clamp(lz, -o.hz, o.hz);
+      let dx = lx - cx, dz = lz - cz; const d2 = dx * dx + dz * dz;
+      if (d2 < r * r) {
+        let d = Math.sqrt(d2), nx, nz, pen;
+        if (d < 1e-4) { const l = lx + o.hx, rr = o.hx - lx, t = lz + o.hz, b = o.hz - lz, m = Math.min(l, rr, t, b);
+          if (m === l) { nx = -1; nz = 0; pen = l + r; } else if (m === rr) { nx = 1; nz = 0; pen = rr + r; } else if (m === t) { nx = 0; nz = -1; pen = t + r; } else { nx = 0; nz = 1; pen = b + r; } }
+        else { nx = dx / d; nz = dz / d; pen = r - d; }
+        const wx = nx * o.c + nz * o.s, wz = -nx * o.s + nz * o.c;
+        p.x += wx * pen; p.z += wz * pen; out.x += wx; out.z += wz; out.pen = Math.max(out.pen, pen); hit = true;
+      }
     } else {
       const dx = p.x - o.x, dz = p.z - o.z, d = Math.hypot(dx, dz), rr = r + o.r;
       if (d < rr && d > 1e-4) { const nx = dx / d, nz = dz / d, pen = rr - d; p.x += nx * pen; p.z += nz * pen; out.x += nx; out.z += nz; out.pen = Math.max(out.pen, pen); hit = true; }
@@ -282,6 +370,7 @@ function segBlocked(ax, az, ay, bx, bz, by) {
     for (const o of c) {
       if (o.off || y > (o.base || 0) + o.h) continue;
       if (o.k === 'b') { if (x > o.x0 - .3 && x < o.x1 + .3 && z > o.z0 - .3 && z < o.z1 + .3) return t; }
+      else if (o.k === 'o') { const [lx, lz] = obbLocal(o, x, z); if (Math.abs(lx) < o.hx + .3 && Math.abs(lz) < o.hz + .3) return t; }
       else if (Math.hypot(x - o.x, z - o.z) < o.r + .3) return t;
     }
   }
@@ -372,51 +461,57 @@ class Batch {
 /* ---------- Grafo viario (IA de tráfico e peóns) ---------- */
 const NODES = []; const nodeMap = new Map();
 function getNode(x, z) {
-  const k = Math.round(x) + ',' + Math.round(z);
+  const k = Math.round(x * 2) + ',' + Math.round(z * 2);
   let n = nodeMap.get(k); if (!n) { n = { id: NODES.length, x, z, edges: [] }; NODES.push(n); nodeMap.set(k, n); }
   return n;
 }
 function link(a, b, road) {
   if (a === b) return;
   const len = Math.hypot(b.x - a.x, b.z - a.z);
-  a.edges.push({ to: b, road, len }); b.edges.push({ to: a, road, len });
+  const e1 = { to: b, road, len }, e2 = { to: a, road, len };
+  e1.rev = e2; e2.rev = e1;
+  if (road.ow === 1) e2.wrong = true; else if (road.ow === -1) e1.wrong = true;
+  a.edges.push(e1); b.edges.push(e2);
 }
+let NODEGRID = null;
 function buildGraph() {
   for (const r of ROADS) {
-    const pts = [];
-    if (r.dir === 'ns') {
-      pts.push(r.z0, r.z1);
-      for (const o of ROADS) if (o.dir === 'ew' && r.x >= o.x0 - 1 && r.x <= o.x1 + 1 && o.z >= r.z0 - 1 && o.z <= r.z1 + 1) pts.push(o.z);
-      const s = [...new Set(pts.map(v => Math.round(v)))].sort((a, b) => a - b).filter(v => v >= r.z0 - 1 && v <= r.z1 + 1);
-      for (let i = 0; i < s.length - 1; i++) link(getNode(r.x, s[i]), getNode(r.x, s[i + 1]), r);
-    } else {
-      pts.push(r.x0, r.x1);
-      for (const o of ROADS) if (o.dir === 'ns' && r.z >= o.z0 - 1 && r.z <= o.z1 + 1 && o.x >= r.x0 - 1 && o.x <= r.x1 + 1) pts.push(o.x);
-      const s = [...new Set(pts.map(v => Math.round(v)))].sort((a, b) => a - b).filter(v => v >= r.x0 - 1 && v <= r.x1 + 1);
-      for (let i = 0; i < s.length - 1; i++) link(getNode(s[i], r.z), getNode(s[i + 1], r.z), r);
+    if (r.type === 'track') continue;
+    let prev = getNode(r.pts[0][0], r.pts[0][1]);
+    // nodos intermedios cada ≤ 30 m (a IA vai en liña recta entre nodos)
+    for (let i = 1; i < r.pts.length; i++) {
+      const a = r.pts[i - 1], b = r.pts[i], L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.ceil(L / 30));
+      for (let k = 1; k <= n; k++) { const nd = getNode(lerp(a[0], b[0], k / n), lerp(a[1], b[1], k / n)); link(prev, nd, r); prev = nd; }
     }
   }
-  // espiral
-  const spRoad = { dir: 'sp', w: 8, hw: 4, type: 'car', spiral: true };
-  let prev = getNode(SPIRAL[0][0], SPIRAL[0][1]);
-  for (let i = 1; i < SPIRAL.length; i++) { const n = getNode(SPIRAL[i][0], SPIRAL[i][1]); n.spiral = true; link(prev, n, spRoad); prev = n; }
-  G.castleTopNode = prev;
+  NODEGRID = new Grid(40);
+  for (const n of NODES) NODEGRID.insert(n, n.x, n.z, n.x, n.z);
+  const gate = G.castleGate || HILL;
+  G.castleTopNode = nearestNode(gate.x, gate.z, n => n.edges.some(e => e.road.type === 'car'));
 }
+const _nq = [];
 function nearestNode(x, z, filter) {
-  let best = null, bd = 1e9;
-  for (const n of NODES) { if (filter && !filter(n)) continue; const d = (n.x - x) ** 2 + (n.z - z) ** 2; if (d < bd) { bd = d; best = n; } }
+  let best = null, bd = 1e18;
+  for (let rad = 40; rad <= 2600 && !best; rad *= 2) {
+    if (!NODEGRID) break;
+    NODEGRID.query(x, z, rad, _nq);
+    for (const n of _nq) { if (filter && !filter(n)) continue; const d = (n.x - x) ** 2 + (n.z - z) ** 2; if (d < bd) { bd = d; best = n; } }
+  }
+  if (!best) for (const n of NODES) { if (filter && !filter(n)) continue; const d = (n.x - x) ** 2 + (n.z - z) ** 2; if (d < bd) { bd = d; best = n; } }
   return best;
 }
-/* camiño máis curto (Dijkstra simple) */
+/* camiño máis curto (Dijkstra con montículo binario) */
 function pathTo(a, b, carOnly = true) {
-  const dist = new Map([[a, 0]]), prev = new Map(), open = [a], done = new Set();
-  while (open.length) {
-    let bi = 0; for (let i = 1; i < open.length; i++) if (dist.get(open[i]) < dist.get(open[bi])) bi = i;
-    const n = open.splice(bi, 1)[0]; if (n === b) break; if (done.has(n)) continue; done.add(n);
+  if (!a || !b) return null;
+  const dist = new Map([[a, 0]]), prev = new Map(), heap = [[0, a]], done = new Set();
+  const push = it => { heap.push(it); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+  while (heap.length) {
+    const [d0, n] = pop(); if (done.has(n)) continue; done.add(n); if (n === b) break;
     for (const e of n.edges) {
       if (carOnly && (e.road.type !== 'car' || e.blocked)) continue;
-      const nd = dist.get(n) + e.len;
-      if (nd < (dist.has(e.to) ? dist.get(e.to) : 1e12)) { dist.set(e.to, nd); prev.set(e.to, n); open.push(e.to); }
+      const nd = d0 + e.len;
+      if (nd < (dist.has(e.to) ? dist.get(e.to) : 1e12)) { dist.set(e.to, nd); prev.set(e.to, n); push([nd, e.to]); }
     }
   }
   if (!prev.has(b) && a !== b) return null;
@@ -426,29 +521,17 @@ function pathTo(a, b, carOnly = true) {
 
 /* ---------- Zonas con nome ---------- */
 function zoneName(x, z) {
-  const dh = Math.hypot(x - HILL.x, z - HILL.z), inZ = (Z, m = 0) => x > Z.x0 - m && x < Z.x1 + m && z > Z.z0 - m && z < Z.z1 + m;
+  const dh = Math.hypot(x - HILL.x, z - HILL.z);
   if (dh < HILL.r0 + 4) return 'Castelo de San Vicente';
-  if (dh < HILL.r1) { let bi = 0, bd = 1e9; SPIRAL.forEach((p, i) => { const d = Math.hypot(p[0] - x, p[1] - z); if (d < bd) { bd = d; bi = i; } }); if (bd < 8) return bi < SPIRAL.length * 0.45 ? 'Rúa Santo Domingo' : bi < SPIRAL.length * 0.8 ? 'Rúa Falagueira' : 'Baixada de San Vicente'; return 'Monte de San Vicente'; }
-  const vb = BRIDGES.find(b => b.type === 'vella'); if (vb && Math.abs(z - vb.z) < 8 && Math.abs(x - vb.c) < RIVER_HW + 6) return 'Ponte Vella';
-  if (inZ(ZONES.cardeal, 2)) return 'Rúa do Cardeal';
-  if (inZ(ZONES.clara, 3)) return 'Mosteiro de Santa Clara';
-  if (inZ(ZONES.malecon)) return 'Paseo do Malecón';
-  if (x > -14 && x < 12 && z > -4 && z < 16) return 'Praza Dr. Goyanes';
-  if (inZ(ZONES.pinguela)) return 'Campo da Pinguela';
-  if (inPark(x, z)) return 'Parque dos Condes';
-  if (inZ(ZONES.companhia)) return 'Praza da Compañía';
-  if (inZ(ZONES.campoComp)) return 'Campo da Compañía';
-  if (inZ(ZONES.carballo)) return 'Parque Antonio Carballo';
-  if (x > 200) return z < -320 ? 'Museo do Ferrocarril' : 'Estación de Monforte';
-  if (riverDistRaw(x, z) < RIVER_HW + 8) return 'Paseo do río Cabe';
-  if (x > 197 && x < 211 && Math.abs(z + 228) < 56) return 'Praza da Estación';
-  if ((x > 130 && z < -60) || (x > 40 && z < -185)) return 'Barrio da Estación';
-  if (x > -20 && z < 0) return 'Casco Vello';
-  if (z > 240) return 'A Pinguela';
-  if (x < -40 && z > 78) return 'Rúa Cobas';
-  if (x < -150) return 'Avenida de Ourense';
-  if (x < -40) return 'Concello';
-  return 'Centro';
+  for (const Zn of G.namedZones || []) if (inPoly(x, z, Zn.p)) return Zn.n;
+  const b = bridgeAt(x, z); if (b) return b.r.name || 'Ponte sobre o Cabe';
+  const nr = nearRoad(x, z, r => !!r.name && r.type !== 'track');
+  if (nr.r && nr.d < nr.r.hw + nr.r.sw + 6) return nr.r.name;
+  if (riverDistRaw(x, z) < RIVER_HW + 10) return 'Beira do río Cabe';
+  if (dh < HILL.r1) return 'Monte de San Vicente';
+  for (const a of AREAS) if (a.n && (a.t === 'park' || a.t === 'plaza' || a.t === 'grass' || a.t === 'stadium' || a.t === 'pitch')) { const bb = a.bb || (a.bb = polyBox(a.p)); if (x > bb.x0 && x < bb.x1 && z > bb.z0 && z < bb.z1 && inPoly(x, z, a.p)) return a.n; }
+  if (nr.r && nr.d < 60) return nr.r.name;
+  return isUrban(x, z) ? 'Monforte de Lemos' : 'Val de Lemos';
 }
 
 /* ---------- Texturas procedurais ---------- */
