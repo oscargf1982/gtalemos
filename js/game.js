@@ -264,7 +264,7 @@ function setupInput() {
     if (e.code === 'KeyY') quickTravel();
     if (e.code === 'KeyI' && !G.invOpen) toggleInventory(true);
     if (e.code === 'KeyH') { if (G.player.car) G.sfx.horn(G.player.car, 1); }
-    if (e.code === 'KeyR') G.sfx.toggleRadio();
+    if (e.code === 'KeyR') radioCycle();
     if (e.code === 'KeyT') taxiShift();
     if (e.code === 'KeyV') $('hud').classList.toggle('photo');
     if (e.code === 'KeyE') interact();
@@ -315,6 +315,7 @@ function setupInput() {
   $('btnTravel').onclick = () => openTravel();
   $('hbMap').onclick = () => toggleMap(true);
   $('hbInv').onclick = e => { e.stopPropagation(); toggleInventory(); };
+  $('hbRadio').onclick = e => { e.stopPropagation(); radioCycle(); };
   $('hbTravel').onclick = () => quickTravel();
   $('btnTravelClose').onclick = () => closeTravel();
   document.querySelectorAll('[data-wp]').forEach(b => b.onclick = () => { const [x, z] = b.dataset.wp.split(',').map(Number); setWaypoint(x, z); toggleMap(false); });
