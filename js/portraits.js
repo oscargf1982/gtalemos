@@ -3,7 +3,7 @@
    GTA LEMOS 27400 · retratos en miniatura para os diálogos
    (pixel art: Iván Nogal co retrato achegado polo autor; o resto debuxados aquí)
    ========================================================== */
-const PORTRAIT_IMG = { 'Iván Nogal': 'img/ivan.png' };
+const PORTRAIT_IMG = { 'Iván Nogal': 'img/ivan.png', 'Damián Selfies': 'img/damian.png' };
 const PORTRAITS = {};
 /* rostro pixelado 32×32 → escalado sen suavizar */
 function pixelFace(o) {
@@ -107,5 +107,59 @@ function ivanTalk(n) {
         { t: 'Non, grazas', fn: () => [I('Ningún problema. Se cambias de idea, aquí estarei, á beira da vía 1.')] },
       ],
     }),
+  ]);
+}
+
+/* ==========================================================
+   DAMIÁN SELFIES · fronte ao Colexio Ferroviario, sacándose fotos
+   ========================================================== */
+function spawnDamian() {
+  const [x, z] = LM.ferro.pt(-7, -6.8);
+  const n = spawnNPC({ id: 'damian', name: 'Damián Selfies', x, z, yaw: LM.ferro.yaw(Math.PI), scale: 1.0, colors: { shirt: '#1f2a5c', pants: '#18181b', skin: '#e2ae86', hair: '#2e1f17', shoe: '#eeeeea', sleeve: true } });
+  if (!n) return;
+  const phone = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.15, 0.012), std({ color: 0x15171a, roughness: 0.3, metalness: 0.6 })); G.scene.add(phone); n.phone = phone;
+  const flash = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff })); flash.visible = false; G.scene.add(flash); n.flash = flash;
+  repaintArms(n.p, '#1f2a5c');
+  // escudo do colexio no peito da sudadeira
+  const lc = cnv(128, 64), lx = lc.getContext('2d'); lx.fillStyle = '#1f2a5c'; lx.fillRect(0, 0, 128, 64); lx.fillStyle = '#f4f4f0'; lx.textAlign = 'center'; lx.font = '700 15px Barlow, sans-serif'; lx.fillText('C. FERROVIARIO', 64, 18); lx.strokeStyle = '#f4f4f0'; lx.lineWidth = 2; lx.strokeRect(52, 24, 24, 22); lx.font = '700 11px Barlow, sans-serif'; lx.fillText('MONFORTE', 64, 60);
+  const glasses = new THREE.Mesh(new THREE.PlaneGeometry(0.13, 0.065), std({ map: toTex(lc, false), roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -2 })); G.scene.add(glasses); n.glasses = glasses;
+  n.pose = 0; n.poseT = 0; n.shot = 0; n.baseYaw = LM.ferro.yaw(Math.PI);
+}
+function updateDamian(dt) {
+  const n = NPCS.find(q => q.id === 'damian'); if (!n) return;
+  const p = n.p, me = G.player.ped;
+  n.poseT -= dt;
+  if (p.talking) { p.yaw += angDiff(p.yaw, Math.atan2(me.x - p.x, me.z - p.z)) * Math.min(1, dt * 4); p.armUp = 0.25; p.wave = false; }
+  else {
+    if (n.poseT <= 0) { n.pose = (n.pose + 1) % 4; n.poseT = RR(1.6, 3); n.shot = RR(0.4, 1.2); }
+    // de costas ao colexio co móbil en alto; cambia de pose: sorriso, perfil, morriña, ferroviario ao fondo
+    const yawT = n.baseYaw + [0, 0.5, -0.45, 0.15][n.pose];
+    p.yaw += angDiff(p.yaw, yawT) * Math.min(1, dt * 3);
+    p.armUp = lerp(p.armUp || 0, 0.95, dt * 5); p.wave = n.pose === 3; p.look = [0, -0.3, 0.3, 0][n.pose]; p.nod = n.pose === 2 ? -0.15 : 0.05;
+    n.shot -= dt; if (n.shot <= 0 && n.shot > -0.1) { n.flash.visible = true; } else n.flash.visible = false;
+  }
+  // móbil na man dereita, diante da cara
+  const sc = p.scale, yaw = p.yaw, fx = Math.sin(yaw), fz = Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw), up = p.talking ? 0.6 : 1;
+  const hx = p.x + fx * 0.42 * up - rx * 0.12, hz = p.z + fz * 0.42 * up - rz * 0.12, hy = p.y + (p.talking ? 1.05 : 1.82) * sc;
+  n.phone.position.set(hx, hy, hz); n.phone.rotation.set(-0.2, yaw + Math.PI, 0);
+  n.flash.position.set(hx - fx * 0.01, hy + 0.05, hz - fz * 0.01);
+  n.glasses.position.set(p.x + fx * 0.135 * sc + rx * 0.07, p.y + 1.42 * sc, p.z + fz * 0.135 * sc + rz * 0.07); n.glasses.rotation.set(0, yaw, 0); // escudo da sudadeira
+}
+function damianTalk(n) {
+  const D = t => ({ who: 'Damián Selfies', text: t });
+  const h = G.hour % 24, night = h < 7.5 || h > 20.5;
+  // "parte" do tempo no xogo: temperatura aproximada segundo a hora e a chuvia
+  const tNow = Math.round((G.rain ? 11 : 16) + 8 * Math.sin((h - 9) / 24 * Math.PI * 2) * (G.rain ? 0.5 : 1));
+  const now = G.rain ? `Agora mesmo chove, uns ${tNow} graos. A luz é horrible para as fotos, pero o reflexo no chan mola.` : night ? `Agora fai uns ${tNow} graos e xa é de noite: fotos con flash e a fachada iluminada, top.` : `Agora fai uns ${tNow} graos e hai boa luz. Hoxe saen fotos de dez!`;
+  openDialog([
+    D('Espera, espera... unha máis... perfecta! Ola! Son Damián Selfies, xa me coñecerás polas redes. Fotografío Monforte todos os días.'),
+    D('Queres saber que tempo fai aquí? Para un fotógrafo o clima é todo.'),
+    D(now),
+    D('Monforte está no fondo do val de Lemos, rodeado de montes. Por iso o clima é máis extremo ca no resto de Galicia: algo así como atlántico, pero cun toque continental.'),
+    D('No verán fai moita calor: en xullo e agosto pásanse con facilidade os 35 graos á tarde, e chove pouquiño. Ideal para as viñas da Ribeira Sacra, mal para o meu cabelo.'),
+    D('No inverno as mañás son xeadas, con xeadas brancas moitos días, e en outono e inverno o val énchese de brétema. Hai mañás en que só sobresae o Castelo de San Vicente por riba da néboa. Esa foto é a miña favorita!'),
+    D('Chove bastante menos ca na costa, e sobre todo entre outubro e abril. Así que se ves nubes negras ao chegar o outono, garda o móbil.'),
+    D('E o mellor momento para fotos? Primavera e outono, coas viñas de cores. E agora, sorrí: selfie contigo para as miñas historias!'),
+    () => { n.shot = 0.05; if (!save.damianSelfie) { save.damianSelfie = true; persist(); toast('Saíches nas historias de Damián Selfies (+15 seguidores)', 3.5); } },
   ]);
 }

@@ -13,11 +13,11 @@ const FENER = { yellow: '#f2cf12', navy: '#132a54' };
 
 /* letreiro flotante co nome */
 function nameSprite(text, color = '#f2a33a') {
-  const c = cnv(256, 96), x = c.getContext('2d');
+  const W = text.length > 9 ? 512 : 256, c = cnv(W, 96), x = c.getContext('2d');
   x.font = '800 54px "Big Shoulders Display", "Arial Narrow", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.lineWidth = 10; x.strokeStyle = 'rgba(10,12,14,.85)'; x.strokeText(text, 128, 50); x.fillStyle = color; x.fillText(text, 128, 50);
+  x.lineWidth = 10; x.strokeStyle = 'rgba(10,12,14,.85)'; x.strokeText(text, W / 2, 50); x.fillStyle = color; x.fillText(text, W / 2, 50);
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: toTex(c, false), depthTest: false, transparent: true }));
-  s.scale.set(1.9, 0.72, 1); s.renderOrder = 10; return s;
+  s.scale.set(1.9 * W / 256, 0.72, 1); s.renderOrder = 10; return s;
 }
 function bubbleSprite() {
   const c = cnv(96, 96), x = c.getContext('2d');
@@ -56,6 +56,7 @@ function spawnStoryNPCs() {
   const juse = NPCS.find(n => n.id === 'emre'); if (juse) { repaintArms(juse.p, '#d4202b'); addCheckerShirt(juse); }
   spawnSpasic();
   spawnIvan();
+  spawnDamian();
 }
 function wearFener(p) { p.col.shirt = FENER.yellow; world.crowd.paint(p); repaintArms(p, FENER.navy); }
 
@@ -127,6 +128,7 @@ function talkTo(n) {
   if (n.id === 'spasic') return talkSpasic(n);
   if (n.id === 'mayor') return talkMayor(n);
   if (n.id === 'ivan') return ivanTalk(n);
+  if (n.id === 'damian') return damianTalk(n);
   const q = G.quest;
   if (n.id === 'pacho') {
     const hola = P('Que pasa, chorbo! Aúpa Depor!');
@@ -230,6 +232,7 @@ function updateStory(dt) {
   const n = nearNPC();
   if (n && !G.dialog) setPrompt(`${isTouch ? '★' : 'E'} · Falar con ${n.name}`);
   updateSpasic(dt);
+  updateDamian(dt);
   // obxectivo no HUD se non hai outra misión
   if (!G.mission && !(q.state === 'go' || q.state === 'return')) spasicObjective(dt);
   if (!G.mission && (q.state === 'go' || q.state === 'return')) {
