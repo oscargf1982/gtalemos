@@ -191,6 +191,9 @@ button, select { font: inherit; }
 .ft-m { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-family: var(--hud); font-size: 14px; color: var(--sodium); font-variant-numeric: tabular-nums; }
 #fade { position: fixed; inset: 0; z-index: 34; background: #000; opacity: 0; pointer-events: none; transition: opacity .6s ease; }
 #fade.on { opacity: 1; }
+#skipIntro { position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); bottom: max(18px, env(safe-area-inset-bottom, 0px)); z-index: 36; font: 700 15px 'Barlow Condensed', sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #f2ecdc; background: #15191dcc; border: 1px solid #f2ecdc55; border-radius: 6px; padding: 10px 16px; cursor: pointer; }
+#skipIntro kbd { font: inherit; opacity: .7; margin-left: 6px; }
+@media (pointer: coarse) { #skipIntro kbd { display: none; } }
 #hud.cine > *:not(#big):not(#toast) { opacity: 0; transition: opacity .3s; }
 #rotate { display: none; }
 @media (pointer: coarse) and (orientation: portrait) { body.playing #rotate { display: grid; place-content: center; text-align: center; position: fixed; inset: 0; z-index: 60; background: #0d1013f0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); } #rotate .wordmark { font-size: 80px; color: var(--sodium); } #rotate p { font-family: var(--hud); font-size: 20px; letter-spacing: .04em; } }
@@ -285,6 +288,7 @@ button, select { font: inherit; }
   <div id="travelList"></div>
 </div></div>
 <div id="fade"></div>
+<button id="skipIntro" type="button" hidden>Saltar intro <kbd>Espazo</kbd></button>
 <div id="touch" hidden>
   <div id="joy"><div id="joyKnob"></div></div>
   <div class="tbtop"><button class="tb" id="tbPause">❚❚</button><button class="tb" id="tbMap">⌖</button><button class="tb" id="tbCam">◉</button></div>

@@ -198,7 +198,7 @@ function spawnActors() {
   const RESERVE = 84; // veciños extra para obreiros, ciclistas, manifestación e feira
   world.crowd = new Crowd(scene, QS.peds + 1 + RESERVE);
   const pp = world.crowd.add({ state: 'player', colors: { shirt: '#7a1f3d', pants: '#22324d', skin: '#e9bc98', hair: '#2a1d14', shoe: '#efefef', sleeve: false } });
-  { const [sx, sz] = LM.compOld(35, 100); pp.x = sx; pp.z = sz; pp.yaw = LM.comp.yaw(0); } pp.y = groundH(pp.x, pp.z); pp.scale = 1.02; G.player.ped = pp;
+  pp.x = G.startPos.x; pp.z = G.startPos.z; pp.yaw = G.startPos.yaw; pp.y = groundH(pp.x, pp.z); pp.scale = 1.02; G.player.ped = pp;
   // coche do xogador aparcado ao lado
   const start = (() => { const sp = G.startCar; return spawnVehicle('clasico', sp.x, sp.z, sp.yaw, '#6a1522'); })(); start.sleep = true;
   // aparcados
@@ -247,8 +247,10 @@ function setupInput() {
     if (e.repeat) { keys[e.code] = true; return; }
     keys[e.code] = true;
     if (!G.started) return;
+    if (G.cine && G.cine.intro && !G.paused && e.code === 'Escape') { skipIntro(); e.preventDefault(); return; }
     if (e.code === 'Escape' || e.code === 'KeyP') { togglePause(); e.preventDefault(); }
     if (G.paused) return;
+    if (G.cine && G.cine.intro) { if (['Space', 'Enter', 'Escape', 'KeyE', 'KeyF'].includes(e.code)) skipIntro(); return; }
     if (G.cine) return;
     if (!$('travel').hidden) { if (e.code === 'Escape') closeTravel(); return; }
     if (G.dialog) { if (['Space', 'KeyE', 'Enter', 'KeyF'].includes(e.code)) { dialogAdvance(); e.preventDefault(); } const m = /^Digit([1-3])$/.exec(e.code) || /^Numpad([1-3])$/.exec(e.code); if (m) choose(+m[1] - 1); return; }
@@ -298,6 +300,7 @@ function setupInput() {
   hold('tbHorn', () => { if (G.player.car) G.sfx.horn(G.player.car, 1); }); hold('tbCam', () => cycleCam()); hold('tbMap', () => toggleMap()); hold('tbPause', () => togglePause()); hold('tbAct', () => { if (G.player.car && G.player.car.type === 'taxi') taxiShift(); else interact(); });
   // botóns do menú
   $('btnPlay').onclick = startGame;
+  $('skipIntro').onclick = e => { e.stopPropagation(); skipIntro(); };
   $('dialog').addEventListener('click', () => dialogAdvance()); $('btnResume').onclick = () => togglePause(false);
   $('optQuality').onchange = e => { try { localStorage.setItem('lemosQ', e.target.value); } catch (er) { } $('qNote').hidden = false; };
   $('optTime').onchange = e => { G.hour = +e.target.value; envTimer = 0; lastEnvHour = -99; };
@@ -911,11 +914,9 @@ function startGame() {
   if (!G.started) {
     G.started = true; G.paused = false; document.body.classList.add('playing'); $('menu').classList.add('ingame'); $('menu').hidden = true; $('hud').hidden = false; if (isTouch) $('touch').hidden = false;
     G.hour = +$('optTime').value; G.rain = $('optRain').value === 'rain';
-    camYaw = Math.PI; camPitch = 0.22;
+    camYaw = G.startPos.yaw + Math.PI; camPitch = 0.22;
     renderStars();
-    setTimeout(() => toast('Benvido á Praza da Compañía. Pacho, o do "!" diante do colexio, quere falar contigo.', 5.5), 600);
-    setTimeout(() => { if (G._worksIntro) toast(G._worksIntro, 5); }, 11800);
-    setTimeout(() => toast(isTouch ? 'A túa berlina clásica granate está aparcada na avenida, ás túas costas (⇅ para subir)' : 'A túa berlina clásica granate está aparcada na avenida, ás túas costas (F para subir)', 5), 6200);
+    startArrivalIntro();
   } else togglePause(false);
 }
 function togglePause(force) {

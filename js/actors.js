@@ -740,8 +740,8 @@ class Train {
     switch (this.state) {
       case 'away': this.timer -= dt; if (this.timer <= 0) { this.dir = R() < 0.5 ? 1 : -1; this.s = S0 - this.dir * 700; this.v = 24; this.state = 'arriving'; if (G.sfx) G.sfx.trainHorn(this); } break;
       case 'arriving': {
-        const dist = (S0 - this.s) * this.dir; const vT = Math.sqrt(Math.max(0, 2 * 0.55 * dist));
-        this.v = Math.min(this.v, vT); if (dist < 0.3) { this.v = 0; this.state = 'stopped'; this.timer = this.holdTime || 30; this.holdTime = 0; }
+        const dist = (S0 - this.s) * this.dir; const vT = Math.sqrt(Math.max(0, 2 * (this.decel || 0.55) * dist));
+        this.v = Math.min(this.v, vT); if (dist < 0.3) { this.v = 0; this.decel = 0; this.state = 'stopped'; this.timer = this.holdTime || 30; this.holdTime = 0; }
         break;
       }
       case 'stopped': this.timer -= dt; if (this.timer <= 0) { this.state = 'departing'; if (G.sfx) G.sfx.trainHorn(this); if (G.onTrainDepart) G.onTrainDepart(); } break;

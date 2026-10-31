@@ -69,6 +69,7 @@ function placeYepes(x, z, yaw, rider) {
 }
 function updateCine(dt) {
   const C = G.cine; if (!C) return false;
+  if (C.intro) return updateIntro(dt);
   C.t += dt;
   const me = G.player.ped;
   if (C.phase === 'arrive') {
@@ -100,6 +101,7 @@ function updateCine(dt) {
 }
 function cineCamera(dt) {
   const C = G.cine, me = G.player.ped;
+  if (C.intro) return introCamera(dt);
   const fx = Math.sin(C.yaw), fz = Math.cos(C.yaw), sx = Math.cos(C.yaw), sz = -Math.sin(C.yaw);
   const focus = C.phase === 'arrive' ? { x: (me.x + C.pos.x) / 2, z: (me.z + C.pos.z) / 2 } : C.pos || C.stop;
   const tgt = new THREE.Vector3(focus.x + sx * 6.5 - fx * 2.5, groundH(focus.x, focus.z) + 2.4, focus.z + sz * 6.5 - fz * 2.5);
@@ -109,4 +111,64 @@ function cineCamera(dt) {
   C.look.lerp(new THREE.Vector3(focus.x, groundH(focus.x, focus.z) + 1.2, focus.z), 1 - Math.pow(0.01, dt));
   camera.lookAt(C.look);
   camera.fov = lerp(camera.fov, 55, dt * 2); camera.updateProjectionMatrix();
+}
+
+/* ==========================================================
+   Chegada en tren á estación (cinemática de inicio, saltable)
+   ========================================================== */
+function startArrivalIntro() {
+  const tr = world.train, me = G.player.ped;
+  tr.state = 'arriving'; tr.dir = 1; tr.s = tr.stopS - 330; tr.v = 24; tr.decel = 1.7; tr.holdTime = 22; tr.place();
+  me.visible = false;
+  G.cine = { intro: true, t: 0, phase: 'train', look: new THREE.Vector3(tr.x, 3, tr.z) };
+  $('hud').classList.add('cine'); $('skipIntro').hidden = false;
+  if (G.sfx.trainHorn) G.sfx.trainHorn(tr);
+  bigMsg('MONFORTE DE LEMOS', 'Rexional procedente de Ourense · vía 1');
+}
+function endIntro() {
+  const me = G.player.ped, p = G.startPos;
+  me.x = p.x; me.z = p.z; me.y = groundH(p.x, p.z); me.yaw = p.yaw; me.visible = true;
+  camYaw = p.yaw + Math.PI; camPitch = 0.22; camIdle = 0; camera._init = 0;
+  G.cine = null; $('hud').classList.remove('cine'); $('skipIntro').hidden = true; $('fade').classList.remove('on');
+  setTimeout(() => toast('Benvido a Monforte! Pacho espérate na Praza da Compañía: está marcado no GPS.', 5.5), 400);
+  setTimeout(() => toast(isTouch ? 'A túa berlina clásica granate está aparcada aí diante, na Praza da Estación (⇅ para subir)' : 'A túa berlina clásica granate está aparcada aí diante, na Praza da Estación (F para subir)', 5), 6200);
+  setTimeout(() => { if (G._worksIntro) toast(G._worksIntro, 5); }, 11800);
+  const pa = NPCS.find(n => n.id === 'pacho'); if (pa && G.quest.state === 'none') setWaypoint(pa.p.x, pa.p.z);
+}
+function skipIntro() {
+  const C = G.cine; if (!C || !C.intro) return;
+  const tr = world.train; if (tr.state === 'arriving') { tr.s = tr.stopS; tr.v = 0; tr.state = 'stopped'; tr.timer = 15; tr.decel = 0; tr.place(); }
+  endIntro();
+}
+function updateIntro(dt) {
+  const C = G.cine, tr = world.train; C.t += dt;
+  if (C.phase === 'train' && tr.state === 'stopped') { C.phase = 'doors'; C.t = 0; }
+  else if (C.phase === 'doors') {
+    if (C.t > 1.6 && !C.faded) { C.faded = true; $('fade').classList.add('on'); }
+    if (C.t > 2.4) { C.phase = 'out'; C.t = 0; const me = G.player.ped, p = G.startPos; me.x = p.x; me.z = p.z; me.y = groundH(p.x, p.z); me.yaw = p.yaw; me.visible = true; $('fade').classList.remove('on'); }
+  } else if (C.phase === 'out') {
+    // o xogador sae da estación cara á praza
+    const me = G.player.ped; me.x += Math.sin(me.yaw) * 1.2 * dt; me.z += Math.cos(me.yaw) * 1.2 * dt; me.y = groundH(me.x, me.z); me.walk = 1; me.phase += dt * 5;
+    if (C.t > 2.6) { me.walk = 0; G.startPos = { x: me.x, z: me.z, yaw: me.yaw }; endIntro(); }
+  }
+  if (C.t > 40) skipIntro();
+  return true;
+}
+function introCamera(dt) {
+  const C = G.cine, tr = world.train, F = LM.station;
+  let tgt, look;
+  if (C.phase === 'train' || C.phase === 'doors') {
+    // cámara fixa no andén 1, do lado polo que entra o tren
+    if (C.sgn === undefined) { const a = tr.at(tr.stopS - 80); C.sgn = F.inv(a.x, a.z)[1] < 0 ? -1 : 1; }
+    const [cx, cz] = F.pt(339.5, C.sgn * 32);
+    tgt = new THREE.Vector3(cx, 2.6, cz);
+    look = new THREE.Vector3(tr.x, 2.2, tr.z);
+  } else {
+    const me = G.player.ped;
+    tgt = new THREE.Vector3(me.x + Math.sin(me.yaw) * 7 + Math.cos(me.yaw) * 2, me.y + 2.2, me.z + Math.cos(me.yaw) * 7 - Math.sin(me.yaw) * 2);
+    look = new THREE.Vector3(me.x, me.y + 1.4, me.z);
+  }
+  if (!C.camInit || C.phase !== C.lastPhase) { camera.position.copy(tgt); C.look.copy(look); C.camInit = true; C.lastPhase = C.phase; }
+  camera.position.lerp(tgt, 1 - Math.pow(0.05, dt)); C.look.lerp(look, 1 - Math.pow(0.02, dt));
+  camera.lookAt(C.look); camera.fov = lerp(camera.fov, 50, dt * 2); camera.updateProjectionMatrix();
 }

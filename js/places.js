@@ -484,8 +484,10 @@ function onRoad(x, z) { const nr = nearRoad(x, z, r => r.type === 'car' && r.cls
 function initPlaces() {
   const co = LM.compOld, so = LM.stationOld, V = LM.vella, cd = LM.cardeal, M = LM.malecon, pc = LM.parkC;
   G.stationStop = (([x, z]) => ({ x, z }))(LM.station.pt(348.5, 0));
+  // chegada en tren: o xogador sae á Praza da Estación
+  { const [x, z] = LM.station.pt(314, 6); G.startPos = { x, z, yaw: LM.station.yaw(-Math.PI / 2) }; }
   // coche do xogador aparcado na rúa máis próxima á praza
-  { const [x, z] = co(35, 80); G.startCar = roadSide(x, z, 1.15); }
+  { const [x, z] = LM.station.pt(292, 34); G.startCar = roadSide(x, z, 1.15); G.startPos.yaw = Math.atan2(G.startCar.x - G.startPos.x, G.startCar.z - G.startPos.z); }
   // parada de taxis diante da estación
   { const [a, b] = LM.station.pt(312, -22), [c, d] = LM.station.pt(312, -29); G.taxiStand = [{ x: a, z: b, yaw: LM.station.yaw(Math.PI) }, { x: c, z: d, yaw: LM.station.yaw(Math.PI) }]; }
   const vW = { x: V.x - V.ux * (V.half + 6), z: V.z - V.uz * (V.half + 6) }, vE = { x: V.x + V.ux * (V.half + 6), z: V.z + V.uz * (V.half + 6) };
