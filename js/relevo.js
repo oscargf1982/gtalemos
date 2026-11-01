@@ -76,7 +76,7 @@ function relevoInit() {
   });
 }
 /* xeometría chan e grande (prazas, parques, lousas): subdivídese para que siga o relevo en vez de cortalo en liña recta */
-function relevoTess(g, maxLen = 5, scale = 1) {
+function relevoTess(g, maxLen = 6, scale = 1) {
   if (typeof RELEVO_DATA === 'undefined' || g.userData.noTess) return g;
   const P = g.attributes.position; if (!P || P.count < 3) return g;
   const a = P.array; let y0 = 1e9, y1 = -1e9, x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
@@ -84,15 +84,42 @@ function relevoTess(g, maxLen = 5, scale = 1) {
   if ((y1 - y0) * scale > 2 || Math.max(x1 - x0, z1 - z0) * scale <= maxLen) return g;
   const idx = g.index ? g.index.array : null, nT = (idx ? idx.length : P.count) / 3;
   const atts = Object.keys(g.attributes).filter(k => ['position', 'normal', 'uv', 'color'].includes(k)).map(k => ({ k, A: g.attributes[k], s: g.attributes[k].itemSize, out: [] }));
-  let any = false;
+  // bisección pola aresta máis longa: as tiras finas (carrís, bordos) só se cortan ao longo, as prazas en malla
+  let any = false; const ns = atts.map(at => at.s);
+  const vert = i => atts.map(at => { const A = at.A.array, s = at.s, o = []; for (let c = 0; c < s; c++) o.push(A[i * s + c]); return o; });
+  const mid = (p, q) => p.map((arr, k) => arr.map((v, c) => (v + q[k][c]) / 2));
+  const hl = (p, q) => Math.hypot(p[0][0] - q[0][0], p[0][2] - q[0][2]) * scale;
+  const emit = v => atts.forEach((at, k) => { for (const x of v[k]) at.out.push(x); });
   for (let t = 0; t < nT; t++) {
     const i0 = idx ? idx[t * 3] : t * 3, i1 = idx ? idx[t * 3 + 1] : t * 3 + 1, i2 = idx ? idx[t * 3 + 2] : t * 3 + 2;
-    const L = Math.max(Math.hypot(a[i0 * 3] - a[i1 * 3], a[i0 * 3 + 2] - a[i1 * 3 + 2]), Math.hypot(a[i1 * 3] - a[i2 * 3], a[i1 * 3 + 2] - a[i2 * 3 + 2]), Math.hypot(a[i2 * 3] - a[i0 * 3], a[i2 * 3 + 2] - a[i0 * 3 + 2])) * scale;
-    const n = Math.min(24, Math.max(1, Math.ceil(L / maxLen))); if (n > 1) any = true;
-    const emit = (u, v) => { const w = 1 - u - v; for (const at of atts) { const A = at.A.array, s = at.s; for (let c = 0; c < s; c++) at.out.push(A[i0 * s + c] * w + A[i1 * s + c] * u + A[i2 * s + c] * v); } };
-    for (let r = 0; r < n; r++) for (let q = 0; q < n - r; q++) {
-      emit(q / n, r / n); emit((q + 1) / n, r / n); emit(q / n, (r + 1) / n);
-      if (q < n - r - 1) { emit((q + 1) / n, r / n); emit((q + 1) / n, (r + 1) / n); emit(q / n, (r + 1) / n); }
+    const stk = [[vert(i0), vert(i1), vert(i2)]];
+    while (stk.length) {
+    const V = stk.pop();
+    const e = [hl(V[1], V[2]), hl(V[2], V[0]), hl(V[0], V[1])], L = Math.max(...e), sh = Math.min(...e);
+    if (L <= maxLen) { emit(V[0]); emit(V[1]); emit(V[2]); continue; }
+    any = true;
+    const lerpV = (p, q, f) => p.map((arr, k) => arr.map((v, c) => v + (q[k][c] - v) * f));
+    const kL = e.indexOf(L), ar = Math.abs((V[1][0][0] - V[0][0][0]) * (V[2][0][2] - V[0][0][2]) - (V[2][0][0] - V[0][0][0]) * (V[1][0][2] - V[0][0][2])) * scale * scale, alt = ar / L;
+    if (sh > maxLen && alt <= maxLen) { // agulla obtusa: pártese polo pé da altura
+      const O = V[kL], P0 = V[(kL + 1) % 3], Q0 = V[(kL + 2) % 3], dx = Q0[0][0] - P0[0][0], dz = Q0[0][2] - P0[0][2];
+      const f = clamp(((O[0][0] - P0[0][0]) * dx + (O[0][2] - P0[0][2]) * dz) / (dx * dx + dz * dz || 1), 0.05, 0.95), M = lerpV(P0, Q0, f);
+      stk.push([O, P0, M], [O, M, Q0]); continue;
+    }
+    if (sh <= maxLen) { // agulla: tira dende o lado curto ata o vértice oposto
+      const k = e.indexOf(sh), A = V[k], P0 = V[(k + 1) % 3], Q0 = V[(k + 2) % 3], n = Math.min(60, Math.ceil(L / maxLen));
+      for (let j = 0; j < n; j++) {
+        const p0 = lerpV(P0, A, j / n), q0 = lerpV(Q0, A, j / n), p1 = lerpV(P0, A, (j + 1) / n), q1 = lerpV(Q0, A, (j + 1) / n);
+        emit(p0); emit(q0); emit(p1);
+        if (j < n - 1) { emit(q0); emit(q1); emit(p1); }
+      }
+    } else { // triángulo grande: malla regular
+      const n = Math.min(24, Math.ceil(L / maxLen));
+      for (let r = 0; r < n; r++) for (let q = 0; q < n - r; q++) {
+        const P = (u, v) => V[0].map((arr, kk) => arr.map((x, c) => x * (1 - u - v) + V[1][kk][c] * u + V[2][kk][c] * v));
+        emit(P(q / n, r / n)); emit(P((q + 1) / n, r / n)); emit(P(q / n, (r + 1) / n));
+        if (q < n - r - 1) { emit(P((q + 1) / n, r / n)); emit(P((q + 1) / n, (r + 1) / n)); emit(P(q / n, (r + 1) / n)); }
+      }
+    }
     }
   }
   if (!any) return g;
@@ -135,6 +162,8 @@ gl_Position = projectionMatrix * mvPosition;`);
     const g = o.geometry; if (g.boundingSphere === null) g.computeBoundingSphere();
     sp.copy(g.boundingSphere).applyMatrix4(o.matrixWorld);
     if (RELEVO.on && !(o.material && o.material.userData && o.material.userData.noRelief)) { sp.center.y += relH(sp.center.x, sp.center.z); if (sp.radius > 40) sp.radius += 40; }
+    // obxectos pequenos e lonxe da cámara non se debuxan (aforra moitas chamadas de debuxo)
+    if (sp.radius < 14 && !o.isInstancedMesh && RELEVO.cam) { const c = RELEVO.cam, dx = sp.center.x - c.x, dz = sp.center.z - c.z, lim = 170 + sp.radius * 14; if (dx * dx + dz * dz > lim * lim) return false; }
     return this.intersectsSphere(sp);
   };
   THREE.Frustum.prototype.intersectsSprite = function (s) {
@@ -152,6 +181,7 @@ function relevoBegin(scene, camera) {
   if (now - _relLightT > 2000) { _relLightT = now; _relLights = []; scene.traverse(o => { if (o.isPointLight || o.isSpotLight || o.isDirectionalLight) _relLights.push(o); }); }
   _relSaved.length = 0;
   const lift = (o, dy) => { _relSaved.push(o, o.position.y); o.position.y += dy; o.updateMatrixWorld(); };
+  RELEVO.cam = camera.position;
   lift(camera, relH(camera.position.x, camera.position.z));
   const wp = new THREE.Vector3();
   for (const l of _relLights) {

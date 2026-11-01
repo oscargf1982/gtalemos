@@ -453,8 +453,12 @@ class Batch {
     // en bloques de ~60k vértices para non pasar de índices razoables
     const meshes = []; let cur = [], cnt = 0;
     const flush = () => { if (!cur.length) return; const m = new THREE.Mesh(mergeGeos(cur), this.mat); m.castShadow = this.cast; m.receiveShadow = this.recv; scene.add(m); meshes.push(m); cur = []; cnt = 0; };
-    for (const g of this.list) { cur.push(g); cnt += g.attributes.position.count; if (cnt > 60000) flush(); }
-    flush(); this.list = []; return meshes;
+    // agrúpase por zonas de ~320 m para que a cámara (e as sombras) descarten o que non se ve
+    const T = 320, buckets = new Map();
+    for (const g of this.list) { const a = g.attributes.position.array; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (let i = 0; i < a.length; i += 3) { const x = a[i], z = a[i + 2]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (z < z0) z0 = z; if (z > z1) z1 = z; }
+      const k = (x1 - x0 > T * 1.5 || z1 - z0 > T * 1.5) ? 'big' : Math.floor((x0 + x1) / 2 / T) + ',' + Math.floor((z0 + z1) / 2 / T); let l = buckets.get(k); if (!l) buckets.set(k, l = []); l.push(g); }
+    for (const l of buckets.values()) { for (const g of l) { cur.push(g); cnt += g.attributes.position.count; if (cnt > 60000) flush(); } flush(); }
+    this.list = []; return meshes;
   }
 }
 
