@@ -36,7 +36,14 @@ function melInit() {
   const near = (x, z) => { const nr = nearRoad(x, z, r => r.type === 'car' || r.type === 'ped'); let nx = x - nr.px, nz = z - nr.pz; const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l; const d = Math.min(l, nr.r ? nr.r.hw + nr.r.sw + 0.9 : 3); return { x: nr.px + nx * d, z: nr.pz + nz * d, face: Math.atan2(-nx, -nz) }; };
   const poi = n => (typeof COMERCIOS !== 'undefined' ? COMERCIOS.find(c => c[1].includes(n)) : null);
   const f = poi('Raíces Madriñán'), d = poi('Dulce Manía');
-  MEL.farm = f ? near(f[2], f[3]) : near(-93, 375.7);
+  // farmacia: diante da parede de edificio máis próxima ao punto de OSM, mirando á rúa, coa cruz verde enriba
+  const atWall = (x, z) => { let best = null, bd = 25; for (const b of G.buildingsList || []) { if (Math.hypot(b.cx - x, b.cz - z) > 60) continue; const P = b.poly; for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length], dx = c[0] - a[0], dz = c[1] - a[1], L2 = dx * dx + dz * dz; if (L2 < 9) continue; const t = Math.max(0.2, Math.min(0.8, ((x - a[0]) * dx + (z - a[1]) * dz) / L2)), px = a[0] + dx * t, pz = a[1] + dz * t, d = Math.hypot(px - x, pz - z); if (d < bd) { const L = Math.sqrt(L2); let nx = -dz / L, nz = dx / L; if (inPoly(px + nx * 0.5, pz + nz * 0.5, P)) { nx = -nx; nz = -nz; } bd = d; best = { px, pz, nx, nz }; } } } return best; };
+  const fw = atWall(f ? f[2] : -93, f ? f[3] : 375.7);
+  if (fw) { MEL.farm = { x: fw.px + fw.nx * 1.1, z: fw.pz + fw.nz * 1.1, face: Math.atan2(fw.nx, fw.nz) };
+    const cr = new THREE.Group(), gm = nightMat(std({ color: 0x18a050, emissive: 0x30ff80, emissiveIntensity: 0.3, roughness: 0.4 }), 0.4, 1.6);
+    cr.add(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.3, 0.12), gm), new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.9, 0.12), gm));
+    const cx = fw.px + fw.nx * 0.5, cz = fw.pz + fw.nz * 0.5; cr.position.set(cx, groundH(cx, cz) + 3.6, cz); cr.rotation.y = Math.atan2(fw.nx, fw.nz) + Math.PI / 2; G.scene.add(cr); }
+  else MEL.farm = f ? near(f[2], f[3]) : near(-93, 375.7);
   MEL.past = d ? near(d[2], d[3]) : near(-8.2, 287.1);
 }
 function melPed(key, look) {
@@ -84,13 +91,32 @@ function updateMelenas(dt) {
     if (typeof PORTRAITS !== 'undefined') PORTRAITS['O Melenas'] = done ? 'img/melenas-face.png' : 'img/melenas-ferido.png';
     if (!G.player.car && !G.dialog && dMe(P) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Falar co Melenas`);
   } else if (MEL.sp) MEL.sp.visible = false;
-  // Valerio, o farmacéutico (bata branca)
-  if (dMe(MEL.farm) < 120) { const v = melPed('valerio', { col: { shirt: '#f4f4f2', pants: '#3a3d44', shoe: '#2a2a2a', hair: '#8a8a8a', skin: '#f0cfae', sleeve: false } });
-    if (v) { v.x = MEL.farm.x; v.z = MEL.farm.z; v.y = groundH(v.x, v.z); v.yaw = dMe(v) < 8 ? Math.atan2(me.x - v.x, me.z - v.z) : MEL.farm.face; if (!G.player.car && !G.dialog && dMe(v) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Falar con Valerio (farmacia)`); } }
+  // Valerio, o farmacéutico (sprite pixel art achegado polo autor): atlas img/valerio.png 4×3 — 0 fronte, 1 perfil dereito, 2 costas, 3 perfil esquerdo, 4-7 camiñar, 8 sinalar, 9 celebrar, 10 brazos cruzados, 11 co matraz
+  if (dMe(MEL.farm) < 160) {
+    if (!MEL.vs) { MEL.vs = melBillboard('img/valerio.png', 0.95, 1.85); MEL.npcs.valerio = { state: 'npc', x: MEL.farm.x, z: MEL.farm.z }; }
+    const V = MEL.npcs.valerio, talking = G.dialog && $('dlgName').textContent === 'Valerio', me2 = dMe(V) < 8;
+    let f = talking ? (MEL.vMood === 'ri' ? 9 : MEL.vMood === 'matraz' ? 11 : Math.floor((MEL.t || 0) / 0.9) % 2 ? 8 : 0) : me2 ? 10 : 0;
+    melBillboardUpdate(MEL.vs, V.x, V.z, f, me2 || talking ? Math.atan2(me.x - V.x, me.z - V.z) : MEL.farm.face);
+    if (typeof PORTRAITS !== 'undefined') PORTRAITS['Valerio'] = 'img/valerio-' + ({ ri: 'ri', matraz: 'chisca', enfado: 'enfado', chisca: 'chisca', sorpresa: 'sorpresa' }[MEL.vMood] || 'face') + '.png';
+    if (!G.player.car && !G.dialog && dMe(V) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Falar con Valerio (farmacia)`);
+  } else if (MEL.vs) MEL.vs.visible = false;
   // Rosiña, a pasteleira (mandil rosa)
   if (dMe(MEL.past) < 120) { const r = melPed('rosina', { female: true, scale: 0.95, col: { shirt: '#f2a6c0', pants: '#f4f0e8', shoe: '#f4f4f4', hair: '#6b4a2e', skin: '#f2d2b6', sleeve: true } });
     if (r) { r.x = MEL.past.x; r.z = MEL.past.z; r.y = groundH(r.x, r.z); r.yaw = dMe(r) < 8 ? Math.atan2(me.x - r.x, me.z - r.z) : MEL.past.face; if (!G.player.car && !G.dialog && dMe(r) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Falar con Rosiña (pastelaría)`); } }
 }
+/* cartel vertical cun atlas 4×3 que sempre mira á cámara; o fotograma depende de cara a onde mira o personaxe */
+function melBillboard(img, w, h) {
+  const tex = new THREE.TextureLoader().load(img); tex.magFilter = THREE.NearestFilter; tex.encoding = THREE.sRGBEncoding;
+  const g = new THREE.PlaneGeometry(w, h); g.translate(0, h / 2, 0);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide })); G.scene.add(m); m.userData.fr = -1; return m;
+}
+function melBillboardUpdate(M, x, z, front, face) {
+  const cam = camera.position, yawC = Math.atan2(cam.x - x, cam.z - z), rel = Math.atan2(Math.sin(face - yawC), Math.cos(face - yawC));
+  let f = front; if (Math.abs(rel) > 2.5) f = 2; else if (Math.abs(rel) > 0.8) f = rel > 0 ? 3 : 1;
+  M.visible = true; M.position.set(x, groundH(x, z), z); M.rotation.y = yawC; M.material.color.setScalar(1 - 0.5 * (G.night || 0));
+  if (M.userData.fr !== f) { M.userData.fr = f; const t = M.material.map, c = f % 4, r = Math.floor(f / 4); t.repeat.set(0.25, 1 / 3); t.offset.set(c / 4, 1 - (r + 1) / 3); }
+}
+const valMood = m => () => { MEL.vMood = m; if (typeof PORTRAITS !== 'undefined') PORTRAITS['Valerio'] = 'img/valerio-' + ({ matraz: 'chisca' }[m] || m) + '.png'; if (G.dialog && typeof setDialogFace === 'function') setDialogFace('Valerio'); };
 function melWay(o, t) { if (o) setWaypoint(o.x, o.z); if (t) toast(t, 4); }
 function melPay(n) { if (G.player.money < n) return false; G.player.money -= n; $('money').textContent = G.player.money + ' €'; return true; }
 function melInteract() {
@@ -109,13 +135,13 @@ function melInteract() {
     return true;
   }
   if (near('valerio')) {
-    if (S.step === 'farmacia') openDialog([Ti('Boas. Necesito ibuprofeno para un colega que ten un dor de cabeza tremendo.'), V('Ibuprofeno... Dor de cabeza... Non será ese rapaz das greñas que lle dá cabezazos ás portas da Duquesa de Alba?'),
-      V('Mira, fago unha cousa: véndocho, pero só se me traes uns pasteles. Levo dende as oito aquí detrás do mostrador e o estómago ruxe máis que a música do teu amigo.'), V('Na pastelaría Dulce Manía, aí ao comezo do Cardeal, teñen uns de crema que... ai. Tráeme unha caixa e falamos.'),
+    if (S.step === 'farmacia') openDialog([valMood('face'), Ti('Boas. Necesito ibuprofeno para un colega que ten un dor de cabeza tremendo.'), V('Ibuprofeno... Dor de cabeza... Non será ese rapaz das greñas que lle dá cabezazos ás portas da Duquesa de Alba?'),
+      valMood('chisca'), V('Mira, fago unha cousa: véndocho, pero só se me traes uns pasteles. Levo dende as oito aquí detrás do mostrador e o estómago ruxe máis que a música do teu amigo.'), V('Na pastelaría Dulce Manía, aí ao comezo do Cardeal, teñen uns de crema que... ai. Tráeme unha caixa e falamos.'),
       () => { melStep('pasteles'); melWay(MEL.past, 'Misión: consegue pasteles para Valerio na pastelaría'); }]);
-    else if (S.step === 'pasteles_ok') openDialog([Ti('Aquí tes a caixa de pasteles.'), V('Ai, miña nai, de crema e de froitas... e aínda quentes! Trato é trato.'), V('Aquí tes o ibuprofeno de 400. Un cada oito horas, con comida. E dille ao teu amigo que a cabeza non é unha baqueta.'),
+    else if (S.step === 'pasteles_ok') openDialog([valMood('face'), Ti('Aquí tes a caixa de pasteles.'), valMood('ri'), V('Ai, miña nai, de crema e de froitas... e aínda quentes! Trato é trato.'), valMood('matraz'), V('Aquí tes o ibuprofeno de 400. Un cada oito horas, con comida. E dille ao teu amigo que a cabeza non é unha baqueta.'),
       () => { melStep('ibuprofeno'); melWay(MEL.spot, 'Conseguiches o ibuprofeno. Volve onda o Melenas'); }]);
-    else if (S.step === 'pasteles' || S.step === 'tarta') openDialog([V('Sen pasteles non hai ibuprofeno. Son farmacéutico, pero tamén son persoa.')]);
-    else openDialog([V(pick(['Boas. Se buscas protector solar, en Monforte non che fai moita falla.', 'Farmacia de garda? Hoxe toca a do Cardeal, ou sexa, eu. Coma sempre.', 'Bébete auga, que se nota que andas moito pola rúa.']))]);
+    else if (S.step === 'pasteles' || S.step === 'tarta') openDialog([valMood('enfado'), V('Sen pasteles non hai ibuprofeno. Son farmacéutico, pero tamén son persoa.')]);
+    else openDialog([valMood('face'), V(pick(['Boas. Se buscas protector solar, en Monforte non che fai moita falla.', 'Farmacia de garda? Hoxe toca a do Cardeal, ou sexa, eu. Coma sempre.', 'Bébete auga, que se nota que andas moito pola rúa.']))]);
     return true;
   }
   if (near('rosina')) {

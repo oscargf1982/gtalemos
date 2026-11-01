@@ -406,7 +406,8 @@ function buildOSMBuildings(B, F) {
     if (!best) continue;
     const b = best.b, P = b.p, A2 = area2(P), facing = i => facingOf(P, A2, i);
     let list = [];
-    if (F.side) { // medianeira cara a un rumbo (S = sur, +z)
+    if (F.all) { for (let i = 0; i < P.length; i++) if (Math.hypot(P[(i + 1) % P.length][0] - P[i][0], P[(i + 1) % P.length][1] - P[i][1]) >= 2) list.push(i); }
+    else if (F.side) { // medianeira cara a un rumbo (S = sur, +z)
       const want = { S: [0, 1], N: [0, -1], E: [1, 0], W: [-1, 0] }[F.side]; let bi = -1, bv = 0.5;
       for (let i = 0; i < P.length; i++) { let a = P[i], c = P[(i + 1) % P.length]; if (A2 > 0) { const t = a; a = c; c = t; } const dx = c[0] - a[0], dz = c[1] - a[1], L = Math.hypot(dx, dz); if (L < 5) continue; const v = (-dz / L) * want[0] + (dx / L) * want[1]; if (v > bv) { bv = v; bi = i; } }
       if (bi >= 0) list = [bi];
