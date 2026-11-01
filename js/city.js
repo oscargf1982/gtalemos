@@ -315,6 +315,20 @@ function buildOSMBuildings(B, F) {
   const BN = new Batch(nightMat(std({ map: TEX.nave, roughness: 0.6, metalness: 0.3 }), 0, 0)), BA = new Batch(std({ map: TEX.alpendre, roughness: 0.95 }));
   const BB = new Batch(std({ map: TEX.baixo, roughness: 0.9 })), BD = new Batch(std({ map: TEX.portas, roughness: 0.7 }));
   G.useStats_portas = 0;
+  // números de portal (enderezos.js): índice espacial e atlas de placas
+  const ADR = [], AG = new Map(), akey = (x, z) => Math.floor(x / 20) + ',' + Math.floor(z / 20);
+  if (typeof ENDEREZOS !== 'undefined') for (const [x, z, n, si, e] of ENDEREZOS.a) { const o = { x: x / 10, z: z / 10, n, s: ENDEREZOS.r[si], e, used: false }; ADR.push(o); const k = akey(o.x, o.z); let l = AG.get(k); if (!l) AG.set(k, l = []); l.push(o); }
+  G.addrGrid = AG; G.addrKey = akey;
+  const labels = [...new Set(ADR.map(o => o.n))], LBI = new Map(labels.map((l, i) => [l, i]));
+  const PCOLS = 16, prow = Math.ceil(Math.max(1, labels.length) / PCOLS), PH = 1 << Math.ceil(Math.log2(Math.max(32, prow * 32)));
+  const pc = cnv(1024, PH), px = pc.getContext('2d');
+  labels.forEach((l, i) => { const ox = (i % PCOLS) * 64, oy = Math.floor(i / PCOLS) * 32;
+    px.fillStyle = '#f2f2ee'; px.fillRect(ox + 1, oy + 1, 62, 30); px.fillStyle = '#1f4f8f'; px.fillRect(ox + 4, oy + 4, 56, 24);
+    px.fillStyle = '#fff'; px.font = `bold ${l.length > 3 ? 15 : 20}px Arial`; px.textAlign = 'center'; px.textBaseline = 'middle'; px.fillText(l, ox + 32, oy + 17); });
+  const plateTex = toTex(pc, false); const BP = new Batch(nightMat(std({ map: plateTex, emissiveMap: plateTex, emissive: 0xffffff, emissiveIntensity: 0, roughness: 0.4 }), 0, 0.25));
+  const plateUV = l => { const i = LBI.get(l), ox = (i % PCOLS) * 64, oy = Math.floor(i / PCOLS) * 32; return [ox / 1024, (ox + 64) / 1024, 1 - (oy + 32) / PH, 1 - oy / PH]; };
+  const addrNear = (x0, z0, x1, z1) => { const out = []; for (let gx = Math.floor(x0 / 20); gx <= Math.floor(x1 / 20); gx++) for (let gz = Math.floor(z0 / 20); gz <= Math.floor(z1 / 20); gz++) for (const o of AG.get(gx + ',' + gz) || []) if (!o.used && o.x > x0 && o.x < x1 && o.z > z0 && o.z < z1) out.push(o); return out; };
+  G.useStats_numeros = 0;
   const shopPois = OSM.pois.filter(q => POI_LABEL[q.t]);
   G.useStats = { shop: 0, bar: 0, poi: 0, nave: 0, alpendre: 0, oficina: 0, publico: 0 };
   const signs = [];
@@ -363,7 +377,7 @@ function buildOSMBuildings(B, F) {
     // relevo: o edificio queda ríxido (horizontal) á altura do seu centro; as paredes baixan ata o chan polo lado de embaixo
     let drop = 0; if (typeof relW === 'function') { const wc = relW(cx, cz); for (const [x, z] of P) drop = Math.max(drop, wc - relW(x, z)); }
     const yb = y0 - 2 - drop;
-    const geo = { wall: { pos: [], uv: [], idx: [] }, shop: { pos: [], uv: [], idx: [] }, bar: { pos: [], uv: [], idx: [] }, baixo: { pos: [], uv: [], idx: [] }, door: { pos: [], uv: [], idx: [] } };
+    const geo = { wall: { pos: [], uv: [], idx: [] }, shop: { pos: [], uv: [], idx: [] }, bar: { pos: [], uv: [], idx: [] }, baixo: { pos: [], uv: [], idx: [] }, door: { pos: [], uv: [], idx: [] }, plate: { pos: [], uv: [], idx: [] } };
     const quad = (g, a, c, yA, yB, u0, u1, vA, vB) => { const v = g.pos.length / 3; g.pos.push(a[0], yA, a[1], c[0], yA, c[1], c[0], yB, c[1], a[0], yB, a[1]); g.uv.push(u0, vA, u1, vA, u1, vB, u0, vB); g.idx.push(v, v + 1, v + 2, v, v + 2, v + 3); };
     let acc = 0, shopEdge = null, bestL = 0, signEdge = null;
     // vivendas: planta baixa de granito con portal na fachada que dá á rúa (ou na máis longa)
@@ -371,6 +385,20 @@ function buildOSMBuildings(B, F) {
     let doorI = -1;
     if (resid) { let best = -1; for (let i = 0; i < P.length; i++) { let a = P[i], c = P[(i + 1) % P.length]; if (A2 > 0) { const t = a; a = c; c = t; } const dx = c[0] - a[0], dz = c[1] - a[1], L = Math.hypot(dx, dz); if (L < 2.2) continue;
       const px = (a[0] + c[0]) / 2 - dz / L * 3, pz = (a[1] + c[1]) / 2 + dx / L * 3, sc = L + (inStreet(px, pz, 1) || inRoad(px, pz, 1, true) ? 1000 : 0); if (sc > best) { best = sc; doorI = i; } } }
+    // portais reais do Catastro: a porta vai onde está o portal e leva o seu número
+    const doors = new Map(); let parcelNum = null;
+    if (resid && ADR.length) {
+      let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+      for (const o of addrNear(x0 - 4, z0 - 4, x1 + 4, z1 + 4)) {
+        if (o.e) { let bd = 3, bi = -1, bt = 0;
+          for (let i = 0; i < P.length; i++) { let a = P[i], c = P[(i + 1) % P.length]; if (A2 > 0) { const t = a; a = c; c = t; } const dx = c[0] - a[0], dz = c[1] - a[1], L = Math.hypot(dx, dz); if (L < 1.8) continue;
+            const tr = ((o.x - a[0]) * dx + (o.z - a[1]) * dz) / (L * L); if (tr < -0.02 || tr > 1.02) continue; const d = Math.hypot(a[0] + dx * tr - o.x, a[1] + dz * tr - o.z); if (d < bd) { bd = d; bi = i; bt = clamp(tr, 0.9 / L, 1 - 0.9 / L); } }
+          if (bi >= 0 && doors.size < 4) { o.used = true; if (!doors.has(bi)) doors.set(bi, []); doors.get(bi).push({ t: bt, n: o.n }); }
+        } else if (!parcelNum && inPoly(o.x, o.z, P)) { o.used = true; parcelNum = o.n; }
+      }
+      if (doors.size) doorI = -1;
+      else if (doorI >= 0) doors.set(doorI, [{ t: 0.5, n: parcelNum }]);
+    } else if (doorI >= 0) doors.set(doorI, [{ t: 0.5, n: null }]);
     for (let i = 0; i < P.length; i++) {
       let a = P[i], c = P[(i + 1) % P.length]; if (A2 > 0) { const t = a; a = c; c = t; } // percorrido horario: a cara frontal (esquerda) mira cara a fóra
       const dx = c[0] - a[0], dz = c[1] - a[1], L = Math.hypot(dx, dz); if (L < 0.05) continue;
@@ -386,10 +414,12 @@ function buildOSMBuildings(B, F) {
         const gt = Math.min(3.6, H);
         quad(geo.baixo, a, c, yb, y0 + gt, acc / 4, (acc + L) / 4, (yb - y0) / 3.6, gt / 3.6);
         if (H > gt + 0.3) quad(geo.wall, a, c, y0 + gt, y0 + H, fu0, fu1, 0.25, (H - 3.6) / FAC_TILE[1] + 0.25);
-        if (i === doorI) { // portal centrado, lixeiramente saído
-          const k = Math.floor((Math.abs(Math.sin(cx * 3.7 + cz * 1.3)) * 1000) % 4), dw = Math.min(1.4, L - 0.6) / 2, m0 = (L / 2 - dw) / L, m1 = (L / 2 + dw) / L;
+        for (const dr of doors.get(i) || []) { // portal (no sitio do portal real se se coñece), lixeiramente saído, coa placa do número
+          const k = Math.floor((Math.abs(Math.sin(cx * 3.7 + cz * 1.3 + dr.t * 9)) * 1000) % 4), dw = Math.min(1.4, L - 0.6) / 2, tc = clamp(dr.t * L, dw + 0.2, L - dw - 0.2), m0 = (tc - dw) / L, m1 = (tc + dw) / L;
           const pa = [a[0] + dx * m0 + ox * 0.05, a[1] + dz * m0 + oz * 0.05], pc = [a[0] + dx * m1 + ox * 0.05, a[1] + dz * m1 + oz * 0.05];
           quad(geo.door, pa, pc, y0 - 0.05, y0 + 2.6, k / 4 + 0.002, (k + 1) / 4 - 0.002, 0, 1); G.useStats_portas++;
+          if (dr.n && LBI.has(dr.n)) { const [u0, u1, v0, v1] = plateUV(dr.n), q0 = (tc - 0.2) / L, q1 = (tc + 0.2) / L;
+            quad(geo.plate, [a[0] + dx * q0 + ox * 0.07, a[1] + dz * q0 + oz * 0.07], [a[0] + dx * q1 + ox * 0.07, a[1] + dz * q1 + oz * 0.07], y0 + 2.68, y0 + 2.88, u0, u1, v0, v1); G.useStats_numeros++; }
         }
       } else quad(geo.wall, a, c, yb, y0 + H, fu0, fu1, (yb - y0) / FAC_TILE[1], H / FAC_TILE[1]);
       acc += L;
@@ -400,6 +430,7 @@ function buildOSMBuildings(B, F) {
     if (geo.bar.idx.length) { B.bar.add(toGeo(geo.bar)); G.useStats.bar++; }
     if (geo.baixo.idx.length) BB.add(toGeo(geo.baixo));
     if (geo.door.idx.length) BD.add(toGeo(geo.door));
+    if (geo.plate.idx.length) BP.add(toGeo(geo.plate));
     // rótulo co nome real (tendas de OSM)
     if (poi && signEdge) { const { a, c, ox, oz, L } = signEdge; const sx = (a[0] + c[0]) / 2 + ox * 0.08, sz = (a[1] + c[1]) / 2 + oz * 0.08; signs.push({ x: sx, z: sz, y: y0 + 3.35 + (typeof relW === 'function' ? relW(cx, cz) - relW(sx, sz) : 0), yaw: Math.atan2(ox, oz), w: Math.min(L - 0.4, 4.2), text: (poi.n || POI_LABEL[poi.t]).toUpperCase().slice(0, 26), bar: POI_BAR.has(poi.t), t: poi.t }); G.useStats.poi++; }
     // tellado
@@ -419,7 +450,7 @@ function buildOSMBuildings(B, F) {
     G.buildingsList.push({ cx, cz, poly: P, H, y0, name: b.n, use, shop: shopMode });
     if (b.n) G.namedZones.push({ n: b.n, p: P });
   }
-  BN.build(G.scene); BA.build(G.scene); BB.build(G.scene); BD.build(G.scene);
+  BN.build(G.scene); BA.build(G.scene); BB.build(G.scene); BD.build(G.scene); BP.build(G.scene);
   // rótulos (unha soa textura atlas para todos)
   if (signs.length) {
     const per = 4, rows = Math.ceil(signs.length / per), cw = 1024, rh = 64, c = cnv(cw, rows * rh), x = c.getContext('2d');

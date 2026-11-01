@@ -866,6 +866,10 @@ function updateHUD(dt) {
   if (pl.car) { $('speedo').hidden = false; $('spd').textContent = Math.round(pl.car.speed * 3.6); const hp = clamp(pl.car.health, 0, 100); $('dmg').style.transform = `scaleX(${hp / 100})`; $('dmg').classList.toggle('low', hp < 30); }
   else $('speedo').hidden = true;
   const z = zoneName(me.x, me.z); if (z !== lastZone) { lastZone = z; $('zone').textContent = z; $('zone').classList.add('show'); zoneT = 3.5; }
+  // número de portal máis próximo da rúa onde estás (enderezos do Catastro)
+  else if (G.addrGrid && !pl.car && (updateHUD._t = (updateHUD._t || 0) - dt) < 0) { updateHUD._t = 0.4;
+    let bn = null, bd = 9; for (let gx = Math.floor((me.x - 9) / 20); gx <= Math.floor((me.x + 9) / 20); gx++) for (let gz = Math.floor((me.z - 9) / 20); gz <= Math.floor((me.z + 9) / 20); gz++) for (const o of G.addrGrid.get(gx + ',' + gz) || []) { if (o.s !== z) continue; const d = Math.hypot(o.x - me.x, o.z - me.z); if (d < bd) { bd = d; bn = o.n; } }
+    const t = bn ? `${z}, ${bn}` : z; if ($('zone').textContent !== t) { $('zone').textContent = t; if (bn) { $('zone').classList.add('show'); zoneT = Math.max(zoneT, 2); } } }
   zoneT -= dt; if (zoneT < 0) $('zone').classList.remove('show');
   toastT -= dt; if (toastT < 0) $('toast').classList.remove('show');
   // indicacións de interacción
