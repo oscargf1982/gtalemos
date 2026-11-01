@@ -283,6 +283,27 @@ function useTextures() {
   TEX.nave = mk(x => { x.fillStyle = '#9aa2a8'; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 256; i += 8) { x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(i, 0, 2, 256); x.fillStyle = 'rgba(255,255,255,.12)'; x.fillRect(i + 3, 0, 2, 256); }
     x.fillStyle = '#5a6a78'; x.fillRect(0, 0, 256, 18); for (let i = 0; i < 400; i++) { x.fillStyle = `rgba(110,70,40,${RR(0.02, 0.08)})`; x.fillRect(R() * 256, 180 + R() * 76, 3, 3); }
     x.fillStyle = '#c8ccd0'; x.fillRect(150, 120, 90, 136); for (let k = 124; k < 256; k += 9) { x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(150, k, 90, 2); } x.fillStyle = '#e8e000'; x.fillRect(150, 118, 90, 4); });
+  // planta baixa de vivenda: zócalo de granito e unha xanela pequena con reixa (tesela de 4 × 3,6 m)
+  TEX.baixo = mk(x => { x.fillStyle = '#8f897d'; x.fillRect(0, 0, 256, 256);
+    for (let r = 0, k = 0; r < 256; r += 32, k++) for (let c = -(k % 2) * 40; c < 256; c += 80) { const v = RI(-12, 12); x.fillStyle = `rgb(${150 + v},${144 + v},${132 + v})`; x.fillRect(c + 2, r + 2, 76, 28); x.fillStyle = 'rgba(0,0,0,.06)'; x.fillRect(c + 2, r + 26, 76, 4); }
+    x.fillStyle = '#6f6a60'; x.fillRect(0, 0, 256, 10);                       // imposta
+    x.fillStyle = '#d8d2c4'; x.fillRect(84, 54, 88, 92);                      // cerco de pedra
+    x.fillStyle = '#26303a'; x.fillRect(94, 62, 68, 76);                      // vidro
+    x.fillStyle = 'rgba(160,190,210,.25)'; x.fillRect(96, 64, 30, 34);
+    x.fillStyle = '#1c1c1c'; for (let k = 100; k < 162; k += 10) x.fillRect(k, 62, 3, 76); x.fillRect(94, 98, 68, 3); // reixa
+    x.fillStyle = '#c9c2b2'; x.fillRect(80, 146, 96, 8); });
+  // portais: catro portas de madeira/metal nun atlas (cada unha 1,4 × 2,6 m)
+  TEX.portas = (() => { const c = cnv(256, 128), x = c.getContext('2d');
+    const cols = [['#5b3a22', '#3e2715'], ['#7a2f22', '#521d14'], ['#2f3b46', '#1d252c'], ['#6e5a3a', '#4b3c25']];
+    cols.forEach(([a, b], i) => { const ox = i * 64;
+      x.fillStyle = '#d6cfbf'; x.fillRect(ox, 0, 64, 128);                     // cerco de granito
+      x.fillStyle = a; x.fillRect(ox + 7, 10, 50, 118);
+      x.fillStyle = b; for (const [yy, hh] of [[16, 40], [62, 58]]) { x.fillRect(ox + 12, yy, 18, hh); x.fillRect(ox + 34, yy, 18, hh); }
+      x.fillStyle = 'rgba(255,255,255,.12)'; x.fillRect(ox + 7, 10, 2, 118);
+      x.fillStyle = '#c9a54a'; x.fillRect(ox + 46, 70, 4, 6);                  // manilla
+      x.fillStyle = '#e8e2d2'; x.fillRect(ox + 26, 2, 12, 7); x.fillStyle = '#334'; x.fillRect(ox + 30, 4, 4, 3); // número
+      if (i % 2) { x.fillStyle = 'rgba(30,45,60,.85)'; x.fillRect(ox + 14, 16, 36, 22); } });                 // montante de vidro
+    return toTex(c, false); })();
   TEX.alpendre = mk(x => { x.fillStyle = '#8a8070'; x.fillRect(0, 0, 256, 256); for (let r = 0; r < 256; r += 22) for (let k = -20 + (r / 22 % 2) * 20; k < 256; k += 40) { const v = RI(-14, 14); x.fillStyle = `rgb(${135 + v},${125 + v},${110 + v})`; x.fillRect(k + 2, r + 2, 36, 18); }
     x.fillStyle = '#5a3a20'; x.fillRect(90, 130, 80, 126); for (let k = 92; k < 170; k += 12) { x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(k, 130, 2, 126); } });
 }
@@ -292,6 +313,8 @@ const SHOP_STREETS = new Set(['Rúa do Doutor Casares', 'Rúa do Cardeal Rodrigo
 function buildOSMBuildings(B, F) {
   useTextures();
   const BN = new Batch(nightMat(std({ map: TEX.nave, roughness: 0.6, metalness: 0.3 }), 0, 0)), BA = new Batch(std({ map: TEX.alpendre, roughness: 0.95 }));
+  const BB = new Batch(std({ map: TEX.baixo, roughness: 0.9 })), BD = new Batch(std({ map: TEX.portas, roughness: 0.7 }));
+  G.useStats_portas = 0;
   const shopPois = OSM.pois.filter(q => POI_LABEL[q.t]);
   G.useStats = { shop: 0, bar: 0, poi: 0, nave: 0, alpendre: 0, oficina: 0, publico: 0 };
   const signs = [];
@@ -340,9 +363,14 @@ function buildOSMBuildings(B, F) {
     // relevo: o edificio queda ríxido (horizontal) á altura do seu centro; as paredes baixan ata o chan polo lado de embaixo
     let drop = 0; if (typeof relW === 'function') { const wc = relW(cx, cz); for (const [x, z] of P) drop = Math.max(drop, wc - relW(x, z)); }
     const yb = y0 - 2 - drop;
-    const geo = { wall: { pos: [], uv: [], idx: [] }, shop: { pos: [], uv: [], idx: [] }, bar: { pos: [], uv: [], idx: [] } };
+    const geo = { wall: { pos: [], uv: [], idx: [] }, shop: { pos: [], uv: [], idx: [] }, bar: { pos: [], uv: [], idx: [] }, baixo: { pos: [], uv: [], idx: [] }, door: { pos: [], uv: [], idx: [] } };
     const quad = (g, a, c, yA, yB, u0, u1, vA, vB) => { const v = g.pos.length / 3; g.pos.push(a[0], yA, a[1], c[0], yA, c[1], c[0], yB, c[1], a[0], yB, a[1]); g.uv.push(u0, vA, u1, vA, u1, vB, u0, vB); g.idx.push(v, v + 1, v + 2, v, v + 2, v + 3); };
     let acc = 0, shopEdge = null, bestL = 0, signEdge = null;
+    // vivendas: planta baixa de granito con portal na fachada que dá á rúa (ou na máis longa)
+    const resid = !nave && !alpendre && !b.look && b.b !== 'church' && b.b !== 'chapel' && use !== 6;
+    let doorI = -1;
+    if (resid) { let best = -1; for (let i = 0; i < P.length; i++) { let a = P[i], c = P[(i + 1) % P.length]; if (A2 > 0) { const t = a; a = c; c = t; } const dx = c[0] - a[0], dz = c[1] - a[1], L = Math.hypot(dx, dz); if (L < 2.2) continue;
+      const px = (a[0] + c[0]) / 2 - dz / L * 3, pz = (a[1] + c[1]) / 2 + dx / L * 3, sc = L + (inStreet(px, pz, 1) || inRoad(px, pz, 1, true) ? 1000 : 0); if (sc > best) { best = sc; doorI = i; } } }
     for (let i = 0; i < P.length; i++) {
       let a = P[i], c = P[(i + 1) % P.length]; if (A2 > 0) { const t = a; a = c; c = t; } // percorrido horario: a cara frontal (esquerda) mira cara a fóra
       const dx = c[0] - a[0], dz = c[1] - a[1], L = Math.hypot(dx, dz); if (L < 0.05) continue;
@@ -354,13 +382,24 @@ function buildOSMBuildings(B, F) {
         quad(sg, a, c, yb, y0 + 3.6, acc / SHOP_TILE[0], (acc + L) / SHOP_TILE[0], -2 / SHOP_TILE[1], 1);
         quad(geo.wall, a, c, y0 + 3.6, y0 + H, fu0, fu1, 0.25, (H - 3.6) / FAC_TILE[1] + 0.25);
         if (L > bestL) { bestL = L; signEdge = { a, c, ox, oz, L }; }
+      } else if (resid && H > 3) {
+        const gt = Math.min(3.6, H);
+        quad(geo.baixo, a, c, yb, y0 + gt, acc / 4, (acc + L) / 4, (yb - y0) / 3.6, gt / 3.6);
+        if (H > gt + 0.3) quad(geo.wall, a, c, y0 + gt, y0 + H, fu0, fu1, 0.25, (H - 3.6) / FAC_TILE[1] + 0.25);
+        if (i === doorI) { // portal centrado, lixeiramente saído
+          const k = Math.floor((Math.abs(Math.sin(cx * 3.7 + cz * 1.3)) * 1000) % 4), dw = Math.min(1.4, L - 0.6) / 2, m0 = (L / 2 - dw) / L, m1 = (L / 2 + dw) / L;
+          const pa = [a[0] + dx * m0 + ox * 0.05, a[1] + dz * m0 + oz * 0.05], pc = [a[0] + dx * m1 + ox * 0.05, a[1] + dz * m1 + oz * 0.05];
+          quad(geo.door, pa, pc, y0 - 0.05, y0 + 2.6, k / 4 + 0.002, (k + 1) / 4 - 0.002, 0, 1); G.useStats_portas++;
+        }
       } else quad(geo.wall, a, c, yb, y0 + H, fu0, fu1, (yb - y0) / FAC_TILE[1], H / FAC_TILE[1]);
       acc += L;
     }
     const toGeo = g => { const w = new THREE.BufferGeometry(); w.setAttribute('position', new THREE.Float32BufferAttribute(g.pos, 3)); w.setAttribute('uv', new THREE.Float32BufferAttribute(g.uv, 2)); w.setIndex(g.idx); w.computeVertexNormals(); return typeof relRigid === 'function' ? relRigid(w, cx, cz) : w; };
-    wallBatch.add(toGeo(geo.wall));
+    if (geo.wall.idx.length) wallBatch.add(toGeo(geo.wall));
     if (geo.shop.idx.length) { B.shop.add(toGeo(geo.shop)); G.useStats.shop++; }
     if (geo.bar.idx.length) { B.bar.add(toGeo(geo.bar)); G.useStats.bar++; }
+    if (geo.baixo.idx.length) BB.add(toGeo(geo.baixo));
+    if (geo.door.idx.length) BD.add(toGeo(geo.door));
     // rótulo co nome real (tendas de OSM)
     if (poi && signEdge) { const { a, c, ox, oz, L } = signEdge; const sx = (a[0] + c[0]) / 2 + ox * 0.08, sz = (a[1] + c[1]) / 2 + oz * 0.08; signs.push({ x: sx, z: sz, y: y0 + 3.35 + (typeof relW === 'function' ? relW(cx, cz) - relW(sx, sz) : 0), yaw: Math.atan2(ox, oz), w: Math.min(L - 0.4, 4.2), text: (poi.n || POI_LABEL[poi.t]).toUpperCase().slice(0, 26), bar: POI_BAR.has(poi.t), t: poi.t }); G.useStats.poi++; }
     // tellado
@@ -380,7 +419,7 @@ function buildOSMBuildings(B, F) {
     G.buildingsList.push({ cx, cz, poly: P, H, y0, name: b.n, use, shop: shopMode });
     if (b.n) G.namedZones.push({ n: b.n, p: P });
   }
-  BN.build(G.scene); BA.build(G.scene);
+  BN.build(G.scene); BA.build(G.scene); BB.build(G.scene); BD.build(G.scene);
   // rótulos (unha soa textura atlas para todos)
   if (signs.length) {
     const per = 4, rows = Math.ceil(signs.length / per), cw = 1024, rh = 64, c = cnv(cw, rows * rh), x = c.getContext('2d');
