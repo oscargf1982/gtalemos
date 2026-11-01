@@ -159,6 +159,26 @@ const FACHADAS = [];
     P.rect(L * 0.08, 0.7, L * 0.55, g - 1.2, '#59646a'); P.rect(L * 0.08, 0.7, L * 0.55, 0.08, '#c8692e'); for (const k of [0.27, 0.45]) P.rect(L * k, 0.7, 0.05, g - 1.2, '#cfc6b0');
     P.door(L * 0.72, 0.05, 1.0, g - 0.6, '#d8d2c2', { glass: true }); P.rect(L * 0.08, g - 0.45, L * 0.55, 0.3, '#d9c99a'); P.txt(L * 0.355, g - 0.3, 0.2, 'BAR', '#8a7a5a');
   }, { r: 14 });
+  // Duquesa de Alba 13: nave branca con zócalo vermello, portalón granate e xanelos altos (aquí dá cabezazos o Melenas)
+  add('duquesa13', ad('Rúa da Duquesa de Alba', '13'), P => {
+    const { L, H } = P, base = Math.min(1.1, H * 0.2);
+    P.rect(0, 0, L, H, '#ecebe6'); for (let i = 0; i < 40; i++) P.rect(Math.random() * L, base + Math.random() * (H - base), 0.4, 0.25, 'rgba(120,110,100,.12)');
+    P.rect(0, 0, L, base, '#b52a24'); P.rect(0, H - 0.35, L, 0.35, '#d8d6cf');
+    const gx = L * 0.5, gw = Math.min(L * 0.36, 4.4), gh = Math.min(H - 1.6, 4.3);
+    P.rect(gx, 0, gw, gh, '#8a2c3c'); for (let k = 1; k < 4; k++) P.rect(gx + gw * k / 4, 0, 0.04, gh, 'rgba(0,0,0,.18)'); P.rect(gx, gh - 0.05, gw, 0.08, '#6a1f2c');
+    P.rect(gx + gw * 0.15, gh * 0.55, 0.3, 0.3, '#f2f2ee'); P.rect(gx + gw * 0.7, gh * 0.55, 0.3, 0.3, '#f2f2ee');
+    for (let k = 0; k < 6; k++) P.win(L * 0.04 + k * L * 0.07, H - 1.5, 0.45, 0.32, { frame: '#d8d8d2', glass: '#3a4048', fw: 0.04 });
+    for (let k = 0; k < 4; k++) P.win(gx + gw + 0.5 + k * ((L - gx - gw - 0.8) / 4), H - 1.5, 0.4, 0.3, { frame: '#d8d8d2', glass: '#3a4048', fw: 0.04 });
+    P.rect(L * 0.17, base + 0.4, 1.1, 0.9, '#f4f4f0'); P.rect(L * 0.17 + 0.1, base + 1.1, 0.3, 0.15, '#6a3a8a');
+    P.rect(L * 0.32, base + 0.6, 0.45, 0.5, '#d8d8d4'); P.rect(gx + gw + 0.4, base + 0.3, 1.6, 0.9, '#c0392b');
+  }, { r: 6 });
+  // Duquesa de Alba 11: casa amarela con galerías brancas e baixo de granito
+  add('duquesa11', ad('Rúa da Duquesa de Alba', '11'), P => {
+    const { L, H } = P, g = Math.min(3.2, H * 0.3), nf = Math.max(1, Math.round((H - g) / 2.8)), fh = (H - g) / nf;
+    P.rect(0, 0, L, H, '#e7cf8a'); P.blocks(0, 0, L, g, '#a9a294', 0.9, 0.45);
+    for (let i = 0; i < nf; i++) { const y = g + i * fh; P.rect(L * 0.05, y + 0.25, L * 0.9, fh - 0.4, '#f1efe8'); for (let k = 0; k < 4; k++) { const w = L * 0.9 / 4; P.win(L * 0.05 + k * w + 0.1, y + 0.4, w - 0.2, fh - 0.75, { frame: '#f6f6f2', glass: '#6f8290', blind: '#efece4', fw: 0.07 }); } }
+    P.door(L * 0.12, 0.05, 1.6, g - 0.5, '#5a5a56', { panels: true }); P.door(L * 0.62, 0.05, 1.0, g - 0.5, '#3a3a3a', { grille: true });
+  }, { r: 6 });
   add('coruna12', ad('Rúa da Coruña', '12'), P => { // casa amarela con xanelas azuis e floreiras
     const { L, H } = P, g = H * 0.48, cr = '#f2efe6';
     P.rect(0, 0, L, H, '#e9c34e'); P.rect(0, H - 0.35, L, 0.35, cr); P.rect(0, g - 0.1, L, 0.15, cr); P.rect(0, 0, 0.3, H, cr); P.rect(L - 0.3, 0, 0.3, H, cr);

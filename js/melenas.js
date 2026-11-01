@@ -25,6 +25,9 @@ function melInit() {
       if (bl && d < bd) { bd = d; best = [X, Z, n]; } }
     if (best) { const nr = nearRoad(best[0], best[1], r => r.name === 'Rúa da Duquesa de Alba'); let wx = best[0] - nr.px, wz = best[1] - nr.pz; const l = Math.hypot(wx, wz) || 1; wx /= l; wz /= l;
       MEL.spot = { x: best[0] - wx * 0.75, z: best[1] - wz * 0.75, wall: Math.atan2(wx, wz), face: Math.atan2(-wx, -wz), num: best[2] }; } }
+  // a porta que recibe: o portalón granate da nave de Duquesa de Alba 13 (fachada singular)
+  const E = G.fachadaEdge && G.fachadaEdge.duquesa13;
+  if (E) { const gx = E.L * 0.5, gw = Math.min(E.L * 0.36, 4.4), t = gx + gw * 0.5; MEL.spot = { x: E.ax + E.ux * t + E.ox * 0.7, z: E.az + E.uz * t + E.oz * 0.7, wall: Math.atan2(-E.ox, -E.oz), face: Math.atan2(E.ox, E.oz), num: null }; }
   // a porta castigada: madeira escura con marcas de golpes
   if (MEL.spot && MEL.spot.num) { const c = cnv(64, 128), x = c.getContext('2d'); x.fillStyle = '#4a2e1c'; x.fillRect(0, 0, 64, 128); x.fillStyle = '#3a2214'; x.fillRect(6, 8, 24, 52); x.fillRect(34, 8, 24, 52); x.fillRect(6, 68, 24, 52); x.fillRect(34, 68, 24, 52);
     x.fillStyle = '#c9a54a'; x.fillRect(50, 66, 4, 6); x.fillStyle = 'rgba(0,0,0,.45)'; for (let i = 0; i < 9; i++) { x.beginPath(); x.arc(28 + Math.random() * 10, 30 + Math.random() * 12, 2 + Math.random() * 2, 0, 7); x.fill(); }
