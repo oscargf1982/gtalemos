@@ -38,11 +38,12 @@ function melInit() {
   const f = poi('Raíces Madriñán'), d = poi('Dulce Manía');
   // farmacia: diante da parede de edificio máis próxima ao punto de OSM, mirando á rúa, coa cruz verde enriba
   const atWall = (x, z) => { let best = null, bd = 25; for (const b of G.buildingsList || []) { if (Math.hypot(b.cx - x, b.cz - z) > 60) continue; const P = b.poly; for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length], dx = c[0] - a[0], dz = c[1] - a[1], L2 = dx * dx + dz * dz; if (L2 < 9) continue; const t = Math.max(0.2, Math.min(0.8, ((x - a[0]) * dx + (z - a[1]) * dz) / L2)), px = a[0] + dx * t, pz = a[1] + dz * t, d = Math.hypot(px - x, pz - z); if (d < bd) { const L = Math.sqrt(L2); let nx = -dz / L, nz = dx / L; if (inPoly(px + nx * 0.5, pz + nz * 0.5, P)) { nx = -nx; nz = -nz; } bd = d; best = { px, pz, nx, nz }; } } } return best; };
-  const fw = atWall(f ? f[2] : -93, f ? f[3] : 375.7);
+  const FE = G.fachadaEdge && G.fachadaEdge.farmaciaCardeal;
+  const fw = FE ? { px: FE.ax + FE.ux * FE.L * 0.75, pz: FE.az + FE.uz * FE.L * 0.75, nx: FE.ox, nz: FE.oz } : atWall(f ? f[2] : -93, f ? f[3] : 375.7);
   if (fw) { MEL.farm = { x: fw.px + fw.nx * 1.1, z: fw.pz + fw.nz * 1.1, face: Math.atan2(fw.nx, fw.nz) };
     const cr = new THREE.Group(), gm = nightMat(std({ color: 0x18a050, emissive: 0x30ff80, emissiveIntensity: 0.3, roughness: 0.4 }), 0.4, 1.6);
     cr.add(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.3, 0.12), gm), new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.9, 0.12), gm));
-    const cx = fw.px + fw.nx * 0.5, cz = fw.pz + fw.nz * 0.5; cr.position.set(cx, groundH(cx, cz) + 3.6, cz); cr.rotation.y = Math.atan2(fw.nx, fw.nz) + Math.PI / 2; G.scene.add(cr); }
+    const cx = fw.px + fw.nx * 0.5, cz = fw.pz + fw.nz * 0.5; cr.position.set(cx + (FE ? -FE.ux * FE.L * 0.6 : 0), groundH(cx, cz) + (FE ? 5.2 : 3.6), cz + (FE ? -FE.uz * FE.L * 0.6 : 0)); if (FE) { cr.scale.setScalar(1.2); const arm = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.8), std({ color: 0x9a9a9a })); arm.position.set(0, 0, -0.4); cr.add(arm); } cr.rotation.y = Math.atan2(fw.nx, fw.nz) + (FE ? 0 : Math.PI / 2); G.scene.add(cr); }
   else MEL.farm = f ? near(f[2], f[3]) : near(-93, 375.7);
   MEL.past = d ? near(d[2], d[3]) : near(-8.2, 287.1);
 }
@@ -91,15 +92,9 @@ function updateMelenas(dt) {
     if (typeof PORTRAITS !== 'undefined') PORTRAITS['O Melenas'] = done ? 'img/melenas-face.png' : 'img/melenas-ferido.png';
     if (!G.player.car && !G.dialog && dMe(P) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Falar co Melenas`);
   } else if (MEL.sp) MEL.sp.visible = false;
-  // Valerio, o farmacéutico (sprite pixel art achegado polo autor): atlas img/valerio.png 4×3 — 0 fronte, 1 perfil dereito, 2 costas, 3 perfil esquerdo, 4-7 camiñar, 8 sinalar, 9 celebrar, 10 brazos cruzados, 11 co matraz
-  if (dMe(MEL.farm) < 160) {
-    if (!MEL.vs) { MEL.vs = melBillboard('img/valerio.png', 0.95, 1.85); MEL.npcs.valerio = { state: 'npc', x: MEL.farm.x, z: MEL.farm.z }; }
-    const V = MEL.npcs.valerio, talking = G.dialog && $('dlgName').textContent === 'Valerio', me2 = dMe(V) < 8;
-    let f = talking ? (MEL.vMood === 'ri' ? 9 : MEL.vMood === 'matraz' ? 11 : Math.floor((MEL.t || 0) / 0.9) % 2 ? 8 : 0) : me2 ? 10 : 0;
-    melBillboardUpdate(MEL.vs, V.x, V.z, f, me2 || talking ? Math.atan2(me.x - V.x, me.z - V.z) : MEL.farm.face);
-    if (typeof PORTRAITS !== 'undefined') PORTRAITS['Valerio'] = 'img/valerio-' + ({ ri: 'ri', matraz: 'chisca', enfado: 'enfado', chisca: 'chisca', sorpresa: 'sorpresa' }[MEL.vMood] || 'face') + '.png';
-    if (!G.player.car && !G.dialog && dMe(V) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Falar con Valerio (farmacia)`);
-  } else if (MEL.vs) MEL.vs.visible = false;
+  // Valerio está dentro da farmacia (Rúa do Cardeal, 3): na porta ofrécese entrar
+  if (!G.player.car && !G.dialog && !G.interior && dMe(MEL.farm) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Entrar na farmacia`);
+  if (G.interior === 'farmacia') farmUpdate(dt);
   // Rosiña, a pasteleira (mandil rosa)
   if (dMe(MEL.past) < 120) { const r = melPed('rosina', { female: true, scale: 0.95, col: { shirt: '#f2a6c0', pants: '#f4f0e8', shoe: '#f4f4f4', hair: '#6b4a2e', skin: '#f2d2b6', sleeve: true } });
     if (r) { r.x = MEL.past.x; r.z = MEL.past.z; r.y = groundH(r.x, r.z); r.yaw = dMe(r) < 8 ? Math.atan2(me.x - r.x, me.z - r.z) : MEL.past.face; if (!G.player.car && !G.dialog && dMe(r) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Falar con Rosiña (pastelaría)`); } }
@@ -121,6 +116,7 @@ function melWay(o, t) { if (o) setWaypoint(o.x, o.z); if (t) toast(t, 4); }
 function melPay(n) { if (G.player.money < n) return false; G.player.money -= n; $('money').textContent = G.player.money + ' €'; return true; }
 function melInteract() {
   if (!MEL.init || G.player.car || G.dialog) return false;
+  if (G.interior && G.interior !== 'farmacia') return false;
   const me = G.player.ped, S = melSave(), near = k => MEL.npcs[k] && MEL.npcs[k].state === 'npc' && Math.hypot(me.x - MEL.npcs[k].x, me.z - MEL.npcs[k].z) < 3;
   const M = t => ({ who: 'O Melenas', text: t }), V = (t, e) => ({ who: 'Valerio', text: t, ...e }), R = (t, e) => ({ who: 'Rosiña', text: t, ...e }), Ti = t => ({ who: 'Ti', text: t });
   if (near('melenas')) {
@@ -134,7 +130,8 @@ function melInteract() {
     else openDialog([M(pick(['Aínda non trouxeches o ibuprofeno? BOOM... ai.', 'Farmacia. Rúa do Cardeal. Rápido, que me vai explotar a cabeza coma un amplificador vello.', 'Se Valerio che pon pegas, dille que é para unha emerxencia METÁLICA.']))]);
     return true;
   }
-  if (near('valerio')) {
+  if (!G.interior && Math.hypot(me.x - MEL.farm.x, me.z - MEL.farm.z) < 3) { farmEnter(); return true; }
+  if (G.interior === 'farmacia') {
     if (S.step === 'farmacia') openDialog([valMood('face'), Ti('Boas. Necesito ibuprofeno para un colega que ten un dor de cabeza tremendo.'), V('Ibuprofeno... Dor de cabeza... Non será ese rapaz das greñas que lle dá cabezazos ás portas da Duquesa de Alba?'),
       valMood('chisca'), V('Mira, fago unha cousa: véndocho, pero só se me traes uns pasteles. Levo dende as oito aquí detrás do mostrador e o estómago ruxe máis que a música do teu amigo.'), V('Na pastelaría Dulce Manía, aí ao comezo do Cardeal, teñen uns de crema que... ai. Tráeme unha caixa e falamos.'),
       () => { melStep('pasteles'); melWay(MEL.past, 'Misión: consegue pasteles para Valerio na pastelaría'); }]);
@@ -163,4 +160,27 @@ function melKioskHook() {
   openDialog([C('Unha tarta? Para min? Ai, esa Rosiña, que se acordou do meu aniversario! Corenta e un anos neste quiosco e aínda me emociono.'), C('Toma, rei, a caixa de pasteles que me deixou para ti. E leva tamén estas lambetadas, que te vexo moi delgadiño.'),
     () => { melStep('pasteles_ok'); melWay(MEL.farm, 'Tes os pasteles. Lévallos a Valerio, na farmacia do Cardeal'); }]);
   return true;
+}
+
+/* ---------- interior da farmacia (escena pixel art achegada polo autor) ---------- */
+function farmEnter() {
+  let el = $('interior');
+  if (!el) { el = document.createElement('div'); el.id = 'interior';
+    el.innerHTML = `<div class="in-scene"><div class="in-valerio" title="Falar con Valerio"></div></div><div class="in-bar"><span class="in-title">Farmacia · Rúa do Cardeal, 3</span><button class="in-talk">Falar con Valerio (E)</button><button class="in-exit">Saír (Esc)</button></div>`;
+    document.body.appendChild(el);
+    el.querySelector('.in-valerio').onclick = e => { e.stopPropagation(); if (!G.dialog) melInteract(); };
+    el.querySelector('.in-talk').onclick = () => { if (!G.dialog) melInteract(); };
+    el.querySelector('.in-exit').onclick = () => farmExit(); }
+  el.hidden = false; G.interior = 'farmacia'; MEL.inT = 0; if (G.sfx && G.sfx.door) G.sfx.door();
+  if (document.exitPointerLock) try { document.exitPointerLock(); } catch (e) { }
+  toast('Na farmacia. Fala con Valerio ou sae (Esc).', 2.5);
+}
+function farmExit() { const el = $('interior'); if (el) el.hidden = true; G.interior = null; if (G.dialog && typeof closeDialog === 'function') closeDialog(); }
+function farmUpdate(dt) {
+  const v = document.querySelector('#interior .in-valerio'); if (!v) return;
+  MEL.inT = (MEL.inT || 0) + dt; const bar = document.querySelector('#interior .in-bar'); if (bar) bar.style.visibility = G.dialog ? 'hidden' : 'visible';
+  const talking = G.dialog && $('dlgName').textContent === 'Valerio';
+  const f = talking ? (MEL.vMood === 'ri' ? 9 : MEL.vMood === 'matraz' ? 11 : Math.floor(MEL.inT / 0.9) % 2 ? 8 : 0) : (Math.floor(MEL.inT / 4) % 3 === 2 ? 10 : 0);
+  v.style.backgroundPosition = `${(f % 4) * 100 / 3}% ${Math.floor(f / 4) * 50}%`;
+  if (typeof PORTRAITS !== 'undefined') PORTRAITS['Valerio'] = 'img/valerio-' + ({ ri: 'ri', matraz: 'chisca', enfado: 'enfado', chisca: 'chisca', sorpresa: 'sorpresa' }[MEL.vMood] || 'face') + '.png';
 }

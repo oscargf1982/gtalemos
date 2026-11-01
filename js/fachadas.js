@@ -179,6 +179,24 @@ const FACHADAS = [];
     for (let i = 0; i < nf; i++) { const y = g + i * fh; P.rect(L * 0.05, y + 0.25, L * 0.9, fh - 0.4, '#f1efe8'); for (let k = 0; k < 4; k++) { const w = L * 0.9 / 4; P.win(L * 0.05 + k * w + 0.1, y + 0.4, w - 0.2, fh - 0.75, { frame: '#f6f6f2', glass: '#6f8290', blind: '#efece4', fw: 0.07 }); } }
     P.door(L * 0.12, 0.05, 1.6, g - 0.5, '#5a5a56', { panels: true }); P.door(L * 0.62, 0.05, 1.0, g - 0.5, '#3a3a3a', { grille: true });
   }, { r: 6 });
+  // Farmacia da Rúa do Cardeal, 3: cantería de granito, balcóns de forxa, escaparates de madeira, toldo raiado vermello e branco e cruz verde
+  add('farmaciaCardeal', [-33.5, 299], P => {
+    const { L, H } = P, g = Math.min(4.2, H * 0.36);
+    P.blocks(0, 0, L, H, '#c8bfa9', 1.1, 0.55);
+    const nf = Math.max(1, Math.round((H - g) / 3.2)), fh = (H - g) / nf, nw = Math.max(2, Math.round(L / 3.3));
+    for (let i = 0; i < nf; i++) for (let k = 0; k < nw; k++) { const cx = (k + 0.5) * L / nw, y = g + i * fh + 0.5;
+      P.win(cx - 0.55, y, 1.1, fh - 1.0, { frame: '#8a3a22', glass: '#3e4a52', fw: 0.12 }); P.rect(cx - 0.9, y - 0.25, 1.8, 0.25, '#b9b09a');
+      P.x.save(); P.x.strokeStyle = '#2a2a2a'; P.x.lineWidth = 0.035; P.x.strokeRect(cx - 0.85, y, 1.7, 0.95); for (let q = 0; q < 4; q++) { P.x.beginPath(); P.x.arc(cx - 0.55 + q * 0.37, y + 0.48, 0.15, 0, 7); P.x.stroke(); } P.x.restore(); }
+    // toldo
+    const tw = L * 0.85, tx = L * 0.05; for (let k = 0; k < tw; k += 0.32) P.rect(tx + k, g - 0.95, 0.16, 0.75, '#b8232a'); P.rect(tx, g - 0.95, tw, 0.04, '#7a1418');
+    for (let k = 0; k < tw; k += 0.32) { P.rect(tx + k, g - 1.25, 0.16, 0.3, '#b8232a'); P.rect(tx + k + 0.16, g - 1.25, 0.16, 0.3, '#f4f0e8'); }
+    P.txt(tx + tw * 0.45, g - 1.1, 0.32, 'F A R M A C I A', '#3a2a22', tw * 0.6);
+    // escaparates e porta de madeira
+    P.rect(L * 0.06, 0.05, L * 0.18, g - 1.5, '#8a4a22'); P.rect(L * 0.08, 0.3, L * 0.14, g - 2.0, '#5a6a72'); for (let q = 0; q < 4; q++) P.rect(L * 0.09, 0.6 + q * 0.45, L * 0.12, 0.08, '#c9a874');
+    P.rect(L * 0.27, 0.6, 0.6, 0.8, '#d8d8d2'); P.txt(L * 0.27 + 0.3, 1.25, 0.11, 'FARMACIA', '#2a2a2a');
+    P.rect(L * 0.38, 0.05, L * 0.16, g - 1.5, '#8a4a22'); P.rect(L * 0.4, 0.3, L * 0.12, g - 2.0, '#c0392b'); P.txt(L * 0.46, g - 2.2, 0.14, 'MegaRed', '#f4f4f0');
+    P.door(L * 0.68, 0.1, L * 0.18, g - 1.4, '#7a3a1c', { panels: true, transom: '#30383e' });
+  }, { r: 8 });
   add('coruna12', ad('Rúa da Coruña', '12'), P => { // casa amarela con xanelas azuis e floreiras
     const { L, H } = P, g = H * 0.48, cr = '#f2efe6';
     P.rect(0, 0, L, H, '#e9c34e'); P.rect(0, H - 0.35, L, 0.35, cr); P.rect(0, g - 0.1, L, 0.15, cr); P.rect(0, 0, 0.3, H, cr); P.rect(L - 0.3, 0, 0.3, H, cr);

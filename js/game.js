@@ -246,6 +246,7 @@ const touch = { active: false, jx: 0, jy: 0, id: null, camId: null, lx: 0, ly: 0
 let camYaw = Math.PI, camPitch = 0.28, camIdle = 9, camMode = 0;
 function setupInput() {
   addEventListener('keydown', e => {
+    if (G.interior && !G.dialog && G.started && !G.paused) { if (e.code === 'Escape') { farmExit(); e.preventDefault(); return; } if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'Enter') { melInteract(); e.preventDefault(); return; } return; }
     if (G.minigame || G.reading) { if (e.code === 'Escape') { if (G.minigame) mgClose(); else { $('xornal').hidden = true; G.reading = false; } } return; }
     if (e.repeat) { keys[e.code] = true; return; }
     keys[e.code] = true;
