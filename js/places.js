@@ -96,10 +96,11 @@ function computeLandmarks() {
     G.monumentZones.push(frameRectPoly(LM.ferro, -18, -5.5, 18, 17));
     G.namedZones.push({ n: 'Colexio Ferroviario', p: frameRectPoly(LM.ferro, -18, -5.5, 18, 17) });
   }
-  // --- Gasolineira na confluencia da Rúa da Coruña coa Rúa do Doutor Casares / López Suárez (posición OSM) ---
+  // --- Gasolineira (Repsol real) na Rúa do Doutor Casares, á beira dos números pares, antes do cruce coa Rúa da Coruña ---
   {
-    const P0 = OSM.pois.find(p => p.t === 'fuel' && Math.abs(p.p[0] - 455) < 30 && Math.abs(p.p[1] + 489) < 30) || { p: [455, -489] };
-    const nr = nearRoad(P0.p[0], P0.p[1], r => r.type === 'car' && r.cls !== 'service'), r = nr.r;
+    // no Catastro: o anaco industrial dunha planta xusto despois da zapataría (Doutor Casares, beira dos pares), e a pista cara ao cruce
+    const P0 = { p: [457, -497] };
+    let nr = nearRoad(P0.p[0], P0.p[1], r => r.type === 'car' && r.name === 'Rúa do Doutor Casares'); if (!nr.r) nr = nearRoad(P0.p[0], P0.p[1], r => r.type === 'car' && r.cls !== 'service'); const r = nr.r;
     let nx = P0.p[0] - nr.px, nz = P0.p[1] - nr.pz; if (Math.hypot(nx, nz) < 0.5) { nx = -nr.uz; nz = nr.ux; } [nx, nz] = norm2(nx, nz);
     const d = r.hw + r.sw + 7.5, rot = Math.atan2(-nr.uz, nr.ux);
     let F = makeFrame(nr.px + nx * d, nr.pz + nz * d, rot);

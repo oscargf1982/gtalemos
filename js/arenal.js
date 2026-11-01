@@ -207,7 +207,8 @@ function arPlan() {
 
   // esquerda (sur, números pares)
   // bloque longo verde auga sobre zócalo de granito, balcóns de forxa
-  Lf.push({ s0: 7, s1: 38, H: 13.0, wall: '#cfe2cf', roof: 'slate', paint(P) {
+  // (o bloque verde auga da esquina coa Rúa da Coruña constrúese agora co Catastro e a fachada singular 'clinicaNos', coas súas tres fachadas)
+  if (typeof FACHADAS === 'undefined') Lf.push({ s0: 7, s1: 38, H: 13.0, wall: '#cfe2cf', roof: 'slate', paint(P) {
     P.rect(0, 0, P.W, P.H, '#d2e5d2'); P.noise(1500); P.stains(0.4); P.ashlar(0, 0, P.W, 1.3, [176, 166, 150], true); P.cornice(P.H - 0.4, 0.4, '#eef2ec'); P.cornice(3.9, 0.25, '#eef2ec');
     for (let u = 1.2; u < P.W - 1.5; u += 2.8) { P.win(u, 1.4, 1.5, 1.9, { grille: true, frame: '#1b1b1d', dark: R() < 0.5 }); for (let f = 0; f < 3; f++) P.win(u + 0.2, 4.4 + f * 2.8, 1.1, 2.0, { blind: RR(0.1, 0.6) }); }
     P.door(14.6, 1.6, 2.8, '#2a2a2c', { frame: '#b9b2a2', panels: true });

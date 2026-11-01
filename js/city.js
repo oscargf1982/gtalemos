@@ -340,6 +340,40 @@ function buildOSMBuildings(B, F) {
       if (inPoly(q.p[0], q.p[1], P)) { best = b; bd = -1; break; } for (let i = 0; i < P.length; i++) { const d = segD(q.p[0], q.p[1], P[i], P[(i + 1) % P.length]); if (d < bd) { bd = d; best = b; } } }
     if (best && !poiOf.has(best)) poiOf.set(best, q);
   }
+  // fachadas singulares (fachadas.js): edificio e panos que dan á rúa
+  const SPEC = new Map(), SPEC_SEGS = [];
+  // parede doutro edificio que coincide (paralela e a menos de 1,6 m) cunha fachada singular: non se debuxa, para que esta se vexa
+  const underSpec = (b, a, c) => { const mx = (a[0] + c[0]) / 2, mz = (a[1] + c[1]) / 2, dx = c[0] - a[0], dz = c[1] - a[1], L = Math.hypot(dx, dz) || 1;
+    for (const S of SPEC_SEGS) { if (S.b === b) continue; const sx = S.c[0] - S.a[0], sz = S.c[1] - S.a[1], SL = Math.hypot(sx, sz) || 1; if (Math.abs(dx * sz - dz * sx) / (L * SL) > 0.25) continue;
+      const t = ((mx - S.a[0]) * sx + (mz - S.a[1]) * sz) / (SL * SL); if (t < -0.1 || t > 1.1) continue; if (Math.abs((mx - S.a[0]) * sz - (mz - S.a[1]) * sx) / SL < 1.6) return true; } return false; };
+  const facingOf = (P, A2, i) => { let a = P[i], c = P[(i + 1) % P.length]; if (A2 > 0) { const t = a; a = c; c = t; } const dx = c[0] - a[0], dz = c[1] - a[1], L = Math.hypot(dx, dz); if (L < 2) return 0; for (const o of [3.5, 7]) { const px = (a[0] + c[0]) / 2 - dz / L * o, pz = (a[1] + c[1]) / 2 + dx / L * o; if (inStreet(px, pz, 1) || inRoad(px, pz, 1, true)) return L; } return 0; };
+  const area2 = P => { let A2 = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) A2 += P[j][0] * P[i][1] - P[i][0] * P[j][1]; return A2; };
+  if (typeof FACHADAS !== 'undefined') for (const F of FACHADAS) {
+    let best = null, bd = F.r || 9;
+    for (const b of OSM.bldgs) {
+      if (!b.p || b.p.length < 3) continue; const P = b.p;
+      const [ax, az] = F.at; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+      if (ax < x0 - bd || ax > x1 + bd || az < z0 - bd || az > z1 + bd) continue;
+      const A2 = area2(P);
+      if ((F.multi || F.inside) && inPoly(ax, az, P)) { best = { b, i: -1 }; bd = 0; break; }
+      for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length], dx = c[0] - a[0], dz = c[1] - a[1], L2 = dx * dx + dz * dz; if (L2 < 4) continue;
+        const t = ((ax - a[0]) * dx + (az - a[1]) * dz) / L2; if (t < -0.05 || t > 1.05) continue; const d = Math.hypot(a[0] + dx * t - ax, a[1] + dz * t - az); if (d < bd && facingOf(P, A2, i)) { bd = d; best = { b, i }; } }
+    }
+    if (!best) continue;
+    const b = best.b, P = b.p, A2 = area2(P), facing = i => facingOf(P, A2, i);
+    let list = [];
+    if (best.i >= 0 && !F.multi) list = [best.i];
+    else { const all = P.map((_, i) => [i, facing(i)]).filter(q => q[1] > 0); if (F.multi) list = all.map(q => q[0]); else if (all.length) list = [all.sort((u, v) => v[1] - u[1])[0][0]]; }
+    if (!list.length) { // sen rúa diante: a parede máis próxima a unha rúa
+      let bi = -1, bdd = 1e9; for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 3) continue; const mx = (a[0] + c[0]) / 2, mz = (a[1] + c[1]) / 2, nr = nearRoad(mx, mz, r => r.type === 'car'); if (nr.r && nr.d < bdd) { bdd = nr.d; bi = i; } }
+      if (bi >= 0) list = [bi]; }
+    if (!list.length) continue;
+    const taken = SPEC.get(b); if (taken) list = list.filter(i => !taken.has(i)); if (!list.length) continue;
+    const ord = A2 > 0 ? list.slice().sort((u, v) => v - u) : list.slice().sort((u, v) => u - v);
+    const lens = ord.map(i => Math.hypot(P[(i + 1) % P.length][0] - P[i][0], P[(i + 1) % P.length][1] - P[i][1])), Lt = lens.reduce((u, v) => u + v, 0);
+    const edges = taken || new Map(); let acc = 0; ord.forEach((i, k) => { edges.set(i, { F, Lt, u0: acc / Lt, u1: (acc + lens[k]) / Lt }); acc += lens[k]; });
+    SPEC.set(b, edges); G.fachadasOK = (G.fachadasOK || 0) + 1; for (const i of ord) SPEC_SEGS.push({ b, a: P[i], c: P[(i + 1) % P.length] }); (G.specDbg = G.specDbg || {})[F.id] = { b, list };
+  }
   for (const b of OSM.bldgs) {
     const P = b.p; if (P.length < 3) continue;
     const [cx, cz] = polyCentroid(P);
@@ -348,7 +382,8 @@ function buildOSMBuildings(B, F) {
     if (b.cat) {
       // edificios do Catastro: só se omiten se pisan un edificio feito a man (ou nas zonas que deben quedar baleiras)
       if ((G.keepEmpty || []).some(q => inPoly(cx, cz, q))) continue;
-      if (customCover(P) > 0.25) continue;
+      const forced = SPEC.has(b) && [...SPEC.get(b).values()].some(e => e.F.force);
+      if (!forced && customCover(P) > 0.25) continue;
     } else if (reservedAt(cx, cz) || G.monumentZones.some(q => inPoly(cx, cz, q))) continue;
     if (b.b === 'roof' || b.b === 'ruins') continue;
     const lv = b.lv || (b.b === 'church' || b.b === 'chapel' ? 3 : b.b === 'industrial' || b.b === 'retail' ? 2 : b.b === 'apartments' ? 5 : 3);
@@ -377,7 +412,8 @@ function buildOSMBuildings(B, F) {
     // relevo: o edificio queda ríxido (horizontal) á altura do seu centro; as paredes baixan ata o chan polo lado de embaixo
     let drop = 0; if (typeof relW === 'function') { const wc = relW(cx, cz); for (const [x, z] of P) drop = Math.max(drop, wc - relW(x, z)); }
     const yb = y0 - 2 - drop;
-    const geo = { wall: { pos: [], uv: [], idx: [] }, shop: { pos: [], uv: [], idx: [] }, bar: { pos: [], uv: [], idx: [] }, baixo: { pos: [], uv: [], idx: [] }, door: { pos: [], uv: [], idx: [] }, plate: { pos: [], uv: [], idx: [] } };
+    const geo = { wall: { pos: [], uv: [], idx: [] }, shop: { pos: [], uv: [], idx: [] }, bar: { pos: [], uv: [], idx: [] }, baixo: { pos: [], uv: [], idx: [] }, door: { pos: [], uv: [], idx: [] }, plate: { pos: [], uv: [], idx: [] }, spec: { pos: [], uv: [], idx: [] } };
+    const spB = SPEC.get(b), specG = new Map();
     const quad = (g, a, c, yA, yB, u0, u1, vA, vB) => { const v = g.pos.length / 3; g.pos.push(a[0], yA, a[1], c[0], yA, c[1], c[0], yB, c[1], a[0], yB, a[1]); g.uv.push(u0, vA, u1, vA, u1, vB, u0, vB); g.idx.push(v, v + 1, v + 2, v, v + 2, v + 3); };
     let acc = 0, shopEdge = null, bestL = 0, signEdge = null;
     // vivendas: planta baixa de granito con portal na fachada que dá á rúa (ou na máis longa)
@@ -403,6 +439,10 @@ function buildOSMBuildings(B, F) {
       let a = P[i], c = P[(i + 1) % P.length]; if (A2 > 0) { const t = a; a = c; c = t; } // percorrido horario: a cara frontal (esquerda) mira cara a fóra
       const dx = c[0] - a[0], dz = c[1] - a[1], L = Math.hypot(dx, dz); if (L < 0.05) continue;
       const ox = -dz / L, oz = dx / L, mx = (a[0] + c[0]) / 2, mz = (a[1] + c[1]) / 2;
+      if (!spB && SPEC_SEGS.length && underSpec(b, a, c)) { acc += L; continue; }
+      if (spB && spB.has(i)) { const sp = spB.get(i); let sg = specG.get(sp.F); if (!sg) specG.set(sp.F, sg = { pos: [], uv: [], idx: [], Lt: sp.Lt }); quad(sg, [a[0] + ox * 0.06, a[1] + oz * 0.06], [c[0] + ox * 0.06, c[1] + oz * 0.06], yb, y0 + H, sp.u0, sp.u1, (yb - y0) / H, 1);
+        (G.fachadaEdge = G.fachadaEdge || {})[sp.F.id] = { ax: a[0], az: a[1], ux: dx / L, uz: dz / L, ox, oz, L, mx, mz, door: L * 0.875 };
+        acc += L; continue; }
       let street = null; if (shopMode && L >= 2.5) { const pr = poi ? 6 : 3, px = mx + ox * pr, pz = mz + oz * pr; street = inStreet(px, pz, 1) || inRoad(px, pz, 1, true); if (street && !poi && use === 1 && !SHOP_STREETS.has(street.name)) street = null; }
       const fu0 = acc / FAC_TILE[0], fu1 = (acc + L) / FAC_TILE[0];
       if (street && H > 4.5) {
@@ -431,6 +471,7 @@ function buildOSMBuildings(B, F) {
     if (geo.baixo.idx.length) BB.add(toGeo(geo.baixo));
     if (geo.door.idx.length) BD.add(toGeo(geo.door));
     if (geo.plate.idx.length) BP.add(toGeo(geo.plate));
+    for (const [F, sg] of specG) { const m = new THREE.Mesh(toGeo(sg), std({ map: fachadaTex(F, sg.Lt, H), roughness: 0.8 })); m.castShadow = m.receiveShadow = true; G.scene.add(m); }
     // rótulo co nome real (tendas de OSM)
     if (poi && signEdge) { const { a, c, ox, oz, L } = signEdge; const sx = (a[0] + c[0]) / 2 + ox * 0.08, sz = (a[1] + c[1]) / 2 + oz * 0.08; signs.push({ x: sx, z: sz, y: y0 + 3.35 + (typeof relW === 'function' ? relW(cx, cz) - relW(sx, sz) : 0), yaw: Math.atan2(ox, oz), w: Math.min(L - 0.4, 4.2), text: (poi.n || POI_LABEL[poi.t]).toUpperCase().slice(0, 26), bar: POI_BAR.has(poi.t), t: poi.t }); G.useStats.poi++; }
     // tellado

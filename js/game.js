@@ -1071,7 +1071,7 @@ function simulate(dt, menu) {
   }
   // peóns
   for (const p of peds) { if (p === pl.ped) continue; pedThink(p, dt, world); }
-  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); updateMedieval(dt); updateAbeledos(dt); updateCows(dt); updateCarmina(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
+  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); updateMedieval(dt); updateAbeledos(dt); updateCows(dt); updateCarmina(dt); if (typeof updateBankQueue === 'function') updateBankQueue(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
   if (!menu && !pl.car && !G.cine) updatePlayerFoot(dt);
   if (!menu) updateCine(dt);
   if (!menu) updateSajoni(dt);
