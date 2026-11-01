@@ -246,6 +246,7 @@ const touch = { active: false, jx: 0, jy: 0, id: null, camId: null, lx: 0, ly: 0
 let camYaw = Math.PI, camPitch = 0.28, camIdle = 9, camMode = 0;
 function setupInput() {
   addEventListener('keydown', e => {
+    if (G.minigame || G.reading) { if (e.code === 'Escape') { if (G.minigame) mgClose(); else { $('xornal').hidden = true; G.reading = false; } } return; }
     if (e.repeat) { keys[e.code] = true; return; }
     keys[e.code] = true;
     if (!G.started) return;
@@ -449,6 +450,8 @@ function interact() {
   if (plazaHotelsInteract()) return;
   if (fineInteract()) return;
   if (carudeInteract()) return;
+  if (typeof kioskInteract === 'function' && kioskInteract()) return;
+  if (typeof fraternalInteract === 'function' && fraternalInteract()) return;
   if (storyInteract()) return;
   // comezar misión se estás nun marcador
   for (const m of G.missionMarkers) if (m.near && !G.mission) { startMission(m.def); return; }
@@ -1071,7 +1074,7 @@ function simulate(dt, menu) {
   }
   // peóns
   for (const p of peds) { if (p === pl.ped) continue; pedThink(p, dt, world); }
-  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); updateMedieval(dt); updateAbeledos(dt); updateCows(dt); updateCarmina(dt); if (typeof updateBankQueue === 'function') updateBankQueue(dt); if (typeof updateBikeKid === 'function') updateBikeKid(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
+  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); updateMedieval(dt); updateAbeledos(dt); updateCows(dt); updateCarmina(dt); if (typeof updateBankQueue === 'function') updateBankQueue(dt); if (typeof updateBikeKid === 'function') updateBikeKid(dt); if (typeof updateKiosk === 'function') updateKiosk(dt); if (typeof updateFraternal === 'function') updateFraternal(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
   if (!menu && !pl.car && !G.cine) updatePlayerFoot(dt);
   if (!menu) updateCine(dt);
   if (!menu) updateSajoni(dt);

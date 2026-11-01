@@ -212,6 +212,23 @@ button, select { font: inherit; }
 #rotate { display: none; }
 @media (pointer: coarse) and (orientation: portrait) { body.playing #rotate { display: grid; place-content: center; text-align: center; position: fixed; inset: 0; z-index: 60; background: #0d1013f0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); } #rotate .wordmark { font-size: 80px; color: var(--sodium); } #rotate p { font-family: var(--hud); font-size: 20px; letter-spacing: .04em; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation-duration: .01s !important; } }
+
+#minigame { position: fixed; inset: 0; z-index: 40; background: rgba(10,14,12,.82); display: flex; align-items: center; justify-content: center; padding: 10px; }
+#minigame[hidden], #xornal[hidden] { display: none; }
+.mg-box { width: min(96vw, 820px); background: #1b2a22; border: 3px solid #c9a24a; border-radius: 12px; padding: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+.mg-top { display: flex; align-items: center; gap: 12px; color: #f2e6c0; font: 600 15px Barlow, sans-serif; margin-bottom: 6px; }
+.mg-title { font-weight: 800; font-size: 17px; } .mg-msg { flex: 1; opacity: .9; }
+.mg-x { background: #7a1f1f; color: #fff; border: 0; border-radius: 6px; width: 34px; height: 30px; font-size: 16px; cursor: pointer; }
+.mg-cv { width: 100%; height: auto; max-height: 72vh; object-fit: contain; display: block; border-radius: 6px; touch-action: none; cursor: pointer; }
+.mg-bar { color: #f2e6c0; font: 15px Barlow, sans-serif; min-height: 30px; margin-top: 6px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.mg-bar button, .xn-close { background: #c9a24a; color: #1b1b1b; border: 0; border-radius: 6px; padding: 6px 12px; font-weight: 700; cursor: pointer; }
+#xornal { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; padding: 12px; overflow: auto; }
+.xn-paper { background: #f4efe2; color: #1d1b17; width: min(96vw, 860px); max-height: 92vh; overflow: auto; padding: 18px 22px; font-family: Georgia, 'Times New Roman', serif; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+.xn-head { border-bottom: 3px double #1d1b17; text-align: center; margin-bottom: 10px; }
+.xn-name { font: 900 clamp(26px, 6vw, 46px) Georgia, serif; letter-spacing: 1px; } .xn-date { font-size: 13px; padding: 4px 0 6px; border-top: 1px solid #1d1b17; }
+.xn-cols { column-count: 2; column-gap: 22px; } @media (max-width: 600px) { .xn-cols { column-count: 1; } }
+.xn-cols article { break-inside: avoid; margin-bottom: 12px; border-bottom: 1px solid #b9b1a0; padding-bottom: 8px; }
+.xn-cols h2 { font-size: 19px; margin: 0 0 3px; } .xn-cols .xn-main h2 { font-size: 26px; } .xn-cols h3 { font-size: 14px; font-style: italic; font-weight: normal; margin: 0 0 5px; color: #4a453c; } .xn-cols p { font-size: 14px; line-height: 1.4; margin: 0; }
 </style>
 </head>
 <body>
@@ -319,49 +336,51 @@ button, select { font: inherit; }
 </div>
 
 <script src="vendor/three.min.js"></script>
-<script src="js/osmdata.js?v=1793552799"></script>
-<script src="js/catastro.js?v=1793552799"></script>
-<script src="js/alturas.js?v=1793552799"></script>
-<script src="js/enderezos.js?v=1793552799"></script>
-<script src="js/comercios.js?v=1793552799"></script>
-<script src="js/fachadas.js?v=1793552799"></script>
-<script src="js/osmfix.js?v=1793552799"></script>
-<script src="js/core.js?v=1793552799"></script>
-<script src="js/relevo_data.js?v=1793552799"></script>
-<script src="js/relevo.js?v=1793552799"></script>
-<script src="js/world.js?v=1793552799"></script>
-<script src="js/monuments.js?v=1793552799"></script>
-<script src="js/city.js?v=1793552799"></script>
-<script src="js/places.js?v=1793552799"></script>
-<script src="js/actors.js?v=1793552799"></script>
-<script src="js/pacho.js?v=1793552799"></script>
-<script src="js/band.js?v=1793552799"></script>
-<script src="js/portraits.js?v=1793552799"></script>
-<script src="js/volei.js?v=1793552799"></script>
-<script src="js/fluvial.js?v=1793552799"></script>
-<script src="js/sajoni.js?v=1793552799"></script>
-<script src="js/arenal.js?v=1793552799"></script>
-<script src="js/ucelers.js?v=1793552799"></script>
-<script src="js/avelino.js?v=1793552799"></script>
-<script src="js/aventura.js?v=1793552799"></script>
-<script src="js/plazahotels.js?v=1793552799"></script>
-<script src="js/goyanes.js?v=1793552799"></script>
-<script src="js/cena.js?v=1793552799"></script>
-<script src="js/tren.js?v=1793552799"></script>
-<script src="js/heroes.js?v=1793552799"></script>
-<script src="js/virginia.js?v=1793552799"></script>
-<script src="js/carude.js?v=1793552799"></script>
-<script src="js/concello.js?v=1793552799"></script>
-<script src="js/medieval.js?v=1793552799"></script>
-<script src="js/zonas.js?v=1793552799"></script>
-<script src="js/radio.js?v=1793552799"></script>
-<script src="js/carmina.js?v=1793552799"></script>
-<script src="js/riders.js?v=1793552799"></script>
-<script src="js/works.js?v=1793552799"></script>
-<script src="js/fair.js?v=1793552799"></script>
-<script src="js/details.js?v=1793552799"></script>
-<script src="js/travel.js?v=1793552799"></script>
-<script src="js/game.js?v=1793552799"></script>
+<script src="js/osmdata.js?v=1793553543"></script>
+<script src="js/catastro.js?v=1793553543"></script>
+<script src="js/alturas.js?v=1793553543"></script>
+<script src="js/enderezos.js?v=1793553543"></script>
+<script src="js/comercios.js?v=1793553543"></script>
+<script src="js/fachadas.js?v=1793553543"></script>
+<script src="js/osmfix.js?v=1793553543"></script>
+<script src="js/core.js?v=1793553543"></script>
+<script src="js/relevo_data.js?v=1793553543"></script>
+<script src="js/relevo.js?v=1793553543"></script>
+<script src="js/world.js?v=1793553543"></script>
+<script src="js/monuments.js?v=1793553543"></script>
+<script src="js/city.js?v=1793553543"></script>
+<script src="js/places.js?v=1793553543"></script>
+<script src="js/actors.js?v=1793553543"></script>
+<script src="js/pacho.js?v=1793553543"></script>
+<script src="js/band.js?v=1793553543"></script>
+<script src="js/portraits.js?v=1793553543"></script>
+<script src="js/volei.js?v=1793553543"></script>
+<script src="js/fluvial.js?v=1793553543"></script>
+<script src="js/sajoni.js?v=1793553543"></script>
+<script src="js/arenal.js?v=1793553543"></script>
+<script src="js/ucelers.js?v=1793553543"></script>
+<script src="js/avelino.js?v=1793553543"></script>
+<script src="js/aventura.js?v=1793553543"></script>
+<script src="js/plazahotels.js?v=1793553543"></script>
+<script src="js/goyanes.js?v=1793553543"></script>
+<script src="js/cena.js?v=1793553543"></script>
+<script src="js/tren.js?v=1793553543"></script>
+<script src="js/heroes.js?v=1793553543"></script>
+<script src="js/virginia.js?v=1793553543"></script>
+<script src="js/carude.js?v=1793553543"></script>
+<script src="js/concello.js?v=1793553543"></script>
+<script src="js/medieval.js?v=1793553543"></script>
+<script src="js/zonas.js?v=1793553543"></script>
+<script src="js/radio.js?v=1793553543"></script>
+<script src="js/carmina.js?v=1793553543"></script>
+<script src="js/riders.js?v=1793553543"></script>
+<script src="js/works.js?v=1793553543"></script>
+<script src="js/fair.js?v=1793553543"></script>
+<script src="js/details.js?v=1793553543"></script>
+<script src="js/travel.js?v=1793553543"></script>
+<script src="js/concha.js?v=1793553543"></script>
+<script src="js/fraternal.js?v=1793553543"></script>
+<script src="js/game.js?v=1793553543"></script>
 
 </body>
 </html>
