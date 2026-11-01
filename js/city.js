@@ -520,7 +520,7 @@ function buildOSMBuildings(B, F) {
     if (geo.baixo.idx.length) BB.add(toGeo(geo.baixo));
     if (geo.door.idx.length) BD.add(toGeo(geo.door));
     if (geo.plate.idx.length) BP.add(toGeo(geo.plate));
-    for (const [F, sg] of specG) { const m = new THREE.Mesh(toGeo(sg), std({ map: fachadaTex(F, sg.Lt, H), roughness: 0.8 })); m.castShadow = m.receiveShadow = true; G.scene.add(m); }
+    for (const [F, sg] of specG) { let map; if (F.img) { map = new THREE.TextureLoader().load(F.img); map.magFilter = THREE.NearestFilter; map.encoding = THREE.sRGBEncoding; map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping; } else map = fachadaTex(F, sg.Lt, H); const m = new THREE.Mesh(toGeo(sg), std({ map, roughness: 0.8 })); m.castShadow = m.receiveShadow = true; G.scene.add(m); }
     // rótulo co nome real (tendas de OSM)
     if (poi && signEdge) { const { a, c, ox, oz, L } = signEdge; const sx = (a[0] + c[0]) / 2 + ox * 0.08, sz = (a[1] + c[1]) / 2 + oz * 0.08; signs.push({ x: sx, z: sz, y: y0 + 3.35 + (typeof relW === 'function' ? relW(cx, cz) - relW(sx, sz) : 0), yaw: Math.atan2(ox, oz), w: Math.min(L - 0.4, 4.2), text: (poi.n || POI_LABEL[poi.t]).toUpperCase().slice(0, 26), bar: POI_BAR.has(poi.t), t: poi.t }); G.useStats.poi++; }
     // tellado

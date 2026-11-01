@@ -193,21 +193,8 @@ const FACHADAS = [];
     diamonds(L * 0.45, L * 0.18, g - 0.75);
     P.rect(L * 0.83, 0.05, L * 0.13, g - 0.9, '#4a3a2c'); P.win(L * 0.84, 0.9, L * 0.11, g - 2.0, { frame: '#9a9384', glass: '#2d3640', fw: 0.06 });
   });
-  add('pereiroMural', ad('Rúa de Juan Ramón Jiménez', '9'), P => { // medianeira sur: mural en homenaxe a Lois Pereiro (Letras Galegas 2011) — composición propia, sen retrato
-    const { L, H } = P;
-    P.rect(0, 0, L, H, '#d9d6cf'); for (let i = 0; i < 260; i++) P.rect(Math.random() * L, Math.random() * H, Math.random() * 1.2, 0.05 + Math.random() * 0.6, `rgba(${90 + Math.random() * 60},${90 + Math.random() * 60},${90 + Math.random() * 60},.08)`);
-    P.rect(0, 0, L, 0.8, '#b9b4aa');
-    // gran libro aberto en estarcido negro, con follas que voan
-    const bx = L * 0.08, bw = L * 0.42, by = H * 0.12, bh = H * 0.42;
-    P.x.save(); P.x.fillStyle = '#1d1d1f';
-    P.x.beginPath(); P.x.moveTo(bx, by); P.x.lineTo(bx + bw / 2, by + bh * 0.08); P.x.lineTo(bx + bw, by); P.x.lineTo(bx + bw, by + bh); P.x.lineTo(bx + bw / 2, by + bh * 1.08); P.x.lineTo(bx, by + bh); P.x.closePath(); P.x.fill();
-    P.x.fillStyle = '#f2efe8'; for (let k = 0; k < 9; k++) { const yy = by + bh * (0.15 + k * 0.085); P.x.fillRect(bx + bw * 0.07, yy, bw * 0.36, bh * 0.025); P.x.fillRect(bx + bw * 0.57, yy + bh * 0.01, bw * 0.36, bh * 0.025); }
-    P.x.fillStyle = '#1d1d1f'; for (let k = 0; k < 7; k++) { const fx = bx + bw * (0.6 + k * 0.12), fy = by + bh * (1.1 + k * 0.12); P.x.save(); P.x.translate(fx, fy); P.x.rotate(0.3 + k * 0.4); P.x.fillRect(-0.5, -0.35, 1.0, 0.7); P.x.restore(); }
-    P.x.restore();
-    P.txt(L * 0.72, H * 0.78, Math.min(3.2, L * 0.09), 'Lois', '#b2304a'); P.txt(L * 0.72, H * 0.63, Math.min(3.2, L * 0.09), 'Pereiro', '#b2304a');
-    P.x.save(); P.x.setTransform(1, 0, 0, 1, 0, 0); P.x.restore();
-    P.txt(L * 0.7, H * 0.42, Math.min(1.8, L * 0.05), 'Letras', '#1d1d1f'); P.txt(L * 0.72, H * 0.32, Math.min(1.8, L * 0.05), 'Galegas', '#1d1d1f'); P.txt(L * 0.74, H * 0.22, Math.min(1.8, L * 0.05), '2011', '#1d1d1f');
-  }, { side: 'S', script: true });
+  // medianeira sur: mural de Lois Pereiro (Letras Galegas 2011), adaptación pixel art achegada polo autor
+  add('pereiroMural', ad('Rúa de Juan Ramón Jiménez', '9'), null, { side: 'S', img: 'img/mural-lois.png' });
   add('estacionBus', [362, -256], P => { // estación de autobuses: banda de chapa co rótulo en letras azuis e fronte de vidro
     const { L, H } = P, g = Math.min(3.4, H * 0.6);
     P.rect(0, 0, L, H, '#cfc8b6'); for (let xx = 0; xx < L; xx += 0.3) P.rect(xx, g, 0.05, H - g, 'rgba(0,0,0,.12)');
