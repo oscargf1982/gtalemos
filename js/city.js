@@ -66,6 +66,32 @@ function addBuildingRot(B, F, cx, cz, rot, w, d, opts = {}) {
 }
 /* ¿solápase un rectángulo orientado con edificios xa postos? (SAT con OBB e caixas) */
 /* un anaco do Catastro omítese se tapa boa parte dun modelo feito a man (quedaría dentro del) ou se o modelo o cubre en máis dun 25 % */
+/* tellado a catro augas sobre o rectángulo que mellor encaixa coa planta (tipo 1: cumio no eixo longo; 2: no curto) */
+function hipRoofPoly(P, type, rise, y) {
+  let cx = 0, cz = 0; for (const [x, z] of P) { cx += x; cz += z; } cx /= P.length; cz /= P.length;
+  let sxx = 0, szz = 0, sxz = 0; for (const [x, z] of P) { const dx = x - cx, dz = z - cz; sxx += dx * dx; szz += dz * dz; sxz += dx * dz; }
+  const th = 0.5 * Math.atan2(2 * sxz, sxx - szz), ux = Math.cos(th), uz = Math.sin(th), vx = -uz, vz = ux;
+  let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9;
+  for (const [x, z] of P) { const u = (x - cx) * ux + (z - cz) * uz, v = (x - cx) * vx + (z - cz) * vz; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); }
+  const ov = 0.3; u0 -= ov; u1 += ov; v0 -= ov; v1 += ov;
+  const uc = (u0 + u1) / 2, vc = (v0 + v1) / 2; let a = (u1 - u0) / 2, bb = (v1 - v0) / 2;
+  if (a < 1.5 || bb < 1.5) return null;
+  // eixo do cumio: A (lonxitude a) ; B perpendicular
+  let Ax = ux, Az = uz, Bx = vx, Bz = vz;
+  const longU = a >= bb; if ((type === 1) !== longU) { [Ax, Az, Bx, Bz] = [vx, vz, ux, uz]; const t = a; a = bb; bb = t; }
+  const ox = cx + uc * ux + vc * vx, oz = cz + uc * uz + vc * vz;
+  const r = Math.max(0, a - bb * 0.9), h = Math.min(rise, Math.max(1, bb * 0.75));
+  const W = (sa, sb, yy) => [ox + Ax * sa + Bx * sb, yy, oz + Az * sa + Bz * sb];
+  const c1 = W(-a, -bb, y), c2 = W(a, -bb, y), c3 = W(a, bb, y), c4 = W(-a, bb, y), e1 = W(-r, 0, y + h), e2 = W(r, 0, y + h);
+  const pos = [], uv = [];
+  const tri = (p, q, s) => { // orde antihoraria vista desde arriba (normal cara arriba)
+    const ax = q[0] - p[0], az = q[2] - p[2], bx = s[0] - p[0], bz = s[2] - p[2]; if (ax * bz - az * bx > 0) { const t = q; q = s; s = t; }
+    for (const v of [p, q, s]) { pos.push(v[0], v[1], v[2]); uv.push(v[0] / 4, v[2] / 4); }
+  };
+  tri(c1, c2, e2); tri(c1, e2, e1); tri(c3, c4, e1); tri(c3, e1, e2); tri(c2, c3, e2); tri(c4, c1, e1);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals();
+  return g;
+}
 function customCover(P) {
   let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
   const q = G.colGrid.query((x0 + x1) / 2, (z0 + z1) / 2, Math.hypot(x1 - x0, z1 - z0) / 2 + 2, []).filter(o => o.k !== 'c' && o.h >= 3 && o.tag !== 'edif' && o.tag !== 'igrexa');
@@ -289,7 +315,8 @@ function buildOSMBuildings(B, F) {
     } else if (reservedAt(cx, cz) || G.monumentZones.some(q => inPoly(cx, cz, q))) continue;
     if (b.b === 'roof' || b.b === 'ruins') continue;
     const lv = b.lv || (b.b === 'church' || b.b === 'chapel' ? 3 : b.b === 'industrial' || b.b === 'retail' ? 2 : b.b === 'apartments' ? 5 : 3);
-    const H = b.h || (b.b === 'church' ? 14 : 3.6 + Math.max(0, lv - 1) * 3.1);
+    let H = b.h || (b.b === 'church' ? 14 : 3.6 + Math.max(0, lv - 1) * 3.1);
+    if (b.mh) { const tol = Math.max(2.5, H * 0.25); H = clamp(b.mh, H - tol, H + tol); } // altura medida co LiDAR
     let y0 = 1e9; for (const [x, z] of P) y0 = Math.min(y0, terrainH(x, z)); y0 = Math.max(0, y0);
     // aspecto segundo o uso
     const use = b.use || (b.b === 'industrial' ? 3 : 0);
@@ -310,6 +337,9 @@ function buildOSMBuildings(B, F) {
     else if (b.cat && use === 1 && lv >= 3) { const h = (Math.abs(Math.sin(cx * 12.9898 + cz * 78.233)) * 43758.5453) % 1; if (h < 0.8) shopMode = h < 0.12 ? 'bar' : 'shop'; }
     // paredes, aresta a aresta (as que dan á rúa levan baixo comercial)
     let A2 = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) A2 += P[j][0] * P[i][1] - P[i][0] * P[j][1];
+    // relevo: o edificio queda ríxido (horizontal) á altura do seu centro; as paredes baixan ata o chan polo lado de embaixo
+    let drop = 0; if (typeof relW === 'function') { const wc = relW(cx, cz); for (const [x, z] of P) drop = Math.max(drop, wc - relW(x, z)); }
+    const yb = y0 - 2 - drop;
     const geo = { wall: { pos: [], uv: [], idx: [] }, shop: { pos: [], uv: [], idx: [] }, bar: { pos: [], uv: [], idx: [] } };
     const quad = (g, a, c, yA, yB, u0, u1, vA, vB) => { const v = g.pos.length / 3; g.pos.push(a[0], yA, a[1], c[0], yA, c[1], c[0], yB, c[1], a[0], yB, a[1]); g.uv.push(u0, vA, u1, vA, u1, vB, u0, vB); g.idx.push(v, v + 1, v + 2, v, v + 2, v + 3); };
     let acc = 0, shopEdge = null, bestL = 0, signEdge = null;
@@ -321,23 +351,28 @@ function buildOSMBuildings(B, F) {
       const fu0 = acc / FAC_TILE[0], fu1 = (acc + L) / FAC_TILE[0];
       if (street && H > 4.5) {
         const sg = shopMode === 'bar' ? geo.bar : geo.shop;
-        quad(sg, a, c, y0 - 2, y0 + 3.6, acc / SHOP_TILE[0], (acc + L) / SHOP_TILE[0], -2 / SHOP_TILE[1], 1);
+        quad(sg, a, c, yb, y0 + 3.6, acc / SHOP_TILE[0], (acc + L) / SHOP_TILE[0], -2 / SHOP_TILE[1], 1);
         quad(geo.wall, a, c, y0 + 3.6, y0 + H, fu0, fu1, 0.25, (H - 3.6) / FAC_TILE[1] + 0.25);
         if (L > bestL) { bestL = L; signEdge = { a, c, ox, oz, L }; }
-      } else quad(geo.wall, a, c, y0 - 2, y0 + H, fu0, fu1, -2 / FAC_TILE[1], H / FAC_TILE[1]);
+      } else quad(geo.wall, a, c, yb, y0 + H, fu0, fu1, (yb - y0) / FAC_TILE[1], H / FAC_TILE[1]);
       acc += L;
     }
-    const toGeo = g => { const w = new THREE.BufferGeometry(); w.setAttribute('position', new THREE.Float32BufferAttribute(g.pos, 3)); w.setAttribute('uv', new THREE.Float32BufferAttribute(g.uv, 2)); w.setIndex(g.idx); w.computeVertexNormals(); return w; };
+    const toGeo = g => { const w = new THREE.BufferGeometry(); w.setAttribute('position', new THREE.Float32BufferAttribute(g.pos, 3)); w.setAttribute('uv', new THREE.Float32BufferAttribute(g.uv, 2)); w.setIndex(g.idx); w.computeVertexNormals(); return typeof relRigid === 'function' ? relRigid(w, cx, cz) : w; };
     wallBatch.add(toGeo(geo.wall));
     if (geo.shop.idx.length) { B.shop.add(toGeo(geo.shop)); G.useStats.shop++; }
     if (geo.bar.idx.length) { B.bar.add(toGeo(geo.bar)); G.useStats.bar++; }
     // rótulo co nome real (tendas de OSM)
-    if (poi && signEdge) { const { a, c, ox, oz, L } = signEdge; signs.push({ x: (a[0] + c[0]) / 2 + ox * 0.08, z: (a[1] + c[1]) / 2 + oz * 0.08, y: y0 + 3.35, yaw: Math.atan2(ox, oz), w: Math.min(L - 0.4, 4.2), text: (poi.n || POI_LABEL[poi.t]).toUpperCase().slice(0, 26), bar: POI_BAR.has(poi.t), t: poi.t }); G.useStats.poi++; }
+    if (poi && signEdge) { const { a, c, ox, oz, L } = signEdge; const sx = (a[0] + c[0]) / 2 + ox * 0.08, sz = (a[1] + c[1]) / 2 + oz * 0.08; signs.push({ x: sx, z: sz, y: y0 + 3.35 + (typeof relW === 'function' ? relW(cx, cz) - relW(sx, sz) : 0), yaw: Math.atan2(ox, oz), w: Math.min(L - 0.4, 4.2), text: (poi.n || POI_LABEL[poi.t]).toUpperCase().slice(0, 26), bar: POI_BAR.has(poi.t), t: poi.t }); G.useStats.poi++; }
     // tellado
     const sh = new THREE.Shape(P.map(([x, z]) => new THREE.Vector2(x, -z)));
+    let hip = b.roof ? hipRoofPoly(P, b.roof, b.rise, y0 + H) : null; if (hip && typeof relRigid === 'function') relRigid(hip, cx, cz);
+    if (hip) { (nave ? B.flat : b.look === 'pedra' || style === 3 && use !== 1 ? B.slate : B.tile).add(hip); G.useStats.hip = (G.useStats.hip || 0) + 1; }
+    else {
     const rg = new THREE.ShapeGeometry(sh); rg.rotateX(-Math.PI / 2); rg.translate(0, y0 + H + 0.02, 0);
     const ru = rg.attributes.uv, rp = rg.attributes.position; for (let i = 0; i < ru.count; i++) ru.setXY(i, rp.getX(i) / 4, rp.getZ(i) / 4);
+    if (typeof relRigid === 'function') relRigid(rg, cx, cz);
     (nave || b.b === 'industrial' || b.b === 'retail' || use === 4 || style === 5 ? B.flat : B.tile).add(rg);
+    }
     const r = minRect(P);
     if (b.cat && polyArea(P) < r.w * r.d * 0.82) { // planta en L/U: colisión parede a parede para non invadir a rúa
       for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.3) continue; addOBB((a[0] + c[0]) / 2, (a[1] + c[1]) / 2, L / 2, 0.25, -Math.atan2(c[1] - a[1], c[0] - a[0]), H + 4, 'edif', y0 - 2); }

@@ -1012,7 +1012,7 @@ function loop(now) {
   let dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
   if (G.paused || G.mapOpen) dt = G.started ? 0 : dt;
   G.t += dt;
-  if (!G.started) { G.t += 0; updateMenuCam(Math.min(0.05, (now - (loop._l || now)) / 1000) || 0.016); loop._l = now; simulate(0.016, true); updateSky(0.016, camera.position); renderer.render(scene, camera); return; }
+  if (!G.started) { G.t += 0; updateMenuCam(Math.min(0.05, (now - (loop._l || now)) / 1000) || 0.016); loop._l = now; simulate(0.016, true); updateSky(0.016, camera.position); if (typeof relevoBegin === 'function') relevoBegin(scene, camera); renderer.render(scene, camera); if (typeof relevoEnd === 'function') relevoEnd(); return; }
   if (dt > 0) {
     readInput();
     simulate(dt, false);
@@ -1022,7 +1022,9 @@ function loop(now) {
     drawMinimap();
   }
   G.sfx.update(dt);
+  if (typeof relevoBegin === 'function') relevoBegin(scene, camera);
   renderer.render(scene, camera);
+  if (typeof relevoEnd === 'function') relevoEnd();
   // resolución dinámica: baixa a densidade de píxeles se o equipo non chega a ~35 fps
   if (dt > 0 && !window.__test) { fpsAcc += dt; fpsN++; if (fpsAcc > 3) { const avg = fpsAcc / fpsN; const pr = renderer.getPixelRatio(); if (avg > 0.029 && pr > 0.6) { renderer.setPixelRatio(Math.max(0.6, pr - 0.15)); onResize(); } else if (avg < 0.017 && pr < Math.min(devicePixelRatio, QS.pr) - 0.01) { renderer.setPixelRatio(Math.min(Math.min(devicePixelRatio, QS.pr), pr + 0.1)); onResize(); } fpsAcc = 0; fpsN = 0; } }
 }

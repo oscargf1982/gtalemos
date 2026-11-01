@@ -447,7 +447,7 @@ function hipRoof(w, d, h, tile = 4, over = 0.45) {
 /* Lotes de xeometría por material → unha malla por material */
 class Batch {
   constructor(mat, opts = {}) { this.mat = mat; this.list = []; this.cast = opts.cast !== false; this.recv = opts.recv !== false; }
-  add(g) { this.list.push(g); return g; }
+  add(g) { if (typeof relevoTess === 'function') g = relevoTess(g); this.list.push(g); return g; }
   build(scene) {
     if (!this.list.length) return null;
     // en bloques de ~60k vértices para non pasar de índices razoables

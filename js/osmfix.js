@@ -24,12 +24,16 @@
   const crossesRoad = P => { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
     for (let gx = Math.floor(x0 / 20); gx <= Math.floor(x1 / 20); gx++) for (let gz = Math.floor(z0 / 20); gz <= Math.floor(z1 / 20); gz++) { const c = RG.get(gx + ',' + gz); if (!c) continue; for (let i = 0; i < c.length; i += 2) { const x = c[i], z = c[i + 1]; if (x > x0 && x < x1 && z > z0 && z < z1 && pip(x, z, P)) return true; } }
     return false; };
-  for (const r of CATASTRO) {
-    const [f, u, dec] = r, P = []; for (let i = 3; i < r.length; i += 2) P.push([r[i], r[i + 1]]);
+  // alturas e tellados medidos co LiDAR (alturas.js)
+  let MH = null; if (typeof CATASTRO_H !== 'undefined') { const bin = atob(CATASTRO_H); MH = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) MH[i] = bin.charCodeAt(i); }
+  for (let ri = 0; ri < CATASTRO.length; ri++) {
+    const r = CATASTRO[ri], [f, u, dec] = r, P = []; for (let i = 3; i < r.length; i += 2) P.push([r[i], r[i + 1]]);
     let cx = 0, cz = 0; for (const [x, z] of P) { cx += x; cz += z; } cx /= P.length; cz /= P.length;
     const look = lookAt(cx, cz);
     if ((!look && named.some(b => pip(cx, cz, b.p))) || crossesRoad(P)) continue;
-    out.push({ p: P, lv: Math.min(f, 14), b: u === 3 ? 'industrial' : (f >= 4 ? 'apartments' : 'house'), use: u, y: dec * 10, cat: 1, look });
+    const o = { p: P, lv: Math.min(f, 14), b: u === 3 ? 'industrial' : (f >= 4 ? 'apartments' : 'house'), use: u, y: dec * 10, cat: 1, look };
+    if (MH && MH[ri * 3]) { o.mh = MH[ri * 3] / 4; o.roof = MH[ri * 3 + 1]; o.rise = MH[ri * 3 + 2] / 10; }
+    out.push(o);
   }
   OSM.bldgs = out; OSM.catastro = true;
 })();

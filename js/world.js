@@ -140,6 +140,7 @@ function buildWorld(scene, Q) {
   for (const k in B) B[k].build(scene);
   F.forEach(b => b.build(scene));
   lap('batches');
+  if (typeof relevoInit === 'function') relevoInit();
 }
 
 /* ---------- Monte e Castelo de San Vicente ---------- */
