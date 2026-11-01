@@ -307,12 +307,50 @@ function useTextures() {
   TEX.alpendre = mk(x => { x.fillStyle = '#8a8070'; x.fillRect(0, 0, 256, 256); for (let r = 0; r < 256; r += 22) for (let k = -20 + (r / 22 % 2) * 20; k < 256; k += 40) { const v = RI(-14, 14); x.fillStyle = `rgb(${135 + v},${125 + v},${110 + v})`; x.fillRect(k + 2, r + 2, 36, 18); }
     x.fillStyle = '#5a3a20'; x.fillRect(90, 130, 80, 126); for (let k = 92; k < 170; k += 12) { x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(k, 130, 2, 126); } });
 }
-const POI_LABEL = { pharmacy: 'FARMACIA', chemist: 'DROGARÍA', bakery: 'PANADARÍA', cafe: 'CAFETARÍA', bar: 'BAR', pub: 'PUB', restaurant: 'RESTAURANTE', fast_food: 'COMIDA RÁPIDA', supermarket: 'SUPERMERCADO', hairdresser: 'PERRUQUERÍA', butcher: 'CARNICERÍA', greengrocer: 'FROITERÍA', bank: 'BANCO', books: 'LIBRARÍA', clothes: 'MODA', shoes: 'ZAPATARÍA', optician: 'ÓPTICA', florist: 'FLORISTERÍA', hardware: 'FERRETERÍA', confectionery: 'PASTELARÍA', stationery: 'PAPELARÍA', laundry: 'LAVANDARÍA', dentist: 'CLÍNICA DENTAL', tattoo: 'TATTOO', deli: 'ULTRAMARINOS', variety_store: 'BAZAR', computer: 'INFORMÁTICA', copyshop: 'COPISTERÍA', furniture: 'MOBLES', second_hand: 'SEGUNDA MAN', motorcycle: 'MOTOS', bicycle: 'BICICLETAS', car_parts: 'RECAMBIOS', fitness_centre: 'XIMNASIO', kiosk: 'QUIOSCO', car: 'CONCESIONARIO', car_repair: 'TALLER' };
+const POI_LABEL = { pharmacy: 'FARMACIA', chemist: 'DROGARÍA', bakery: 'PANADARÍA', cafe: 'CAFETARÍA', bar: 'BAR', pub: 'PUB', restaurant: 'RESTAURANTE', fast_food: 'COMIDA RÁPIDA', supermarket: 'SUPERMERCADO', hairdresser: 'PERRUQUERÍA', butcher: 'CARNICERÍA', greengrocer: 'FROITERÍA', bank: 'BANCO', books: 'LIBRARÍA', clothes: 'MODA', shoes: 'ZAPATARÍA', optician: 'ÓPTICA', florist: 'FLORISTERÍA', hardware: 'FERRETERÍA', confectionery: 'PASTELARÍA', stationery: 'PAPELARÍA', laundry: 'LAVANDARÍA', dentist: 'CLÍNICA DENTAL', tattoo: 'TATTOO', deli: 'ULTRAMARINOS', variety_store: 'BAZAR', computer: 'INFORMÁTICA', copyshop: 'COPISTERÍA', furniture: 'MOBLES', second_hand: 'SEGUNDA MAN', motorcycle: 'MOTOS', bicycle: 'BICICLETAS', car_parts: 'RECAMBIOS', fitness_centre: 'XIMNASIO', kiosk: 'QUIOSCO', car: 'CONCESIONARIO', car_repair: 'TALLER', convenience: 'ALIMENTACIÓN', association: 'ASOCIACIÓN', employment_agency: 'AXENCIA DE EMPREGO', advertising_agency: 'PUBLICIDADE', it: 'INFORMÁTICA', key_cutter: 'CHAVES', shoemaker: 'ZAPATEIRO', winery: 'ADEGA', post_office: 'CORREOS', doors: 'PORTAS', doityourself: 'BRICOLAXE', clinic: 'CLÍNICA', ticket: 'BILLETES', funeral_directors: 'FUNERARIA', music_school: 'ESCOLA DE MÚSICA', cinema: 'CINE', ice_cream: 'XEADOS', veterinary: 'VETERINARIO', doctors: 'CONSULTA MÉDICA', insurance: 'SEGUROS', estate_agent: 'INMOBILIARIA', lawyer: 'AVOGADOS', jewelry: 'XOIARÍA', gift: 'AGASALLOS', beauty: 'ESTÉTICA', mobile_phone: 'TELEFONÍA', electronics: 'ELECTRÓNICA', pet: 'MASCOTAS', toys: 'XOGUETES', sports: 'DEPORTES', travel_agency: 'VIAXES', photo: 'FOTOGRAFÍA', wine: 'VIÑOS', alcohol: 'BEBIDAS', seafood: 'PESCADARÍA', tobacco: 'ESTANCO', lottery: 'LOTARÍAS', newsagent: 'PRENSA' };
+/* categorías de baixo comercial: cada unha co seu escaparate, en versión tradicional (edificio vello) ou moderna */
+const SHOP_CAT = t => /^(cafe|bar|pub|restaurant|fast_food|ice_cream|winery)$/.test(t) ? 'bar' : /^(greengrocer|butcher|bakery|confectionery|deli|convenience|supermarket|seafood|wine|alcohol)$/.test(t) ? 'comida'
+  : /^(pharmacy|chemist|optician|dentist|clinic|doctors|veterinary)$/.test(t) ? 'saude' : /^(bank|association|employment_agency|advertising_agency|it|post_office|insurance|estate_agent|lawyer|travel_agency|music_school)$/.test(t) ? 'oficina'
+  : /^(clothes|shoes|hairdresser|tattoo|florist|jewelry|gift|beauty|shoemaker|toys|sports|mobile_phone|photo)$/.test(t) ? 'moda' : /^(car|motorcycle|car_repair|car_parts|bicycle|hardware|doors|doityourself|furniture|key_cutter)$/.test(t) ? 'taller' : 'tenda';
+function shopFrontTex(cat, old) {
+  const W = 512, H = 192, c = cnv(W, H), x = c.getContext('2d'), e = cnv(W, H), ex = e.getContext('2d'); ex.fillStyle = '#000'; ex.fillRect(0, 0, W, H);
+  const frame = old ? '#b3ab9b' : '#3a3d42', wood = old ? '#5a3a22' : '#26292d';
+  x.fillStyle = old ? '#a8a091' : '#d6d3cc'; x.fillRect(0, 0, W, H); noiseFill(x, W, H, 0, old ? 18 : 8);
+  for (let i = 0; i < 2; i++) {
+    const X = i * W / 2 + 14, w = W / 2 - 28;
+    x.fillStyle = frame; x.fillRect(X - 8, 18, w + 16, H - 18);
+    if (old) { x.fillStyle = 'rgba(0,0,0,.12)'; for (let k = 18; k < H; k += 22) x.fillRect(X - 8, k, 8, 2); for (let k = 18; k < H; k += 22) x.fillRect(X + w, k, 8, 2); }
+    if (cat === 'taller') { // persiana metálica e porta pequena
+      x.fillStyle = '#8e9296'; x.fillRect(X, 30, w * 0.7, H - 30); for (let k = 30; k < H; k += 6) { x.fillStyle = 'rgba(0,0,0,.2)'; x.fillRect(X, k, w * 0.7, 2); }
+      x.fillStyle = '#20262b'; x.fillRect(X, 120, w * 0.7, H - 120); ex.fillStyle = 'rgba(255,230,190,.5)'; ex.fillRect(X, 124, w * 0.7, H - 126);
+      x.fillStyle = wood; x.fillRect(X + w * 0.74, 50, w * 0.26, H - 50); x.fillStyle = 'rgba(90,110,125,.8)'; x.fillRect(X + w * 0.78, 60, w * 0.18, 50);
+      continue;
+    }
+    const gl = x.createLinearGradient(X, 34, X + w, H); const tint = { bar: ['#3a2a1e', '#6b4a2c'], comida: ['#2c3a2a', '#5a6a4a'], saude: ['#dfe9e6', '#f4f8f6'], oficina: ['#2b3640', '#6f8594'], moda: ['#2a2a30', '#7d7a80'], tenda: ['#27323a', '#5f7381'] }[cat];
+    gl.addColorStop(0, tint[0]); gl.addColorStop(0.5, tint[1]); gl.addColorStop(1, '#1d2328'); x.fillStyle = gl; x.fillRect(X, 34, w, H - 34);
+    // carpintería: madeira con cuarteiróns (vello) ou aluminio con vidro grande (moderno)
+    x.fillStyle = wood; x.fillRect(X, 34, w, 5); x.fillRect(X + w * 0.66, 34, 5, H - 34); x.fillRect(X, H - 26, w * 0.66, 26);
+    if (old) for (let k = 1; k < 3; k++) x.fillRect(X + k * w * 0.22, 34, 3, H - 60); else x.fillRect(X + w * 0.33, 34, 3, H - 60);
+    if (cat === 'comida') { for (let k = 0; k < 10; k++) { x.fillStyle = pick(['#c0392b', '#e67e22', '#f1c40f', '#27ae60', '#8e44ad']); x.beginPath(); x.arc(X + 14 + k * w * 0.06, H - 34, 7, 0, 7); x.fill(); }
+      for (let k = 0; k < w; k += 20) { x.fillStyle = k / 20 % 2 ? '#f4f2ea' : (old ? '#2e6b3a' : '#c0392b'); x.fillRect(X + k, 22, 20, 18); } }
+    if (cat === 'bar') { x.fillStyle = 'rgba(255,190,110,.35)'; x.fillRect(X, 40, w * 0.66, H - 66); x.fillStyle = '#2a1d14'; x.fillRect(X + 10, 120, w * 0.6, 24); for (let k = 0; k < 6; k++) { x.fillStyle = pick(['#7a1f3d', '#355f2e', '#c7a14a']); x.fillRect(X + 20 + k * 26, 74, 8, 22); } }
+    if (cat === 'saude') { x.fillStyle = '#e8eeec'; for (let k = 0; k < 4; k++) x.fillRect(X + 10, 60 + k * 26, w * 0.55, 4); x.fillStyle = '#18a050'; x.fillRect(X + w * 0.3, 44, 18, 6); x.fillRect(X + w * 0.3 + 6, 38, 6, 18); ex.fillStyle = 'rgba(80,255,140,.9)'; ex.fillRect(X + w * 0.3, 38, 18, 18); }
+    if (cat === 'moda') for (let k = 0; k < 3; k++) { const mx = X + 26 + k * w * 0.18; x.fillStyle = pick(['#c0392b', '#2c3e50', '#d4a017', '#7d3c98', '#e8e4dc']); x.fillRect(mx - 9, 70, 18, 46); x.fillStyle = '#d8c0a8'; x.beginPath(); x.arc(mx, 60, 7, 0, 7); x.fill(); x.fillStyle = '#333'; x.fillRect(mx - 1, 116, 2, 30); }
+    if (cat === 'oficina') { x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(X + 8, 70, w * 0.5, 10); x.fillStyle = '#6f8594'; x.fillRect(X + 8, 100, w * 0.25, 40); }
+    if (cat === 'tenda') for (let k = 0; k < 4; k++) { x.fillStyle = pick(['#c7a14a', '#5d6d7e', '#a04030', '#e8e4dc']); x.fillRect(X + 12 + k * 30, 110 - RI(0, 30), 22, 34); }
+    const lit = cat === 'bar' ? 'rgba(255,170,90,.95)' : cat === 'saude' ? 'rgba(235,255,245,.95)' : `rgba(255,${220 + RI(0, 30)},${180 + RI(0, 60)},.8)`;
+    ex.fillStyle = lit; ex.fillRect(X + 2, 40, w * 0.64, H - 66);
+    // franxa do rótulo (o nome vai no letreiro aparte)
+    x.fillStyle = { bar: '#6b2c1c', comida: '#2e6b3a', saude: '#18a050', oficina: '#24425e', moda: '#1c1c1e', tenda: pick(['#7a1f3d', '#8a5a1c', '#1e5f66']) }[cat]; x.fillRect(X - 8, 2, w + 16, 20);
+  }
+  return { map: toTex(c), emissive: toTex(e) };
+}
 const POI_BAR = new Set(['cafe', 'bar', 'pub', 'restaurant', 'fast_food']);
 const SHOP_STREETS = new Set(['Rúa do Doutor Casares', 'Rúa do Cardeal Rodrigo de Castro', 'Rúa do Comercio', 'Rúa de Ourense', 'Rúa de Chantada', 'Rúa de Roberto Baamonde', 'Rúa de Concepción Arenal', 'Rúa de Abelardo Baanante', 'Rúa da Duquesa de Alba', 'Rúa de Leopoldo Calvo Sotelo', 'Rúa de Curros Enríquez', 'Rúa da Coruña', 'Rúa de San Pedro', 'Rúa de Pontevedra', 'Rúa de Ricardo Quiroga', 'Rúa Zapaterías', 'Rúa de Santo Domingo', 'Rúa Pescaderías', 'Rúa Bailén', 'Rúa Teceláns', 'Rúa do Burato', 'Praza de España', 'Rúa de Armando Cotarelo']);
 function buildOSMBuildings(B, F) {
   useTextures();
   const BN = new Batch(nightMat(std({ map: TEX.nave, roughness: 0.6, metalness: 0.3 }), 0, 0)), BA = new Batch(std({ map: TEX.alpendre, roughness: 0.95 }));
+  const SBT = new Map(), shopBatch = (cat, old) => { const k = cat + (old ? 'V' : 'M'); let b = SBT.get(k); if (!b) { const T = shopFrontTex(cat, old); b = new Batch(nightMat(std({ map: T.map, emissiveMap: T.emissive, emissive: 0xffffff, roughness: 0.6 }), cat === 'bar' ? 0.35 : 0.05, cat === 'bar' ? 1.3 : 1.1)); SBT.set(k, b); } return b; };
   const BB = new Batch(std({ map: TEX.baixo, roughness: 0.9 })), BD = new Batch(std({ map: TEX.portas, roughness: 0.7 }));
   G.useStats_portas = 0;
   // números de portal (enderezos.js): índice espacial e atlas de placas
@@ -329,16 +367,22 @@ function buildOSMBuildings(B, F) {
   const plateUV = l => { const i = LBI.get(l), ox = (i % PCOLS) * 64, oy = Math.floor(i / PCOLS) * 32; return [ox / 1024, (ox + 64) / 1024, 1 - (oy + 32) / PH, 1 - oy / PH]; };
   const addrNear = (x0, z0, x1, z1) => { const out = []; for (let gx = Math.floor(x0 / 20); gx <= Math.floor(x1 / 20); gx++) for (let gz = Math.floor(z0 / 20); gz <= Math.floor(z1 / 20); gz++) for (const o of AG.get(gx + ',' + gz) || []) if (!o.used && o.x > x0 && o.x < x1 && o.z > z0 && o.z < z1) out.push(o); return out; };
   G.useStats_numeros = 0;
-  const shopPois = OSM.pois.filter(q => POI_LABEL[q.t]);
+  // todos os comercios de OpenStreetMap (comercios.js); se teñen rúa e número, vanse ao portal do Catastro
+  const shopPois = (typeof COMERCIOS !== 'undefined' ? COMERCIOS.map(([t, n, x, z, st, num]) => ({ t, n, p: [x, z], st, num })) : OSM.pois).filter(q => POI_LABEL[q.t]);
+  if (typeof ENDEREZOS !== 'undefined') for (const q of shopPois) if (q.st && q.num) { const si = ENDEREZOS.r.indexOf(q.st); if (si < 0) continue; for (const [x, z, n, s2] of ENDEREZOS.a) if (s2 === si && n === q.num) { q.p = [x / 10, z / 10]; break; } }
+  G.useStats_poisTot = shopPois.length;
   G.useStats = { shop: 0, bar: 0, poi: 0, nave: 0, alpendre: 0, oficina: 0, publico: 0 };
   const signs = [];
   // cada tenda de OSM vai a un só edificio: o que a contén ou o de parede máis próxima
   const poiOf = new Map(), segD = (x, z, a, c) => { const dx = c[0] - a[0], dz = c[1] - a[1], L2 = dx * dx + dz * dz || 1, t = clamp(((x - a[0]) * dx + (z - a[1]) * dz) / L2, 0, 1); return Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t); };
+  // cada comercio ao edificio que o contén ou ao máis próximo; se xa está ocupado, ao veciño libre máis próximo (ata 12 m)
   for (const q of shopPois) {
-    let best = null, bd = 10;
-    for (const b of OSM.bldgs) { if (!b.cat || b.p.length < 3) continue; const P = b.p; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); } if (q.p[0] < x0 - 10 || q.p[0] > x1 + 10 || q.p[1] < z0 - 10 || q.p[1] > z1 + 10) continue;
-      if (inPoly(q.p[0], q.p[1], P)) { best = b; bd = -1; break; } for (let i = 0; i < P.length; i++) { const d = segD(q.p[0], q.p[1], P[i], P[(i + 1) % P.length]); if (d < bd) { bd = d; best = b; } } }
-    if (best && !poiOf.has(best)) poiOf.set(best, q);
+    const cand = [];
+    for (const b of OSM.bldgs) { if (!b.cat || b.p.length < 3) continue; const P = b.p; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); } if (q.p[0] < x0 - 12 || q.p[0] > x1 + 12 || q.p[1] < z0 - 12 || q.p[1] > z1 + 12) continue;
+      let d = inPoly(q.p[0], q.p[1], P) ? -1 : 1e9; if (d > 0) for (let i = 0; i < P.length; i++) d = Math.min(d, segD(q.p[0], q.p[1], P[i], P[(i + 1) % P.length])); if (d < 12) cand.push([d, b]); }
+    cand.sort((u, v) => u[0] - v[0]);
+    const free = cand.find(([d, b]) => !poiOf.has(b) && (b.lv || 1) >= 1 && b.use !== 3 && b.use !== 2);
+    if (free) poiOf.set(free[1], q); else G.useStats_poisSen = (G.useStats_poisSen || 0) + 1;
   }
   // fachadas singulares (fachadas.js): edificio e panos que dan á rúa
   const SPEC = new Map(), SPEC_SEGS = [];
@@ -404,9 +448,11 @@ function buildOSMBuildings(B, F) {
     const poi = !nave && !alpendre ? poiOf.get(b) || null : null;
     let shopMode = null;
     if (b.look) shopMode = null; // edificio singular: sen baixos comerciais
-    else if (poi) shopMode = POI_BAR.has(poi.t) ? 'bar' : 'shop';
-    else if (use === 5 || use === 4) shopMode = 'shop';
-    else if (b.cat && use === 1 && lv >= 3) { const h = (Math.abs(Math.sin(cx * 12.9898 + cz * 78.233)) * 43758.5453) % 1; if (h < 0.8) shopMode = h < 0.12 ? 'bar' : 'shop'; }
+    else if (poi) shopMode = SHOP_CAT(poi.t);
+    else if (use === 4) shopMode = 'oficina';
+    else if (use === 5) shopMode = 'tenda';
+    else if (b.cat && use === 1 && lv >= 3) { const h = (Math.abs(Math.sin(cx * 12.9898 + cz * 78.233)) * 43758.5453) % 1; if (h < 0.8) shopMode = h < 0.12 ? 'bar' : h < 0.24 ? 'comida' : h < 0.34 ? 'moda' : h < 0.4 ? 'saude' : h < 0.46 ? 'taller' : 'tenda'; }
+    const shopOld = (b.y && b.y < 1950) || style === 3;
     // paredes, aresta a aresta (as que dan á rúa levan baixo comercial)
     let A2 = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) A2 += P[j][0] * P[i][1] - P[i][0] * P[j][1];
     // relevo: o edificio queda ríxido (horizontal) á altura do seu centro; as paredes baixan ata o chan polo lado de embaixo
@@ -446,7 +492,7 @@ function buildOSMBuildings(B, F) {
       let street = null; if (shopMode && L >= 2.5) { const pr = poi ? 6 : 3, px = mx + ox * pr, pz = mz + oz * pr; street = inStreet(px, pz, 1) || inRoad(px, pz, 1, true); if (street && !poi && use === 1 && !SHOP_STREETS.has(street.name)) street = null; }
       const fu0 = acc / FAC_TILE[0], fu1 = (acc + L) / FAC_TILE[0];
       if (street && H > 4.5) {
-        const sg = shopMode === 'bar' ? geo.bar : geo.shop;
+        const sg = geo.shop;
         quad(sg, a, c, yb, y0 + 3.6, acc / SHOP_TILE[0], (acc + L) / SHOP_TILE[0], -2 / SHOP_TILE[1], 1);
         quad(geo.wall, a, c, y0 + 3.6, y0 + H, fu0, fu1, 0.25, (H - 3.6) / FAC_TILE[1] + 0.25);
         if (L > bestL) { bestL = L; signEdge = { a, c, ox, oz, L }; }
@@ -466,8 +512,7 @@ function buildOSMBuildings(B, F) {
     }
     const toGeo = g => { const w = new THREE.BufferGeometry(); w.setAttribute('position', new THREE.Float32BufferAttribute(g.pos, 3)); w.setAttribute('uv', new THREE.Float32BufferAttribute(g.uv, 2)); w.setIndex(g.idx); w.computeVertexNormals(); return typeof relRigid === 'function' ? relRigid(w, cx, cz) : w; };
     if (geo.wall.idx.length) wallBatch.add(toGeo(geo.wall));
-    if (geo.shop.idx.length) { B.shop.add(toGeo(geo.shop)); G.useStats.shop++; }
-    if (geo.bar.idx.length) { B.bar.add(toGeo(geo.bar)); G.useStats.bar++; }
+    if (geo.shop.idx.length) { shopBatch(shopMode, shopOld).add(toGeo(geo.shop)); if (shopMode === 'bar') G.useStats.bar++; else G.useStats.shop++; (G.useStats.cat = G.useStats.cat || {})[shopMode] = (G.useStats.cat[shopMode] || 0) + 1; }
     if (geo.baixo.idx.length) BB.add(toGeo(geo.baixo));
     if (geo.door.idx.length) BD.add(toGeo(geo.door));
     if (geo.plate.idx.length) BP.add(toGeo(geo.plate));
@@ -491,7 +536,7 @@ function buildOSMBuildings(B, F) {
     G.buildingsList.push({ cx, cz, poly: P, H, y0, name: b.n, use, shop: shopMode });
     if (b.n) G.namedZones.push({ n: b.n, p: P });
   }
-  BN.build(G.scene); BA.build(G.scene); BB.build(G.scene); BD.build(G.scene); BP.build(G.scene);
+  BN.build(G.scene); BA.build(G.scene); BB.build(G.scene); BD.build(G.scene); BP.build(G.scene); for (const b of SBT.values()) b.build(G.scene);
   // rótulos (unha soa textura atlas para todos)
   if (signs.length) {
     const per = 4, rows = Math.ceil(signs.length / per), cw = 1024, rh = 64, c = cnv(cw, rows * rh), x = c.getContext('2d');
