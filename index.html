@@ -262,6 +262,8 @@ button, select { font: inherit; }
       <select id="optRain"><option value="sun">Claro</option><option value="rain">Chuvia galega</option></select>
       <label for="optQuality">Calidade</label>
       <select id="optQuality"><option value="high">Alta</option><option value="med">Media</option><option value="low">Baixa</option></select>
+      <label for="optPix">Estilo</label>
+      <select id="optPix"><option value="0">Normal</option><option value="3">Pixel art · fino</option><option value="4">Pixel art</option><option value="6">Pixel art · groso</option></select>
       <span id="qNote" hidden>A calidade aplícase ao recargar a páxina.</span>
     </div>
     <div class="keys desk">
@@ -337,52 +339,53 @@ button, select { font: inherit; }
 </div>
 
 <script src="vendor/three.min.js"></script>
-<script src="js/osmdata.js?v=1793563151"></script>
-<script src="js/catastro.js?v=1793563151"></script>
-<script src="js/alturas.js?v=1793563151"></script>
-<script src="js/enderezos.js?v=1793563151"></script>
-<script src="js/comercios.js?v=1793563151"></script>
-<script src="js/fachadas.js?v=1793563151"></script>
-<script src="js/osmfix.js?v=1793563151"></script>
-<script src="js/core.js?v=1793563151"></script>
-<script src="js/relevo_data.js?v=1793563151"></script>
-<script src="js/relevo.js?v=1793563151"></script>
-<script src="js/world.js?v=1793563151"></script>
-<script src="js/monuments.js?v=1793563151"></script>
-<script src="js/city.js?v=1793563151"></script>
-<script src="js/places.js?v=1793563151"></script>
-<script src="js/actors.js?v=1793563151"></script>
-<script src="js/pacho.js?v=1793563151"></script>
-<script src="js/band.js?v=1793563151"></script>
-<script src="js/portraits.js?v=1793563151"></script>
-<script src="js/volei.js?v=1793563151"></script>
-<script src="js/fluvial.js?v=1793563151"></script>
-<script src="js/sajoni.js?v=1793563151"></script>
-<script src="js/arenal.js?v=1793563151"></script>
-<script src="js/ucelers.js?v=1793563151"></script>
-<script src="js/avelino.js?v=1793563151"></script>
-<script src="js/aventura.js?v=1793563151"></script>
-<script src="js/plazahotels.js?v=1793563151"></script>
-<script src="js/goyanes.js?v=1793563151"></script>
-<script src="js/cena.js?v=1793563151"></script>
-<script src="js/tren.js?v=1793563151"></script>
-<script src="js/heroes.js?v=1793563151"></script>
-<script src="js/virginia.js?v=1793563151"></script>
-<script src="js/carude.js?v=1793563151"></script>
-<script src="js/concello.js?v=1793563151"></script>
-<script src="js/medieval.js?v=1793563151"></script>
-<script src="js/zonas.js?v=1793563151"></script>
-<script src="js/radio.js?v=1793563151"></script>
-<script src="js/carmina.js?v=1793563151"></script>
-<script src="js/riders.js?v=1793563151"></script>
-<script src="js/works.js?v=1793563151"></script>
-<script src="js/fair.js?v=1793563151"></script>
-<script src="js/details.js?v=1793563151"></script>
-<script src="js/travel.js?v=1793563151"></script>
-<script src="js/concha.js?v=1793563151"></script>
-<script src="js/fraternal.js?v=1793563151"></script>
-<script src="js/sanpedro.js?v=1793563151"></script>
-<script src="js/game.js?v=1793563151"></script>
+<script src="js/osmdata.js?v=1793563796"></script>
+<script src="js/catastro.js?v=1793563796"></script>
+<script src="js/alturas.js?v=1793563796"></script>
+<script src="js/enderezos.js?v=1793563796"></script>
+<script src="js/comercios.js?v=1793563796"></script>
+<script src="js/fachadas.js?v=1793563796"></script>
+<script src="js/osmfix.js?v=1793563796"></script>
+<script src="js/core.js?v=1793563796"></script>
+<script src="js/relevo_data.js?v=1793563796"></script>
+<script src="js/relevo.js?v=1793563796"></script>
+<script src="js/world.js?v=1793563796"></script>
+<script src="js/monuments.js?v=1793563796"></script>
+<script src="js/city.js?v=1793563796"></script>
+<script src="js/places.js?v=1793563796"></script>
+<script src="js/actors.js?v=1793563796"></script>
+<script src="js/pacho.js?v=1793563796"></script>
+<script src="js/band.js?v=1793563796"></script>
+<script src="js/portraits.js?v=1793563796"></script>
+<script src="js/volei.js?v=1793563796"></script>
+<script src="js/fluvial.js?v=1793563796"></script>
+<script src="js/sajoni.js?v=1793563796"></script>
+<script src="js/arenal.js?v=1793563796"></script>
+<script src="js/ucelers.js?v=1793563796"></script>
+<script src="js/avelino.js?v=1793563796"></script>
+<script src="js/aventura.js?v=1793563796"></script>
+<script src="js/plazahotels.js?v=1793563796"></script>
+<script src="js/goyanes.js?v=1793563796"></script>
+<script src="js/cena.js?v=1793563796"></script>
+<script src="js/tren.js?v=1793563796"></script>
+<script src="js/heroes.js?v=1793563796"></script>
+<script src="js/virginia.js?v=1793563796"></script>
+<script src="js/carude.js?v=1793563796"></script>
+<script src="js/concello.js?v=1793563796"></script>
+<script src="js/medieval.js?v=1793563796"></script>
+<script src="js/zonas.js?v=1793563796"></script>
+<script src="js/radio.js?v=1793563796"></script>
+<script src="js/carmina.js?v=1793563796"></script>
+<script src="js/riders.js?v=1793563796"></script>
+<script src="js/works.js?v=1793563796"></script>
+<script src="js/fair.js?v=1793563796"></script>
+<script src="js/details.js?v=1793563796"></script>
+<script src="js/travel.js?v=1793563796"></script>
+<script src="js/concha.js?v=1793563796"></script>
+<script src="js/fraternal.js?v=1793563796"></script>
+<script src="js/sanpedro.js?v=1793563796"></script>
+<script src="js/pixel.js?v=1793563796"></script>
+<script src="js/game.js?v=1793563796"></script>
 
 </body>
 </html>
