@@ -324,7 +324,7 @@ function updateDavid(dt) {
     davidFrame(0, false);
   }
   const me = G.player.ped, h = G.hour, D = DAVID; D.t += dt;
-  if (!(h >= 20 && h < 23.5)) { D.sp.visible = false; return; } D.sp.visible = true; // de día está dentro da Fraternal; á noitiña sae ao banco
+  D.sp.visible = !G.interior; // sempre á porta da Fraternal, para sinalar que se pode entrar
   let x, z, face, moving = false;
   const near = !G.player.car && Math.hypot(me.x - Fr.door.x, me.z - Fr.door.z) < 7;
   const sitting = h >= 20 && h < 23.5 && !near && !(G.dialog && $('dlgName').textContent === 'Tío David');

@@ -93,6 +93,12 @@ function updateMelenas(dt) {
     if (!G.player.car && !G.dialog && dMe(P) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Falar co Melenas`);
   } else if (MEL.sp) MEL.sp.visible = false;
   // Valerio está dentro da farmacia (Rúa do Cardeal, 3): na porta ofrécese entrar
+  // Valerio tamén aparece fóra, á porta, para sinalar que se pode entrar
+  if (dMe(MEL.farm) < 160) {
+    if (!MEL.vs) MEL.vs = melBillboard('img/valerio.png', 0.95, 1.85);
+    const near = dMe(MEL.farm) < 9, wave = Math.floor(G.t / 1.2) % 3 === 0;
+    melBillboardUpdate(MEL.vs, MEL.farm.x, MEL.farm.z, near ? (wave ? 8 : 9) : (wave ? 8 : 10), near ? Math.atan2(me.x - MEL.farm.x, me.z - MEL.farm.z) : MEL.farm.face);
+  } else if (MEL.vs) MEL.vs.visible = false;
   if (!G.player.car && !G.dialog && !G.interior && dMe(MEL.farm) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Entrar na farmacia`);
   if (G.interior) interiorUpdate(dt);
   // Rosiña, a pasteleira (mandil rosa)

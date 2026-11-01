@@ -291,32 +291,37 @@ function buildCardealOSM(B, F, scene) {
   const hw = 3.5, front = hw + 0.35;
   let bi = 0;
   const tables = [], chairs = [], umbrellas = [], barrels = [], awnings = [];
+  // a rúa é ancha: os edificios son só os do Catastro. Mídese a que distancia do eixo está cada fachada
+  const facade = (x, z, nx, nz) => { let best = 99; for (const b of OSM.bldgs) { if (!b.cat) continue; const Q = b.p; let bx = 1e9, bz = 1e9; for (const q of Q) { bx = Math.min(bx, Math.abs(q[0] - x)); bz = Math.min(bz, Math.abs(q[1] - z)); } if (bx > 40 || bz > 40) continue;
+    for (let i = 0; i < Q.length; i++) { const a = Q[i], c = Q[(i + 1) % Q.length], ex = c[0] - a[0], ez = c[1] - a[1], den = nx * ez - nz * ex; if (Math.abs(den) < 1e-6) continue; const t = ((a[0] - x) * ez - (a[1] - z) * ex) / den, u = ((a[0] - x) * nz - (a[1] - z) * nx) / den; if (t > 0 && t < best && u >= 0 && u <= 1) best = t; } } return best; };
+  // pavimento de beirarrúa a beirarrúa (lousas de granito ata as fachadas)
+  { const L = [], Rr = []; for (let s = 0; s <= P.len; s += 2) { const p = P.at(Math.min(s, P.len)), nx = -p.uz, nz = p.ux; const dl = Math.min(12, facade(p.x, p.z, nx, nz)), dr = Math.min(12, facade(p.x, p.z, -nx, -nz)); L.push([p.x + nx * dl, p.z + nz * dl]); Rr.push([p.x - nx * dr, p.z - nz * dr]); }
+    const pos = [], uv = [], idx = []; for (let i = 0; i < L.length; i++) { for (const q of [L[i], Rr[i]]) { pos.push(q[0], terrainH(q[0], q[1]) + 0.03, q[1]); uv.push(q[0] / 3, q[1] / 3); } if (i) { const o = (i - 1) * 2; idx.push(o, o + 2, o + 1, o + 1, o + 2, o + 3); } }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); if (g.attributes.normal.array[1] < 0) { idx.reverse(); g.setIndex(idx); g.computeVertexNormals(); } B.paving.add(g); }
   for (const side of [-1, 1]) {
-    let s = 6 + (side > 0 ? 2 : 0);
+    let s = 6 + (side > 0 ? 4 : 0);
     while (s < P.len - 8) {
-      const lw = RR(7.5, 11), dp = RR(12, 15), p = P.at(s + lw / 2);
-      const nx = -p.uz * side, nz = p.ux * side, rot = Math.atan2(-p.uz, p.ux);
-      const cx = p.x + nx * (front + dp / 2), cz = p.z + nz * (front + dp / 2);
-      if (obbOverlaps(cx, cz, lw / 2, dp / 2, rot, 0.1) || inStreet(cx + nx * (-dp / 2 + 0.5), cz + nz * (-dp / 2 + 0.5), 0) && !inRoad(p.x, p.z, 0)) { s += 2; continue; }
+      const lw = RR(8, 12), p = P.at(s + lw / 2), nx = -p.uz * side, nz = p.ux * side, d = facade(p.x, p.z, nx, nz);
+      if (d < 4 || d > 13) { s += 3; continue; }
       const isBar = bi < BAR_NAMES.length && R() < 0.8;
-      addBuildingRot(B, F, cx, cz, rot, lw, dp, { floors: RI(3, 4), style: pick([4, 4, 0, 1, 2, 4, 3]), bar: isBar });
       if (isBar) {
         const name = BAR_NAMES[bi], col = BAR_COLORS[bi]; bi++;
-        const fx = p.x + nx * (front - 0.12), fz = p.z + nz * (front - 0.12), yaw = Math.atan2(-nx, -nz), y = terrainH(fx, fz);
+        const fx = p.x + nx * (d - 0.12), fz = p.z + nz * (d - 0.12), yaw = Math.atan2(-nx, -nz), y = terrainH(fx, fz);
         const tex = textTex(name.toUpperCase(), { w: 512, h: 96, bg: '#14100e', fg: col, size: 54, glow: true, border: col });
         const sm = nightMat(std({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.4, roughness: 0.5 }), 0.25, 1.6);
         const sign = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(lw - 1.5, 5.2), 0.95), sm);
         sign.position.set(fx - nx * 0.03, y + 3.05, fz - nz * 0.03); sign.rotation.y = yaw; scene.add(sign);
         awnings.push({ x: fx - nx * 0.9, z: fz - nz * 0.9, y, w: lw - 1.2, yaw, col });
-        const nT = RI(1, 2);
+        // terraza: dúas ou tres mesas diante do local, deixando libre o centro da rúa
+        const nT = d > 8 ? 3 : 2, td = Math.max(2.4, d - 2.6);
         for (let k = 0; k < nT; k++) {
-          const q = P.at(s + lw / 2 + (nT === 1 ? 0 : (k ? 2.2 : -2.2))), tx = q.x - q.uz * side * (hw - 1.0), tz = q.z + q.ux * side * (hw - 1.0), ty = terrainH(tx, tz);
-          if (R() < 0.45) {
+          const off = (k - (nT - 1) / 2) * 2.6, q = P.at(s + lw / 2 + off), tx = q.x - q.uz * side * td, tz = q.z + q.ux * side * td, ty = terrainH(tx, tz);
+          if (R() < 0.3) {
             barrels.push([tx, ty, tz]);
             G.seats.push({ x: tx + q.ux * 0.75, z: tz + q.uz * 0.75, yaw: Math.atan2(-q.ux, -q.uz), y: ty, stand: true });
             G.seats.push({ x: tx - q.ux * 0.75, z: tz - q.uz * 0.75, yaw: Math.atan2(q.ux, q.uz), y: ty, stand: true });
           } else {
-            tables.push([tx, ty, tz]); umbrellas.push([tx, ty, tz, col]);
+            tables.push([tx, ty, tz]); if (k % 2 === 0) umbrellas.push([tx, ty, tz, col]);
             for (const [ox, oz] of [[q.ux, q.uz], [-q.ux, -q.uz], [-q.uz, q.ux], [q.uz, -q.ux]]) { const sx = tx + ox * 0.8, sz = tz + oz * 0.8, ya = Math.atan2(-ox, -oz); chairs.push([sx, ty, sz, ya + Math.PI]); if (R() < 0.7) G.seats.push({ x: sx, z: sz, yaw: ya, y: ty, sit: true }); }
           }
           addCircCol(tx, tz, 0.7, 1.2, 'mesa', -1);
