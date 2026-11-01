@@ -48,7 +48,9 @@ function computeLandmarks() {
     const pl = osmArea('Campo da Compañía', 'plaza'), pc = pl ? polyCentroid(pl.p) : [r.cx + 50, r.cz];
     const ux = Math.cos(r.w >= r.d ? r.ang : r.ang + Math.PI / 2), uz = Math.sin(r.w >= r.d ? r.ang : r.ang + Math.PI / 2);
     let nx = pc[0] - r.cx, nz = pc[1] - r.cz; const k = nx * ux + nz * uz; nx -= k * ux; nz -= k * uz; [nx, nz] = norm2(nx, nz);
-    LM.comp = frameAt(-35, 188, r.cx, r.cz, Math.atan2(-nx, -nz));
+    // axuste á planta real do Catastro: o modelo quedaba desprazado e xirado (mellor encaixe: xiro −4,5° e desprazamento 13, 7 m)
+    const th = -4.5 * Math.PI / 180, mx = -337.49, mz = 675.75, px = r.cx - mx, pz = r.cz - mz;
+    LM.comp = frameAt(-35, 188, mx + px * Math.cos(th) - pz * Math.sin(th) + 13, mz + px * Math.sin(th) + pz * Math.cos(th) + 7, Math.atan2(-nx, -nz) - th);
     // antigas coordenadas de deseño (marco anterior: +70, −41)
     LM.compOld = (x, z) => LM.comp.pt(x - 70, z + 41);
     G.monumentZones.push(frameRectPoly(LM.comp, -95, 125, 25, 214));

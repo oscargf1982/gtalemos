@@ -12,8 +12,11 @@
 (function () {
   if (typeof CATASTRO === 'undefined') return;
   const named = OSM.bldgs.filter(b => b.n);
+  // edificios singulares que o xogo modela á man: os anacos do Catastro que non pise o modelo constrúense coa súa estética
+  const LOOKS = { 'Colexio Privado Ferroviario': 'colegio', 'Colexio da Nosa Señora da Antiga': 'pedra', 'Convento das Clarisas': 'pedra', 'Castelo de Monforte de Lemos': 'pedra', 'Igrexa de San Vicente do Pino': 'pedra', 'Torre da Homenaxe': 'pedra', 'Torre Pequena': 'pedra', 'Monforte de Lemos': 'estacion', 'Edificio Multiúsos de Monforte de Lemos': 'moderno' };
+  const lookAt = (x, z) => { for (const b of named) if (LOOKS[b.n] && pip(x, z, b.p)) return LOOKS[b.n]; return null; };
   const pip = (x, z, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
-  const USE = ['', '', 'industrial', 'industrial', 'commercial'];
+  const USE = ['', '', 'farm', 'industrial', 'office', 'retail', 'public'];
   const out = named.slice();
   // mostras do eixo das rúas: un edificio que as tape (soportais, desaxustes) non se constrúe
   const RG = new Map(), key = (x, z) => Math.floor(x / 20) + ',' + Math.floor(z / 20);
@@ -24,8 +27,9 @@
   for (const r of CATASTRO) {
     const [f, u, dec] = r, P = []; for (let i = 3; i < r.length; i += 2) P.push([r[i], r[i + 1]]);
     let cx = 0, cz = 0; for (const [x, z] of P) { cx += x; cz += z; } cx /= P.length; cz /= P.length;
-    if (named.some(b => pip(cx, cz, b.p)) || crossesRoad(P)) continue;
-    out.push({ p: P, lv: Math.min(f, 14), b: USE[u] || (f >= 4 ? 'apartments' : 'house'), y: dec * 10, cat: 1 });
+    const look = lookAt(cx, cz);
+    if ((!look && named.some(b => pip(cx, cz, b.p))) || crossesRoad(P)) continue;
+    out.push({ p: P, lv: Math.min(f, 14), b: u === 3 ? 'industrial' : (f >= 4 ? 'apartments' : 'house'), use: u, y: dec * 10, cat: 1, look });
   }
   OSM.bldgs = out; OSM.catastro = true;
 })();

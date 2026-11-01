@@ -65,12 +65,28 @@ function addBuildingRot(B, F, cx, cz, rot, w, d, opts = {}) {
   return o;
 }
 /* ¿solápase un rectángulo orientado con edificios xa postos? (SAT con OBB e caixas) */
-function obbOverlaps(cx, cz, hx, hz, rot, pad = 0.2) {
+/* un anaco do Catastro omítese se tapa boa parte dun modelo feito a man (quedaría dentro del) ou se o modelo o cubre en máis dun 25 % */
+function customCover(P) {
+  let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+  const q = G.colGrid.query((x0 + x1) / 2, (z0 + z1) / 2, Math.hypot(x1 - x0, z1 - z0) / 2 + 2, []).filter(o => o.k !== 'c' && o.h >= 3 && o.tag !== 'edif' && o.tag !== 'igrexa');
+  if (!q.length) return 0;
+  const inO = (o, x, z) => { if (o.k === 'o') { const dx = x - o.x, dz = z - o.z, lx = dx * o.c - dz * o.s, lz = dx * o.s + dz * o.c; return Math.abs(lx) < o.hx && Math.abs(lz) < o.hz; } return x > o.x0 && x < o.x1 && z > o.z0 && z < o.z1; };
+  // ¿algún modelo quedaría tragado polo anaco?
+  for (const o of q) {
+    let n = 0, hit = 0; const ox0 = o.x0, ox1 = o.x1, oz0 = o.z0, oz1 = o.z1, st = Math.max(0.8, Math.min(ox1 - ox0, oz1 - oz0) / 5);
+    for (let x = ox0 + st / 2; x < ox1; x += st) for (let z = oz0 + st / 2; z < oz1; z += st) { if (!inO(o, x, z)) continue; n++; if (inPoly(x, z, P)) hit++; }
+    if (n && hit / n > 0.5) return 1;
+  }
+  const st = Math.max(1, Math.min(x1 - x0, z1 - z0) / 6); let n = 0, hit = 0;
+  for (let x = x0 + st / 2; x < x1; x += st) for (let z = z0 + st / 2; z < z1; z += st) { if (!inPoly(x, z, P)) continue; n++; if (q.some(o => inO(o, x, z))) hit++; }
+  return n ? hit / n : 0;
+}
+function obbOverlaps(cx, cz, hx, hz, rot, pad = 0.2, skip = null) {
   const q = G.colGrid.query(cx, cz, Math.hypot(hx, hz) + 2, []);
   const c = Math.cos(rot), s = Math.sin(rot);
   const axA = [[c, -s], [s, c]];
   for (const o of q) {
-    if (o.k === 'c' || o.h < 3) continue;
+    if (o.k === 'c' || o.h < 3 || (skip && skip(o))) continue;
     let oc, os, ohx, ohz, ox, oz;
     if (o.k === 'o') { oc = o.c; os = o.s; ohx = o.hx; ohz = o.hz; ox = o.x; oz = o.z; }
     else { oc = 1; os = 0; ohx = (o.x1 - o.x0) / 2; ohz = (o.z1 - o.z0) / 2; ox = (o.x0 + o.x1) / 2; oz = (o.z0 + o.z1) / 2; }
@@ -234,43 +250,116 @@ function buildPlayground(B, cx, cz, rot) {
 
 /* ---------- Edificios de OSM (planta real) ---------- */
 const OSM_SKIP = new Set(['Castelo de Monforte de Lemos', 'Igrexa de San Vicente do Pino', 'Torre da Homenaxe', 'Torre Pequena', 'Colexio da Nosa Señora da Antiga', 'Convento das Clarisas', 'Monforte de Lemos', 'Colexio Privado Ferroviario', 'Edificio Multiúsos de Monforte de Lemos']);
+/* ---------- usos: texturas de nave industrial e de alpendre agrario ---------- */
+function useTextures() {
+  if (TEX.nave) return;
+  const mk = (draw) => { const c = cnv(256, 256), x = c.getContext('2d'); draw(x); return toTex(c); };
+  TEX.nave = mk(x => { x.fillStyle = '#9aa2a8'; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 256; i += 8) { x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(i, 0, 2, 256); x.fillStyle = 'rgba(255,255,255,.12)'; x.fillRect(i + 3, 0, 2, 256); }
+    x.fillStyle = '#5a6a78'; x.fillRect(0, 0, 256, 18); for (let i = 0; i < 400; i++) { x.fillStyle = `rgba(110,70,40,${RR(0.02, 0.08)})`; x.fillRect(R() * 256, 180 + R() * 76, 3, 3); }
+    x.fillStyle = '#c8ccd0'; x.fillRect(150, 120, 90, 136); for (let k = 124; k < 256; k += 9) { x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(150, k, 90, 2); } x.fillStyle = '#e8e000'; x.fillRect(150, 118, 90, 4); });
+  TEX.alpendre = mk(x => { x.fillStyle = '#8a8070'; x.fillRect(0, 0, 256, 256); for (let r = 0; r < 256; r += 22) for (let k = -20 + (r / 22 % 2) * 20; k < 256; k += 40) { const v = RI(-14, 14); x.fillStyle = `rgb(${135 + v},${125 + v},${110 + v})`; x.fillRect(k + 2, r + 2, 36, 18); }
+    x.fillStyle = '#5a3a20'; x.fillRect(90, 130, 80, 126); for (let k = 92; k < 170; k += 12) { x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(k, 130, 2, 126); } });
+}
+const POI_LABEL = { pharmacy: 'FARMACIA', chemist: 'DROGARÍA', bakery: 'PANADARÍA', cafe: 'CAFETARÍA', bar: 'BAR', pub: 'PUB', restaurant: 'RESTAURANTE', fast_food: 'COMIDA RÁPIDA', supermarket: 'SUPERMERCADO', hairdresser: 'PERRUQUERÍA', butcher: 'CARNICERÍA', greengrocer: 'FROITERÍA', bank: 'BANCO', books: 'LIBRARÍA', clothes: 'MODA', shoes: 'ZAPATARÍA', optician: 'ÓPTICA', florist: 'FLORISTERÍA', hardware: 'FERRETERÍA', confectionery: 'PASTELARÍA', stationery: 'PAPELARÍA', laundry: 'LAVANDARÍA', dentist: 'CLÍNICA DENTAL', tattoo: 'TATTOO', deli: 'ULTRAMARINOS', variety_store: 'BAZAR', computer: 'INFORMÁTICA', copyshop: 'COPISTERÍA', furniture: 'MOBLES', second_hand: 'SEGUNDA MAN', motorcycle: 'MOTOS', bicycle: 'BICICLETAS', car_parts: 'RECAMBIOS', fitness_centre: 'XIMNASIO', kiosk: 'QUIOSCO', car: 'CONCESIONARIO', car_repair: 'TALLER' };
+const POI_BAR = new Set(['cafe', 'bar', 'pub', 'restaurant', 'fast_food']);
+const SHOP_STREETS = new Set(['Rúa do Doutor Casares', 'Rúa do Cardeal Rodrigo de Castro', 'Rúa do Comercio', 'Rúa de Ourense', 'Rúa de Chantada', 'Rúa de Roberto Baamonde', 'Rúa de Concepción Arenal', 'Rúa de Abelardo Baanante', 'Rúa da Duquesa de Alba', 'Rúa de Leopoldo Calvo Sotelo', 'Rúa de Curros Enríquez', 'Rúa da Coruña', 'Rúa de San Pedro', 'Rúa de Pontevedra', 'Rúa de Ricardo Quiroga', 'Rúa Zapaterías', 'Rúa de Santo Domingo', 'Rúa Pescaderías', 'Rúa Bailén', 'Rúa Teceláns', 'Rúa do Burato', 'Praza de España', 'Rúa de Armando Cotarelo']);
 function buildOSMBuildings(B, F) {
+  useTextures();
+  const BN = new Batch(nightMat(std({ map: TEX.nave, roughness: 0.6, metalness: 0.3 }), 0, 0)), BA = new Batch(std({ map: TEX.alpendre, roughness: 0.95 }));
+  const shopPois = OSM.pois.filter(q => POI_LABEL[q.t]);
+  G.useStats = { shop: 0, bar: 0, poi: 0, nave: 0, alpendre: 0, oficina: 0, publico: 0 };
+  const signs = [];
+  // cada tenda de OSM vai a un só edificio: o que a contén ou o de parede máis próxima
+  const poiOf = new Map(), segD = (x, z, a, c) => { const dx = c[0] - a[0], dz = c[1] - a[1], L2 = dx * dx + dz * dz || 1, t = clamp(((x - a[0]) * dx + (z - a[1]) * dz) / L2, 0, 1); return Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t); };
+  for (const q of shopPois) {
+    let best = null, bd = 10;
+    for (const b of OSM.bldgs) { if (!b.cat || b.p.length < 3) continue; const P = b.p; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); } if (q.p[0] < x0 - 10 || q.p[0] > x1 + 10 || q.p[1] < z0 - 10 || q.p[1] > z1 + 10) continue;
+      if (inPoly(q.p[0], q.p[1], P)) { best = b; bd = -1; break; } for (let i = 0; i < P.length; i++) { const d = segD(q.p[0], q.p[1], P[i], P[(i + 1) % P.length]); if (d < bd) { bd = d; best = b; } } }
+    if (best && !poiOf.has(best)) poiOf.set(best, q);
+  }
   for (const b of OSM.bldgs) {
     const P = b.p; if (P.length < 3) continue;
     const [cx, cz] = polyCentroid(P);
     if (OSM_SKIP.has(b.n)) continue;
     if (Math.hypot(cx - HILL.x, cz - HILL.z) < HILL.r0 + 3) continue;
-    if (reservedAt(cx, cz) || G.monumentZones.some(q => inPoly(cx, cz, q))) continue;
+    if (b.cat) {
+      // edificios do Catastro: só se omiten se pisan un edificio feito a man (ou nas zonas que deben quedar baleiras)
+      if ((G.keepEmpty || []).some(q => inPoly(cx, cz, q))) continue;
+      if (customCover(P) > 0.25) continue;
+    } else if (reservedAt(cx, cz) || G.monumentZones.some(q => inPoly(cx, cz, q))) continue;
     if (b.b === 'roof' || b.b === 'ruins') continue;
     const lv = b.lv || (b.b === 'church' || b.b === 'chapel' ? 3 : b.b === 'industrial' || b.b === 'retail' ? 2 : b.b === 'apartments' ? 5 : 3);
     const H = b.h || (b.b === 'church' ? 14 : 3.6 + Math.max(0, lv - 1) * 3.1);
     let y0 = 1e9; for (const [x, z] of P) y0 = Math.min(y0, terrainH(x, z)); y0 = Math.max(0, y0);
-    const style = b.b === 'church' || b.b === 'chapel' || b.a === 'manor' || (b.y && b.y < 1930) ? 3 : b.b === 'industrial' || b.b === 'retail' ? 5 : RI(0, 6);
-    // paredes
-    const pos = [], uv = [], idx = []; let acc = 0, vi = 0;
-    const ccw = (() => { let a = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) a += (P[j][0] - P[i][0]) * (P[j][1] + P[i][1]); return a > 0; })();
+    // aspecto segundo o uso
+    const use = b.use || (b.b === 'industrial' ? 3 : 0);
+    const nave = use === 3 || (use === 0 && b.b === 'industrial'), alpendre = use === 2;
+    let style = b.b === 'church' || b.b === 'chapel' || b.a === 'manor' || (b.y && b.y < 1930) ? 3 : nave ? 5 : RI(0, 6);
+    if (use === 4) style = 5;                        // oficinas: fachada moderna
+    if (use === 6) style = b.y && b.y < 1970 ? 3 : 1; // servizos públicos: pedra ou crema
+    const LOOK = { colegio: B.colegio, pedra: B.stone, moderno: F[5], estacion: B.station };
+    if (b.look === 'moderno') style = 5;
+    const wallBatch = b.look && LOOK[b.look] ? LOOK[b.look] : b.b === 'church' || b.b === 'chapel' ? B.stone : nave ? BN : alpendre ? BA : F[style];
+    if (nave) G.useStats.nave++; if (alpendre) G.useStats.alpendre++; if (use === 4) G.useStats.oficina++; if (use === 6) G.useStats.publico++;
+    // baixos comerciais: comercio do Catastro, tendas de OSM ou rúas comerciais
+    const poi = !nave && !alpendre ? poiOf.get(b) || null : null;
+    let shopMode = null;
+    if (b.look) shopMode = null; // edificio singular: sen baixos comerciais
+    else if (poi) shopMode = POI_BAR.has(poi.t) ? 'bar' : 'shop';
+    else if (use === 5 || use === 4) shopMode = 'shop';
+    else if (b.cat && use === 1 && lv >= 3) { const h = (Math.abs(Math.sin(cx * 12.9898 + cz * 78.233)) * 43758.5453) % 1; if (h < 0.8) shopMode = h < 0.12 ? 'bar' : 'shop'; }
+    // paredes, aresta a aresta (as que dan á rúa levan baixo comercial)
+    let A2 = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) A2 += P[j][0] * P[i][1] - P[i][0] * P[j][1];
+    const geo = { wall: { pos: [], uv: [], idx: [] }, shop: { pos: [], uv: [], idx: [] }, bar: { pos: [], uv: [], idx: [] } };
+    const quad = (g, a, c, yA, yB, u0, u1, vA, vB) => { const v = g.pos.length / 3; g.pos.push(a[0], yA, a[1], c[0], yA, c[1], c[0], yB, c[1], a[0], yB, a[1]); g.uv.push(u0, vA, u1, vA, u1, vB, u0, vB); g.idx.push(v, v + 1, v + 2, v, v + 2, v + 3); };
+    let acc = 0, shopEdge = null, bestL = 0, signEdge = null;
     for (let i = 0; i < P.length; i++) {
-      let a = P[i], c = P[(i + 1) % P.length]; if (!ccw) { a = P[(i + 1) % P.length]; c = P[i]; }
-      const L = Math.hypot(c[0] - a[0], c[1] - a[1]);
-      pos.push(a[0], y0 - 2, a[1], c[0], y0 - 2, c[1], c[0], y0 + H, c[1], a[0], y0 + H, a[1]);
-      uv.push(acc / FAC_TILE[0], -2 / FAC_TILE[1], (acc + L) / FAC_TILE[0], -2 / FAC_TILE[1], (acc + L) / FAC_TILE[0], H / FAC_TILE[1], acc / FAC_TILE[0], H / FAC_TILE[1]);
-      idx.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3); vi += 4; acc += L;
+      let a = P[i], c = P[(i + 1) % P.length]; if (A2 > 0) { const t = a; a = c; c = t; } // percorrido horario: a cara frontal (esquerda) mira cara a fóra
+      const dx = c[0] - a[0], dz = c[1] - a[1], L = Math.hypot(dx, dz); if (L < 0.05) continue;
+      const ox = -dz / L, oz = dx / L, mx = (a[0] + c[0]) / 2, mz = (a[1] + c[1]) / 2;
+      let street = null; if (shopMode && L >= 2.5) { const pr = poi ? 6 : 3, px = mx + ox * pr, pz = mz + oz * pr; street = inStreet(px, pz, 1) || inRoad(px, pz, 1, true); if (street && !poi && use === 1 && !SHOP_STREETS.has(street.name)) street = null; }
+      const fu0 = acc / FAC_TILE[0], fu1 = (acc + L) / FAC_TILE[0];
+      if (street && H > 4.5) {
+        const sg = shopMode === 'bar' ? geo.bar : geo.shop;
+        quad(sg, a, c, y0 - 2, y0 + 3.6, acc / SHOP_TILE[0], (acc + L) / SHOP_TILE[0], -2 / SHOP_TILE[1], 1);
+        quad(geo.wall, a, c, y0 + 3.6, y0 + H, fu0, fu1, 0.25, (H - 3.6) / FAC_TILE[1] + 0.25);
+        if (L > bestL) { bestL = L; signEdge = { a, c, ox, oz, L }; }
+      } else quad(geo.wall, a, c, y0 - 2, y0 + H, fu0, fu1, -2 / FAC_TILE[1], H / FAC_TILE[1]);
+      acc += L;
     }
-    const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); wg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); wg.setIndex(idx); wg.computeVertexNormals();
-    // comprobar orientación das normais (cara a fóra)
-    { const n = wg.attributes.normal, p0 = P[0], p1 = P[1 % P.length]; const mx = (p0[0] + p1[0]) / 2, mz = (p0[1] + p1[1]) / 2; if ((mx - cx) * n.getX(0) + (mz - cz) * n.getZ(0) < 0) { const ix = wg.index.array; for (let i = 0; i < ix.length; i += 3) { const t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; } wg.computeVertexNormals(); } }
-    (b.b === 'church' || b.b === 'chapel' ? B.stone : F[style]).add(wg);
-    // tellado plano (triangulado)
+    const toGeo = g => { const w = new THREE.BufferGeometry(); w.setAttribute('position', new THREE.Float32BufferAttribute(g.pos, 3)); w.setAttribute('uv', new THREE.Float32BufferAttribute(g.uv, 2)); w.setIndex(g.idx); w.computeVertexNormals(); return w; };
+    wallBatch.add(toGeo(geo.wall));
+    if (geo.shop.idx.length) { B.shop.add(toGeo(geo.shop)); G.useStats.shop++; }
+    if (geo.bar.idx.length) { B.bar.add(toGeo(geo.bar)); G.useStats.bar++; }
+    // rótulo co nome real (tendas de OSM)
+    if (poi && signEdge) { const { a, c, ox, oz, L } = signEdge; signs.push({ x: (a[0] + c[0]) / 2 + ox * 0.08, z: (a[1] + c[1]) / 2 + oz * 0.08, y: y0 + 3.35, yaw: Math.atan2(ox, oz), w: Math.min(L - 0.4, 4.2), text: (poi.n || POI_LABEL[poi.t]).toUpperCase().slice(0, 26), bar: POI_BAR.has(poi.t), t: poi.t }); G.useStats.poi++; }
+    // tellado
     const sh = new THREE.Shape(P.map(([x, z]) => new THREE.Vector2(x, -z)));
     const rg = new THREE.ShapeGeometry(sh); rg.rotateX(-Math.PI / 2); rg.translate(0, y0 + H + 0.02, 0);
     const ru = rg.attributes.uv, rp = rg.attributes.position; for (let i = 0; i < ru.count; i++) ru.setXY(i, rp.getX(i) / 4, rp.getZ(i) / 4);
-    (b.b === 'industrial' || b.b === 'retail' || style === 5 ? B.flat : B.tile).add(rg);
+    (nave || b.b === 'industrial' || b.b === 'retail' || use === 4 || style === 5 ? B.flat : B.tile).add(rg);
     const r = minRect(P);
     if (b.cat && polyArea(P) < r.w * r.d * 0.82) { // planta en L/U: colisión parede a parede para non invadir a rúa
       for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 0.3) continue; addOBB((a[0] + c[0]) / 2, (a[1] + c[1]) / 2, L / 2, 0.25, -Math.atan2(c[1] - a[1], c[0] - a[0]), H + 4, 'edif', y0 - 2); }
     } else addOBB(r.cx, r.cz, r.w / 2, r.d / 2, -r.ang, H + 2, b.b === 'church' ? 'igrexa' : 'edif', y0 - 2);
-    G.buildingsList.push({ cx, cz, poly: P, H, y0, name: b.n });
+    G.buildingsList.push({ cx, cz, poly: P, H, y0, name: b.n, use, shop: shopMode });
     if (b.n) G.namedZones.push({ n: b.n, p: P });
+  }
+  BN.build(G.scene); BA.build(G.scene);
+  // rótulos (unha soa textura atlas para todos)
+  if (signs.length) {
+    const per = 4, rows = Math.ceil(signs.length / per), cw = 1024, rh = 64, c = cnv(cw, rows * rh), x = c.getContext('2d');
+    const cols = { pharmacy: ['#1f8a3a', '#ffffff'], bank: ['#1f3a8a', '#ffffff'] };
+    signs.forEach((s, i) => { const X = (i % per) * 256, Y = Math.floor(i / per) * rh, [bg, fg] = cols[s.t] || (s.bar ? ['#5a1a1a', '#ffd98a'] : [pick(['#24425e', '#7a1f3d', '#2f5a3a', '#3a3a3a', '#8a5a1c']), '#f4f0e6']);
+      x.fillStyle = bg; x.fillRect(X, Y, 256, rh); x.fillStyle = 'rgba(255,255,255,.25)'; x.fillRect(X, Y, 256, 3); x.fillStyle = fg; x.textAlign = 'center'; x.textBaseline = 'middle';
+      let fs = 34; x.font = `800 ${fs}px "Barlow Condensed", sans-serif`; while (x.measureText(s.text).width > 240 && fs > 14) { fs -= 2; x.font = `800 ${fs}px "Barlow Condensed", sans-serif`; } x.fillText(s.text, X + 128, Y + rh / 2 + 2); });
+    const tex = toTex(c, false), mat = nightMat(std({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0, roughness: 0.6 }), 0.05, 0.7);
+    const pos = [], uv = [], idx = [];
+    signs.forEach((s, i) => { const u0 = (i % per) / per, u1 = u0 + 1 / per, v1 = 1 - Math.floor(i / per) / rows, v0 = v1 - 1 / rows, hw = s.w / 2, rx = Math.cos(s.yaw), rz = -Math.sin(s.yaw), v = pos.length / 3;
+      pos.push(s.x - rx * hw, s.y - 0.24, s.z - rz * hw, s.x + rx * hw, s.y - 0.24, s.z + rz * hw, s.x + rx * hw, s.y + 0.24, s.z + rz * hw, s.x - rx * hw, s.y + 0.24, s.z - rz * hw);
+      uv.push(u0, v0, u1, v0, u1, v1, u0, v1); idx.push(v, v + 1, v + 2, v, v + 2, v + 3); });
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+    G.scene.add(new THREE.Mesh(g, mat));
   }
 }
 

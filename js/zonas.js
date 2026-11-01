@@ -20,7 +20,7 @@ function corridorPoly(pts, w) {
 }
 function zonasLandmarks() {
   // en tramos para que o polígono non se cruce consigo mesmo
-  for (let i = 0; i < ABEL.pts.length - 1; i++) { const P = corridorPoly([ABEL.pts[i], ABEL.pts[i + 1]], ABEL.half); reserve(P); (G.noTrees = G.noTrees || []).push(P); }
+  for (let i = 0; i < ABEL.pts.length - 1; i++) { const P = corridorPoly([ABEL.pts[i], ABEL.pts[i + 1]], ABEL.half); reserve(P); (G.noTrees = G.noTrees || []).push(P); (G.keepEmpty = G.keepEmpty || []).push(P); }
   G.namedZones.push({ n: 'Rúa dos Abeledos · zona catastrófica', p: corridorPoly(ABEL.pts, 14) });
 }
 /* ---------- texturas ---------- */
