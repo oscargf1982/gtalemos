@@ -5,18 +5,18 @@
    ás damas e ao xadrez. Gañar dálle uns euros (e moita conversa).
    ========================================================== */
 G.fraternal = null;
-/* batallitas do Tío David cando xogaba no Lemos (todas inventadas, coma as boas batallitas) */
+/* batallitas do Tío David: baseadas na entrevista publicada en El Progreso (setembro de 2022) */
 const DAVID_LEMOS = [
-  'Sabes que eu xoguei no Lemos? Extremo dereito. Corría a banda coma un lóstrego. Bueno, coma un lóstrego de antes, que daquela os lóstregos ían máis amodo.',
-  'Unha vez, no Castro de Ribeiras, marquei un gol de cabeza desde o medio campo. Ninguén o viu porque había néboa, pero foi gol. O árbitro deumo porque era do Saviñao e debíame cartos.',
-  'Daquela xogabamos en terra, fillo. Se caías, levabas o campo enteiro na perna. A miña nai aínda me está sacando pedras do xeonllo.',
-  'O míster do Lemos dicíanos: «Rapaces, o balón é coma o polbo: hai que darlle ben antes de servilo». Nunca entendín que quería dicir, pero gañabamos.',
-  'Xogamos un derbi contra o Ourense e fun eu quen lle fixo o túnel ao seu central. Aínda hoxe, cando me ve polo mercado, cambia de beirarrúa.',
-  'Viaxabamos no autobús de liña cos veciños e as galiñas. Unha vez chegamos tarde a Lugo porque unha vaca non quería saír da estrada. Empatamos igual.',
-  'Eu tiña unhas botas de coiro que pesaban dous quilos cada unha. Cando chovía, catro. Por iso hoxe teño estas pernas, mira, mira que xemelgos.',
-  'Unha tempada fun o máximo goleador do Lemos. Bueno, empatado con outros tres. Bueno, un gol cada un. Pero o meu foi o máis bonito.',
-  'Unha vez paramos o partido porque pasaba o tren polo lado do campo e o maquinista era o pai do porteiro. Saudámolo todos. Gol deles nese intre, claro.',
-  'Na celebración do ascenso cantamos ata as catro da mañá na Rúa do Cardeal. O alcalde de daquela tamén cantaba. Peor ca nós, pero cantaba.',
+  'Eu nacín no Barco, sabes? Alí non había fútbol, só baloncesto! Cheguei a Monforte con doce anos, fillo de ferroviarios. Monfortino de adopción.',
+  'O fútbol descubrino nos Escolapios. Nos recreos xogabamos vinte contra vinte. Vinte contra vinte! Un balón para corenta rapaces, e eu sempre o tiña.',
+  'Xogaba a todas horas: antes de comer, ao saír de clase, antes de deitarme... Despois veu o Calasancio, a Peña de Jopy... Futbolista nácese, non se fai.',
+  'No 66 fichei polo Lemos, cando estabamos en Tercera Nacional. Tercera Nacional, eh! Do mellor que tivo nunca o Lemos.',
+  'Contra o Ourense, que aquel ano era o mellor da categoría, marqueilles un gol. Anulárono por un fóra de xogo que non existía! E despois eles meten un moi dubidoso e gañan 1-0. Aínda hai xente que mo lembra.',
+  'Eu xogaba no Lemos e traballaba na óptica Cardenal. Pola mañá graduando a vista, pola tarde adestrando. Por iso vía os pases antes que ninguén.',
+  'En Barcelona, nun partido de empresa polo día de Santa Otilia, metín once goles. Once! E por primeira vez a miña fábrica gañoulle á outra.',
+  'No 77, coa moda do fútbol sala, fundamos co meus irmáns o Atlético Monfortino. Fixemos un partido en Semana Santa contra o Calasancio xuvenil e de aí saíu a liga de fútbol sala de Monforte.',
+  'Xoguei ao fútbol sala ata os corenta e oito anos, e fun o máximo goleador da Liga Federada. Despois fixen de árbitro, que alguén tiña que poñer orde.',
+  'Agora xa só vexo os partidos. E no outono vou aos cogumelos. Iso si que é un deporte de risco, que hai que saber cales colles!',
 ];
 const davidStory = () => pick(DAVID_LEMOS);
 function fraternalDoor() {
@@ -37,7 +37,7 @@ function fraternalInteract() {
     { t: 'Brisca', fn: () => [D('Unha brisca a dous. O triunfo é a carta que queda debaixo do mazo. Fai sesenta e un e gañas.'), () => mgOpen('brisca')] },
     { t: 'Damas', fn: () => [D('Damas! Ti levas as brancas e saes ti. Comer é obrigatorio, eh, que aquí somos serios.'), () => mgOpen('damas')] },
     { t: 'Xadrez', fn: () => [D('Xadrez... o xogo dos reis. Ti brancas. E non me fagas esperar, que ás nove pecho o bar.'), () => mgOpen('xadrez')] },
-    { t: 'Cóntame de cando xogabas no Lemos', fn: () => [D(davidStory()), D(pick(['E iso non é nada...', 'Que tempos, rapaz, que tempos.', 'Bueno, iso conto eu. Os outros contano doutra maneira, pero mentiran.'])), games()] },
+    { t: 'Cóntame de cando xogabas no Lemos', fn: () => [D(davidStory()), D(pick(['E iso non é nada...', 'Que tempos, rapaz, que tempos.', 'Futbolista nácese, xa cho dixen.'])), games()] },
     { t: 'Hoxe non, Tío David', fn: () => [D('Ti verás. Aquí estarei, coma sempre, entre o café e a partida.')] },
   ] });
   openDialog([D(G.davidMet ? 'Volves! Xa sabía eu que tiñas gana de perder outra vez.' : 'Hombre! Benvido á Fraternal. Eu son o Tío David. Aquí xogamos desde antes de que houbese televisión.'), D(davidStory()), D(G.davidMet ? 'Veña, escolle.' : 'Se me gañas, pago eu. Se perdes, polo menos aprendes algo. Que me dis?'), games()]);
@@ -73,7 +73,7 @@ function mgEnd(won, draw) {
   if (won) { G.player.money += pr; $('money').textContent = G.player.money + ' €'; }
   const L = won ? [`Gañaches! Toma, ${pr} euros. Mañá non che vai saír tan ben.`, 'Bah, tiveches sorte. Outra?'] : draw ? ['Táboas. Ningún dos dous quere perder, eh?'] : ['Gañei eu! Ai, rapaz, aínda tes moito que aprender.', 'Non te poñas triste, que eu levo setenta anos xogando.'];
   mgMsg(won ? `Gañaches! +${pr} €` : draw ? 'Táboas' : 'Gañou o Tío David');
-  if (Math.random() < 0.6) L.push(...DAVID_LEMOS.map(t => (won ? 'Gañaches, si... ' : 'Iso pásame por xogar coma no Lemos. ') + t));
+  if (Math.random() < 0.6) L.push(...DAVID_LEMOS.map(t => (won ? 'Gañaches, si... pero escoita: ' : 'Ves? Experiencia. ') + t));
   const bar = MG.el.querySelector('.mg-bar'); bar.innerHTML = `<i>Tío David: «${pick(L)}»</i> <button class="mg-again">Outra partida</button> <button class="mg-out">Saír</button>`;
   bar.querySelector('.mg-again').onclick = () => { const k = G.minigame; bar.innerHTML = ''; mgOpen(k); };
   bar.querySelector('.mg-out').onclick = () => mgClose();
