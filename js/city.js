@@ -399,14 +399,18 @@ function buildOSMBuildings(B, F) {
       const [ax, az] = F.at; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
       if (ax < x0 - bd || ax > x1 + bd || az < z0 - bd || az > z1 + bd) continue;
       const A2 = area2(P);
-      if ((F.multi || F.inside) && inPoly(ax, az, P)) { best = { b, i: -1 }; bd = 0; break; }
+      if ((F.multi || F.inside || F.side) && inPoly(ax, az, P)) { best = { b, i: -1 }; bd = 0; break; }
       for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length], dx = c[0] - a[0], dz = c[1] - a[1], L2 = dx * dx + dz * dz; if (L2 < 4) continue;
-        const t = ((ax - a[0]) * dx + (az - a[1]) * dz) / L2; if (t < -0.05 || t > 1.05) continue; const d = Math.hypot(a[0] + dx * t - ax, a[1] + dz * t - az); if (d < bd && facingOf(P, A2, i)) { bd = d; best = { b, i }; } }
+        const t = ((ax - a[0]) * dx + (az - a[1]) * dz) / L2; if (t < -0.05 || t > 1.05) continue; const d = Math.hypot(a[0] + dx * t - ax, a[1] + dz * t - az); if (d < bd && (F.side || facingOf(P, A2, i))) { bd = d; best = { b, i }; } }
     }
     if (!best) continue;
     const b = best.b, P = b.p, A2 = area2(P), facing = i => facingOf(P, A2, i);
     let list = [];
-    if (best.i >= 0 && !F.multi) list = [best.i];
+    if (F.side) { // medianeira cara a un rumbo (S = sur, +z)
+      const want = { S: [0, 1], N: [0, -1], E: [1, 0], W: [-1, 0] }[F.side]; let bi = -1, bv = 0.5;
+      for (let i = 0; i < P.length; i++) { let a = P[i], c = P[(i + 1) % P.length]; if (A2 > 0) { const t = a; a = c; c = t; } const dx = c[0] - a[0], dz = c[1] - a[1], L = Math.hypot(dx, dz); if (L < 5) continue; const v = (-dz / L) * want[0] + (dx / L) * want[1]; if (v > bv) { bv = v; bi = i; } }
+      if (bi >= 0) list = [bi];
+    } else if (best.i >= 0 && !F.multi) list = [best.i];
     else { const all = P.map((_, i) => [i, facing(i)]).filter(q => q[1] > 0); if (F.multi) list = all.map(q => q[0]); else if (all.length) list = [all.sort((u, v) => v[1] - u[1])[0][0]]; }
     if (!list.length) { // sen rúa diante: a parede máis próxima a unha rúa
       let bi = -1, bdd = 1e9; for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length], L = Math.hypot(c[0] - a[0], c[1] - a[1]); if (L < 3) continue; const mx = (a[0] + c[0]) / 2, mz = (a[1] + c[1]) / 2, nr = nearRoad(mx, mz, r => r.type === 'car'); if (nr.r && nr.d < bdd) { bdd = nr.d; bi = i; } }

@@ -175,6 +175,86 @@ const FACHADAS = [];
     P.door(L * 0.5 - 0.45, 0.05, 0.9, g - 0.9, '#d8d8d2', { grille: true }); P.awning(L * 0.5 - 0.7, L * 0.5 + 0.7, g - 0.45, '#efe7d2', '#5a5244', 'PELUQUERÍA Julio', '#3a3020');
     P.door(L * 0.8 - 0.5, 0.05, 1.0, g - 0.6, '#b4834a', { panels: true, transom: '#3a3a3a' });
   }, { r: 12, inside: true });
+  add('zapardiel9', ad('Rúa de Juan Ramón Jiménez', '9'), P => { // ladrillo de plaqueta vermella, terrazas con varandas brancas, baixo de granito con portas de ferro
+    const { L, H } = P, g = Math.min(4.0, H * 0.25), nf = Math.max(1, Math.round((H - g) / 2.8)), fh = (H - g) / nf;
+    P.rect(0, 0, L, H, '#a0483a'); for (let y = g; y < H; y += 0.12) P.rect(0, y, L, 0.012, 'rgba(255,255,255,.12)'); for (let y = g, k = 0; y < H; y += 0.12, k++) for (let xx = (k % 2) * 0.12; xx < L; xx += 0.24) P.rect(xx, y, 0.012, 0.12, 'rgba(255,255,255,.1)');
+    P.blocks(0, 0, L, g, '#bdb4a3', 1.2, 0.6); P.rect(0, g - 0.12, L, 0.16, '#d8d2c4');
+    const cols = [[0.02, 0.3, 'balc'], [0.36, 0.43, 'win'], [0.45, 0.63, 'balc'], [0.68, 0.76, 'win'], [0.8, 0.98, 'balc']];
+    for (let i = 0; i < nf; i++) { const y = g + i * fh;
+      for (const [a, b, k] of cols) { const x0 = L * a, w = L * (b - a);
+        if (k === 'balc') { P.rect(x0, y + 0.1, w, fh - 0.2, '#c9773e'); P.win(x0 + w * 0.2, y + 0.35, w * 0.6, fh - 0.8, { frame: '#e8e4dc', glass: '#556570', blind: '#ece9e0' }); P.rect(x0 - 0.1, y, w + 0.2, 0.14, '#e4e0d6'); P.rail(x0, x0 + w, y + 0.12, 0.95, '#f2f0ea'); }
+        else P.win(x0, y + 0.7, w, fh * 0.45, { frame: '#e4e0d6', glass: '#556570', blind: '#ece9e0' }); } }
+    P.txt(L * 0.7, H - 0.6, 0.45, '1981', 'rgba(255,255,255,.35)');
+    // baixo: portal de ferro verde, porta de madeira co 9, gran porta enreixada de rombos, entrada da dereita
+    const diamonds = (x0, w, h) => { P.rect(x0, 0.05, w, h, '#f2f0ea'); const n = Math.max(2, Math.round(w / 0.6)), cw = w / n, rows = Math.max(2, Math.round(h / 0.65)), ch = h / rows;
+      for (let i = 0; i < n; i++) for (let j = 0; j < rows; j++) { const cx = x0 + (i + 0.5) * cw, cy = 0.05 + (j + 0.5) * ch; P.rect(cx - cw / 2 + 0.04, cy - ch / 2 + 0.04, cw - 0.08, ch - 0.08, '#23292c'); P.x.save(); P.x.strokeStyle = '#e8e4dc'; P.x.lineWidth = 0.035; P.x.beginPath(); P.x.moveTo(cx, cy - ch * 0.4); P.x.lineTo(cx + cw * 0.4, cy); P.x.lineTo(cx, cy + ch * 0.4); P.x.lineTo(cx - cw * 0.4, cy); P.x.closePath(); P.x.stroke(); P.x.restore(); } };
+    P.rect(L * 0.0, 0.05, L * 0.2, g - 1.0, '#1f3a2c'); for (let k = 0; k < 6; k++) P.rect(L * 0.0 + k * L * 0.034, 0.05, 0.03, g - 1.0, '#2f5a42');
+    P.rect(L * 0.27 - 0.1, 0, 1.6, g - 0.75, '#9a9384'); P.door(L * 0.27, 0.05, 1.4, g - 0.9, '#5a3a22', { glass: true, panels: true }); P.txt(L * 0.27 + 0.7, g - 0.6, 0.22, '9', '#222');
+    diamonds(L * 0.45, L * 0.18, g - 0.75);
+    P.rect(L * 0.83, 0.05, L * 0.13, g - 0.9, '#4a3a2c'); P.win(L * 0.84, 0.9, L * 0.11, g - 2.0, { frame: '#9a9384', glass: '#2d3640', fw: 0.06 });
+  });
+  add('pereiroMural', ad('Rúa de Juan Ramón Jiménez', '9'), P => { // medianeira sur: mural en homenaxe a Lois Pereiro (Letras Galegas 2011) — composición propia, sen retrato
+    const { L, H } = P;
+    P.rect(0, 0, L, H, '#d9d6cf'); for (let i = 0; i < 260; i++) P.rect(Math.random() * L, Math.random() * H, Math.random() * 1.2, 0.05 + Math.random() * 0.6, `rgba(${90 + Math.random() * 60},${90 + Math.random() * 60},${90 + Math.random() * 60},.08)`);
+    P.rect(0, 0, L, 0.8, '#b9b4aa');
+    // gran libro aberto en estarcido negro, con follas que voan
+    const bx = L * 0.08, bw = L * 0.42, by = H * 0.12, bh = H * 0.42;
+    P.x.save(); P.x.fillStyle = '#1d1d1f';
+    P.x.beginPath(); P.x.moveTo(bx, by); P.x.lineTo(bx + bw / 2, by + bh * 0.08); P.x.lineTo(bx + bw, by); P.x.lineTo(bx + bw, by + bh); P.x.lineTo(bx + bw / 2, by + bh * 1.08); P.x.lineTo(bx, by + bh); P.x.closePath(); P.x.fill();
+    P.x.fillStyle = '#f2efe8'; for (let k = 0; k < 9; k++) { const yy = by + bh * (0.15 + k * 0.085); P.x.fillRect(bx + bw * 0.07, yy, bw * 0.36, bh * 0.025); P.x.fillRect(bx + bw * 0.57, yy + bh * 0.01, bw * 0.36, bh * 0.025); }
+    P.x.fillStyle = '#1d1d1f'; for (let k = 0; k < 7; k++) { const fx = bx + bw * (0.6 + k * 0.12), fy = by + bh * (1.1 + k * 0.12); P.x.save(); P.x.translate(fx, fy); P.x.rotate(0.3 + k * 0.4); P.x.fillRect(-0.5, -0.35, 1.0, 0.7); P.x.restore(); }
+    P.x.restore();
+    P.txt(L * 0.72, H * 0.78, Math.min(3.2, L * 0.09), 'Lois', '#b2304a'); P.txt(L * 0.72, H * 0.63, Math.min(3.2, L * 0.09), 'Pereiro', '#b2304a');
+    P.x.save(); P.x.setTransform(1, 0, 0, 1, 0, 0); P.x.restore();
+    P.txt(L * 0.7, H * 0.42, Math.min(1.8, L * 0.05), 'Letras', '#1d1d1f'); P.txt(L * 0.72, H * 0.32, Math.min(1.8, L * 0.05), 'Galegas', '#1d1d1f'); P.txt(L * 0.74, H * 0.22, Math.min(1.8, L * 0.05), '2011', '#1d1d1f');
+  }, { side: 'S', script: true });
+  add('estacionBus', [362, -256], P => { // estación de autobuses: banda de chapa co rótulo en letras azuis e fronte de vidro
+    const { L, H } = P, g = Math.min(3.4, H * 0.6);
+    P.rect(0, 0, L, H, '#cfc8b6'); for (let xx = 0; xx < L; xx += 0.3) P.rect(xx, g, 0.05, H - g, 'rgba(0,0,0,.12)');
+    P.rect(0, g - 0.2, L, 0.25, '#8f8a7c');
+    P.txt(L * 0.5, g + (H - g) * 0.5, Math.min(1.0, (H - g) * 0.55), 'ESTACIÓN DE AUTOBUSES', '#3b5ea8', L * 0.9);
+    P.rect(0, 0, L, g - 0.2, '#3a3d40'); const n = Math.max(3, Math.round(L / 2.2)); for (let k = 0; k < n; k++) { P.win(k * L / n + 0.15, 0.4, L / n - 0.3, g - 1.0, { frame: '#9a9a96', glass: '#4d5d68', fw: 0.06 }); }
+    P.door(L * 0.5 - 1.0, 0.02, 2.0, g - 0.8, '#5a6a74', { glass: true }); P.rect(L * 0.08, g - 0.75, 1.2, 0.5, '#f2f2f0'); P.txt(L * 0.08 + 0.6, g - 0.5, 0.25, 'XUNTA', '#3b5ea8');
+  }, { r: 14 });
+  add('iesRioCabe', [385, -188], P => { // IES Río Cabe: piares de ladrillo e paneis amarelos, caixa de escaleira con pavés
+    const { L, H } = P, nf = Math.max(2, Math.round(H / 3.1)), fh = H / nf;
+    P.rect(0, 0, L, H, '#e3dccb'); const bay = 3.4, n = Math.max(3, Math.floor(L / bay)), bw = L / n, mid = Math.floor(n / 2);
+    for (let k = 0; k < n; k++) { const x0 = k * bw;
+      P.rect(x0, 0, 0.55, H, '#8e4a36'); for (let y = 0; y < H; y += 0.15) P.rect(x0, y, 0.55, 0.015, 'rgba(255,255,255,.18)');
+      if (k === mid) { P.rect(x0 + 0.8, 0.8, bw - 1.3, H - 1.2, '#b9b39f'); for (let y = 0.9; y < H - 0.4; y += 0.25) for (let xx = x0 + 0.85; xx < x0 + bw - 0.5; xx += 0.25) P.rect(xx, y, 0.2, 0.2, '#d8d6c8'); continue; }
+      for (let i = 0; i < nf; i++) { const y = i * fh; P.rect(x0 + 0.55, y + 0.1, bw - 0.55, fh * 0.42, '#e3b632'); P.win(x0 + 0.75, y + fh * 0.55, bw - 0.95, fh * 0.36, { frame: '#d8d8d2', glass: '#7d8b93', blind: '#e8e8e2', fw: 0.06 }); } }
+    P.rect(mid * bw - 1.2, fh * 0.75, bw + 2.4, 0.5, '#f2f0ea'); P.txt(mid * bw + bw / 2, fh * 0.75 + 0.25, 0.24, 'INSTITUTO DE EDUCACIÓN SECUNDARIA · RÍO CABE', '#2d3b5a', bw + 2.2);
+    P.door(mid * bw + 0.6, 0.02, bw - 1.2, fh * 0.6, '#4a5a64', { glass: true });
+  }, { inside: true, r: 20 });
+  add('sanpedro45', ad('Rúa de San Pedro', '45'), P => { // granito claro en bandas, panos de cores entre as xanelas, correduría no baixo
+    const { L, H } = P, g = 3.6, nf = Math.max(1, Math.round((H - g) / 2.9)), fh = (H - g) / nf, C = ['#e8b23a', '#d64a3a', '#3a5fc8', '#eceae4'];
+    P.rect(0, 0, L, H, '#cfc8b8'); for (let y = 0; y < H; y += 0.5) P.rect(0, y, L, 0.02, 'rgba(0,0,0,.06)');
+    for (let i = 0; i < nf; i++) { const y = g + i * fh; let xx = 0.3, k = i;
+      while (xx < L - 1) { const w = 1.6 + ((k * 7) % 3) * 0.5; P.rect(xx, y + fh * 0.32, 0.9, fh * 0.5, C[k % 4]); P.win(xx + 1.0, y + fh * 0.32, Math.min(w, L - xx - 1.2), fh * 0.5, { frame: '#2f3338', glass: '#3d4850', blind: '#5a5f64', fw: 0.06 }); xx += w + 1.3; k++; } }
+    P.rect(0, 0, L, g, '#9a948a'); P.rect(L * 0.08, 0.05, 1.6, g - 0.6, '#e8b23a'); P.door(L * 0.08 + 0.3, 0.05, 1.0, g - 0.9, '#2a2d30', { glass: true }); P.txt(L * 0.08 + 0.8, g - 0.4, 0.25, '45', '#222');
+    P.rect(L * 0.35, 0.05, L * 0.4, g - 0.6, '#2b3036'); P.win(L * 0.37, 0.3, L * 0.36, g - 1.2, { frame: '#2b3036', glass: '#50606a', fw: 0.05 });
+    P.rect(L * 0.35, g - 0.95, L * 0.4, 0.55, '#1d2a22'); P.txt(L * 0.55, g - 0.67, 0.34, 'CORREDURÍA DE SEGUROS', '#9fd36a', L * 0.38);
+  });
+  add('neka', ad('Rúa de San Pedro', '73'), P => { // ximnasio Neka: azul e amarelo, mirador no primeiro, rótulo de taekwondo
+    const { L, H } = P, g = 3.4, bl = '#3a64b0', am = '#e8c23a';
+    P.rect(0, 0, L, H, bl); P.rect(0, 0, 0.2, H, am); P.rect(L - 0.2, 0, 0.2, H, am); P.rect(0, g - 0.1, L, 0.25, am); P.rect(0, H - 0.3, L, 0.3, am);
+    P.rect(L * 0.3, g + 0.4, L * 0.4, Math.min(2.4, H - g - 0.8), am); P.win(L * 0.31, g + 0.5, L * 0.38, Math.min(2.2, H - g - 1.0), { frame: am, glass: '#6f8494', blind: '#e8e8e2', fw: 0.08 }); P.txt(L * 0.5, g + 0.9, 0.28, 'BOXEO', '#f4f4f0');
+    for (const k of [0.13, 0.87]) P.win(L * k - 0.5, g + 0.6, 1.0, Math.min(1.6, H - g - 1.2), { frame: am, glass: '#6f8494', fw: 0.12 });
+    P.txt(L * 0.5, g - 0.45, 0.55, 'NEKA', '#e6e9ee', L * 0.5);
+    P.rect(L * 0.3, 0.3, L * 0.38, g - 1.1, '#1d2125'); P.txt(L * 0.49, g - 1.1, 0.28, 'TAEKWONDO', '#f2f2f0'); P.txt(L * 0.49, 1.7, 0.45, 'Spa', '#f2f2f0'); P.txt(L * 0.49, 1.0, 0.16, 'SAUNA · FITNESS · MUSCULACIÓN · BOXEO', '#d8d8d2', L * 0.36);
+    P.rect(L * 0.17, 0.4, L * 0.1, g - 0.9, '#f4f4f0'); P.txt(L * 0.22, g - 1.2, 0.18, 'TAEKWONDO', '#b2201f'); P.txt(L * 0.22, 1.0, 0.13, 'CAMPEÓNS', '#1d3e7a');
+    P.door(L * 0.05, 0.05, 1.1, g - 0.9, '#8a8f94', { grille: true }); P.door(L * 0.76, 0.05, 1.0, g - 0.9, '#c9ccd0', { grille: true }); P.txt(L * 0.76 + 0.5, g - 0.75, 0.2, '73', '#222');
+  });
+  add('ford', ad('Rúa de Leopoldo Calvo Sotelo', '66'), P => { // bloque branco con terrazas vermellas; concesionario no baixo de pedra
+    const { L, H } = P, g = 3.8, nf = Math.max(1, Math.round((H - g) / 2.8)), fh = (H - g) / nf;
+    P.rect(0, 0, L, H, '#ecebe6'); P.rect(L * 0.15, g, L * 0.7, H - g, '#9a2a22');
+    for (let i = 0; i < nf; i++) { const y = g + i * fh; P.rect(L * 0.13, y, L * 0.74, 0.18, '#ecebe6'); P.rail(L * 0.15, L * 0.85, y + 0.18, 0.85, '#1d1d1f');
+      for (let k = 0; k < 6; k++) P.win(L * 0.18 + k * L * 0.11, y + 0.5, L * 0.07, fh - 0.9, { frame: '#f2f0ea', glass: '#55646f', blind: '#ece9e0' });
+      for (const xx of [0.03, 0.9]) P.win(L * xx, y + 0.6, L * 0.06, fh * 0.45, { frame: '#9a2a22', glass: '#55646f', fw: 0.1 }); }
+    P.blocks(0, 0, L, g, '#a39684', 0.5, 0.35);
+    for (let k = 0; k < 4; k++) { const x0 = L * (0.08 + k * 0.22); P.win(x0, 0.2, L * 0.16, g - 1.3, { frame: '#d8d4c8', glass: '#4b5a64', fw: 0.08 }); P.rect(x0 + L * 0.03, 0.6, L * 0.1, 0.6, '#f4f4f0'); }
+    for (const [k, t] of [[0.2, 'SEAT'], [0.45, 'Ford'], [0.65, 'Ford'], [0.88, 'AUTOS LEMOS']]) { P.rect(L * k - 0.9, g - 0.85, 1.8, 0.55, t === 'Ford' ? '#1f3f8f' : '#f2f2f0'); P.txt(L * k, g - 0.57, 0.3, t, t === 'Ford' ? '#f2f2f0' : '#222', 1.7); }
+  }, { r: 12 });
   add('igrexaEstacion', [484, -461], P => { // igrexa do Sagrado Corazón: cantería, nicho coa imaxe e porta enreixada
     const { L, H } = P, st = '#cbbf9f';
     P.blocks(0, 0, L, H, st, 1.2, 0.6);

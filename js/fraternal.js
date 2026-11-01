@@ -25,6 +25,7 @@ function fraternalDoor() {
 }
 function updateFraternal(dt) {
   if (!G.fraternal) G.fraternal = { door: fraternalDoor() };
+  updateDavid(dt);
   const D = G.fraternal.door; if (!D || G.player.car || G.dialog || G.minigame) return;
   const me = G.player.ped; if (Math.hypot(me.x - D.x, me.z - D.z) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Entrar na Fraternal`);
 }
@@ -40,7 +41,15 @@ function fraternalInteract() {
     { t: 'Cóntame de cando xogabas no Lemos', fn: () => [D(davidStory()), D(pick(['E iso non é nada...', 'Que tempos, rapaz, que tempos.', 'Futbolista nácese, xa cho dixen.'])), games()] },
     { t: 'Hoxe non, Tío David', fn: () => [D('Ti verás. Aquí estarei, coma sempre, entre o café e a partida.')] },
   ] });
-  openDialog([D(G.davidMet ? 'Volves! Xa sabía eu que tiñas gana de perder outra vez.' : 'Hombre! Benvido á Fraternal. Eu son o Tío David. Aquí xogamos desde antes de que houbese televisión.'), D(davidStory()), D(G.davidMet ? 'Veña, escolle.' : 'Se me gañas, pago eu. Se perdes, polo menos aprendes algo. Que me dis?'), games()]);
+  const ME = t => ({ who: 'Ti', text: t });
+  const ourense = [
+    [ME('Tío David! Aínda se fala do gol que lle marcaches ao Ourense cando o Lemos estaba en Tercera Nacional!'), D('Ese gol era legal! O liñeiro estaba a tomar un café, porque fóra de xogo non había ningún. E logo eles meten un en fóra de xogo descarado e gañan 1-0. Aínda me ferve o sangue.')],
+    [ME('Oe, Tío David, e aquel gol ao Ourense en Tercera Nacional?'), D('Ai, non me fales... Era o mellor equipo da categoría e eu metinlles un golazo. Anulárono! Hai xente que aínda mo lembra pola rúa, sabes?')],
+    [ME('Dixéronme que lle marcaches un gol ao Ourense cando xogabas no Lemos, en Tercera Nacional...'), D('Dixéronche ben! O que non che dirían é que o anularon. Fóra de xogo, dicían. Fóra de xogo o árbitro, que non vía nin cos meus lentes!')],
+    [ME('Tío David, o do gol ao Ourense en Tercera Nacional foi verdade?'), D('Verdade verdadeira! Se ata me paran polo mercado para falar del. E iso que mo anularon... Imaxínate se subise ao marcador.')],
+  ];
+  const og = pick(ourense);
+  openDialog([D(G.davidMet ? 'Volves! Xa sabía eu que tiñas gana de perder outra vez.' : 'Hombre! Benvido á Fraternal. Eu son o Tío David. Aquí xogamos desde antes de que houbese televisión.'), ...og, D(G.davidMet ? 'Veña, escolle.' : 'Se me gañas, pago eu. Se perdes, polo menos aprendes algo. Que me dis?'), games()]);
   G.davidMet = true; return true;
 }
 /* ==================== capa dos minixogos ==================== */
@@ -48,7 +57,7 @@ const MG = { el: null, game: null };
 function mgEl() {
   if (MG.el) return MG.el;
   const el = document.createElement('div'); el.id = 'minigame'; el.hidden = true;
-  el.innerHTML = `<div class="mg-box"><div class="mg-top"><span class="mg-title"></span><span class="mg-msg"></span><button class="mg-x" title="Saír">✕</button></div><canvas class="mg-cv"></canvas><div class="mg-bar"></div></div>`;
+  el.innerHTML = `<div class="mg-box"><div class="mg-top"><span class="mg-title"></span><span class="mg-msg"></span><button class="mg-x" title="Saír">✕</button></div><div class="mg-row"><div class="mg-david"></div><canvas class="mg-cv"></canvas></div><div class="mg-bar"></div></div>`;
   document.body.appendChild(el); MG.el = el;
   el.querySelector('.mg-x').onclick = () => mgClose();
   const cv = el.querySelector('.mg-cv');
@@ -56,25 +65,27 @@ function mgEl() {
   cv.addEventListener('pointerdown', ev => { ev.preventDefault(); if (MG.game && MG.game.click && !MG.busy) { MG.game.click(...hit(ev)); mgDraw(); } });
   return el;
 }
-function mgMsg(t) { MG.el.querySelector('.mg-msg').textContent = t; }
+function mgMsg(t) { MG.el.querySelector('.mg-msg').textContent = t; if (typeof mgDavid === 'function') mgDavid(/Pensa|xoga|rouba|Xoga/.test(t) ? 8 : /Gañaches/.test(t) ? 10 : /Gañou|Xaque|leva a baza/.test(t) ? 9 : 0); }
 function mgOpen(kind) {
   const el = mgEl(); el.hidden = false; G.minigame = kind; MG.busy = false;
   if (document.exitPointerLock) try { document.exitPointerLock(); } catch (e) {}
   const cv = el.querySelector('.mg-cv'); cv.width = 760; cv.height = 560;
-  MG.game = { domino: mgDomino, brisca: mgBrisca, damas: mgDamas, xadrez: mgXadrez }[kind]();
-  el.querySelector('.mg-title').textContent = { domino: 'Dominó', brisca: 'Brisca', damas: 'Damas', xadrez: 'Xadrez' }[kind] + ' co Tío David';
+  MG.game = { domino: mgDomino, brisca: mgBrisca, damas: mgDamas, xadrez: mgXadrez, taekwondo: () => mgFight('taekwondo'), boxeo: () => mgFight('boxeo') }[kind]();
+  const fight = kind === 'taekwondo' || kind === 'boxeo'; el.querySelector('.mg-david').style.display = fight ? 'none' : '';
+  el.querySelector('.mg-title').textContent = { domino: 'Dominó co Tío David', brisca: 'Brisca co Tío David', damas: 'Damas co Tío David', xadrez: 'Xadrez co Tío David', taekwondo: 'Taekwondo co sensei', boxeo: 'Boxeo co sensei' }[kind];
   mgDraw();
 }
 function mgClose() { if (MG.el) MG.el.hidden = true; G.minigame = null; MG.game = null; }
 function mgDraw() { const cv = MG.el.querySelector('.mg-cv'), x = cv.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = '#245a36'; x.fillRect(0, 0, cv.width, cv.height); x.fillStyle = 'rgba(0,0,0,.12)'; for (let i = 0; i < 400; i++) x.fillRect(Math.random() * cv.width, Math.random() * cv.height, 2, 2); if (MG.game) MG.game.draw(x, cv.width, cv.height); }
 function mgLater(fn, ms = 650) { MG.busy = true; setTimeout(() => { MG.busy = false; if (!MG.game) return; fn(); mgDraw(); if (!MG.game.over && Math.random() < 0.12) mgBar(`<i>Tío David: «${davidStory()}»</i>`); }, ms); }
 function mgEnd(won, draw) {
-  const pr = { domino: 15, brisca: 15, damas: 20, xadrez: 40 }[G.minigame] || 10;
+  const pr = { domino: 15, brisca: 15, damas: 20, xadrez: 40, taekwondo: 25, boxeo: 25 }[G.minigame] || 10, fightK = G.minigame === 'taekwondo' || G.minigame === 'boxeo';
   if (won) { G.player.money += pr; $('money').textContent = G.player.money + ' €'; }
   const L = won ? [`Gañaches! Toma, ${pr} euros. Mañá non che vai saír tan ben.`, 'Bah, tiveches sorte. Outra?'] : draw ? ['Táboas. Ningún dos dous quere perder, eh?'] : ['Gañei eu! Ai, rapaz, aínda tes moito que aprender.', 'Non te poñas triste, que eu levo setenta anos xogando.'];
-  mgMsg(won ? `Gañaches! +${pr} €` : draw ? 'Táboas' : 'Gañou o Tío David');
-  if (Math.random() < 0.6) L.push(...DAVID_LEMOS.map(t => (won ? 'Gañaches, si... pero escoita: ' : 'Ves? Experiencia. ') + t));
-  const bar = MG.el.querySelector('.mg-bar'); bar.innerHTML = `<i>Tío David: «${pick(L)}»</i> <button class="mg-again">Outra partida</button> <button class="mg-out">Saír</button>`;
+  mgMsg(won ? `Gañaches! +${pr} €` : draw ? 'Empate' : fightK ? 'Gañou o sensei' : 'Gañou o Tío David');
+  if (fightK) { L.length = 0; L.push(...(won ? ['Bo traballo. Toma, ' + pr + ' euros de premio. Volve o martes, que hai adestramento.', 'Tes pernas. Agora falta cabeza. Toma o premio.'] : draw ? ['Empate. Polo menos non caíches.'] : ['Garda arriba, sempre! Volve mañá.', 'Ao chan. Saúda e volve a intentalo.'])); }
+  else if (Math.random() < 0.6) L.push(...DAVID_LEMOS.map(t => (won ? 'Gañaches, si... pero escoita: ' : 'Ves? Experiencia. ') + t));
+  const bar = MG.el.querySelector('.mg-bar'); bar.innerHTML = `<i>${fightK ? 'Sensei' : 'Tío David'}: «${pick(L)}»</i> <button class="mg-again">Outra partida</button> <button class="mg-out">Saír</button>`;
   bar.querySelector('.mg-again').onclick = () => { const k = G.minigame; bar.innerHTML = ''; mgOpen(k); };
   bar.querySelector('.mg-out').onclick = () => mgClose();
   MG.game.over = true;
@@ -291,3 +302,49 @@ function mgXadrez() {
     },
   };
 }
+
+/* ==================== o Tío David en persoa (sprite pixel art achegado polo autor) ==================== */
+if (typeof PORTRAIT_IMG !== 'undefined') PORTRAIT_IMG['Tío David'] = 'img/david-face.png';
+// fotogramas do atlas img/david.png (4×3): 0 fronte, 1 perfil dereito, 2 costas, 3 perfil esquerdo, 4-7 camiñar, 8 sinalar, 9 man aberta, 10 brazos cruzados, 11 sentado no banco
+const DAVID = { tex: null, sp: null, t: 0, s: 0, dir: 1, wait: 0, frame: -1, flip: false };
+function davidFrame(f, flip) {
+  if (DAVID.frame === f && DAVID.flip === flip) return; DAVID.frame = f; DAVID.flip = flip;
+  const t = DAVID.sp.material.map, c = f % 4, r = Math.floor(f / 4);
+  t.repeat.set(flip ? -0.25 : 0.25, 1 / 3); t.offset.set(flip ? (c + 1) / 4 : c / 4, 1 - (r + 1) / 3);
+}
+function updateDavid(dt) {
+  const Fr = G.fraternal; if (!Fr || !Fr.door || !LM.arenal) return;
+  if (!DAVID.sp) {
+    const tex = new THREE.TextureLoader().load('img/david.png'); tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.LinearMipMapLinearFilter; tex.encoding = THREE.sRGBEncoding;
+    // cartel vertical que sempre mira á cámara (só xira en vertical)
+    const pg = new THREE.PlaneGeometry(1.6, 1.84); pg.translate(0, 0.92, 0);
+    const sp = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide })); sp.castShadow = true; G.scene.add(sp); DAVID.sp = sp;
+    const [ax, az] = LM.arenal.pt(0, 0), [bx, bz] = LM.arenal.pt(1, 0); DAVID.ux = bx - ax; DAVID.uz = bz - az; // ao longo da fachada
+    const [sx, sz] = LM.arenal.pt(28.3, 0); const l = Math.hypot(sx - Fr.door.x, sz - Fr.door.z) || 1; DAVID.fx = (sx - Fr.door.x) / l; DAVID.fz = (sz - Fr.door.z) / l; // cara á rúa
+    davidFrame(0, false);
+  }
+  const me = G.player.ped, h = G.hour, D = DAVID; D.t += dt;
+  let x, z, face, moving = false;
+  const near = !G.player.car && Math.hypot(me.x - Fr.door.x, me.z - Fr.door.z) < 7;
+  const sitting = h >= 20 && h < 23.5 && !near && !(G.dialog && $('dlgName').textContent === 'Tío David');
+  if (sitting) { x = Fr.door.x + D.ux * 2.4 + D.fx * 0.4; z = Fr.door.z + D.uz * 2.4 + D.fz * 0.4; face = Math.atan2(D.fx, D.fz); }
+  else if (near || G.minigame) { x = Fr.door.x + D.ux * D.s; z = Fr.door.z + D.uz * D.s; face = Math.atan2(me.x - x, me.z - z); }
+  else {
+    if (D.wait > 0) D.wait -= dt; else { D.s += D.dir * 1.0 * dt; moving = true; if (Math.abs(D.s) > 3) { D.s = Math.sign(D.s) * 3; D.dir = -D.dir; D.wait = 2 + Math.random() * 2; } }
+    x = Fr.door.x + D.ux * D.s; z = Fr.door.z + D.uz * D.s; face = moving ? Math.atan2(D.ux * D.dir, D.uz * D.dir) : Math.atan2(D.fx, D.fz);
+  }
+  const y = groundH(x, z); D.sp.position.set(x, y + (moving ? Math.abs(Math.sin(D.t * 6)) * 0.03 : 0), z);
+  D.sp.material.color.setScalar(1 - 0.55 * (G.night || 0)); D.sp.rotation.y = Math.atan2(camera.position.x - x, camera.position.z - z);
+  if (sitting) { davidFrame(11, false); return; }
+  // vista segundo onde estea a cámara respecto de cara onde mira
+  const cp = camera.position, dx = cp.x - x, dz = cp.z - z, lx = dx * Math.cos(face) - dz * Math.sin(face), lz = dx * Math.sin(face) + dz * Math.cos(face);
+  const view = Math.abs(lz) >= Math.abs(lx) ? (lz > 0 ? 'front' : 'back') : (lx > 0 ? 'left' : 'right');
+  if (moving && (view === 'left' || view === 'right')) { davidFrame(4 + Math.floor(D.t * 7) % 4, view === 'left'); return; }
+  if (view === 'back') return davidFrame(2, false);
+  if (view !== 'front') return davidFrame(view === 'left' ? 3 : 1, false);
+  const talking = G.dialog && $('dlgName').textContent === 'Tío David';
+  if (talking) return davidFrame(Math.floor(D.t / 0.9) % 2 ? 8 : 9, false);
+  davidFrame(near ? 10 : 0, false);
+}
+/* no taboleiro: o Tío David ao carón, con xestos */
+function mgDavid(f) { const el = MG.el && MG.el.querySelector('.mg-david'); if (el) el.style.backgroundPosition = `${(f % 4) * 100 / 3}% ${Math.floor(f / 4) * 50}%`; }

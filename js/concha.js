@@ -25,17 +25,27 @@ function buildKiosk() {
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.32), std({ map: textTex('PRENSA · LAMBETADAS', { w: 512, h: 80, bg: '#2f3b34', fg: '#f2e6b0', size: 40 }), roughness: 0.6 })); sign.position.set(0, 2.25, 0.92); g.add(sign);
   addOBB(x, z, 1.6, 1.0, yaw, 3, 'quiosco');
   const [dx, dz] = [x + Math.sin(yaw) * 1.9, z + Math.cos(yaw) * 1.9];
-  G.kiosk = { x, z, yaw, g, door: { x: dx, z: dz }, cx: x + Math.sin(yaw) * 0.55, cz: z + Math.cos(yaw) * 0.55 };
+  G.kiosk = { x, z, yaw, g, door: { x: dx, z: dz }, cx: x + Math.sin(yaw) * 1.25 + Math.cos(yaw) * 2.15, cz: z + Math.cos(yaw) * 1.25 - Math.sin(yaw) * 2.15 }; // ela, ao carón do revisteiro
 }
 function updateKiosk(dt) {
   if (!G.kiosk && !G._kioskTried) { G._kioskTried = true; buildKiosk(); }
   const K = G.kiosk; if (!K) return;
   const me = G.player.ped;
-  if (!K.p && typeof freePed === 'function' && Math.hypot(me.x - K.x, me.z - K.z) < 120) {
-    const p = freePed(); if (p) { K.p = p; Object.assign(p, { state: 'npc', home: 'npc', npc: 'concha', manual: true, immune: true, visible: true, walk: 0, run: 0, sit: 0, lie: 0, armUp: 0, edge: null, female: true, scale: 0.94 });
-      Object.assign(p.col, { hair: '#c9c4bd', shirt: '#7a2f4a', pants: '#2a2a30', shoe: '#1a1a1a', sleeve: true, skin: '#efc8a8' }); world.crowd.paint(p); }
+  // Dona Concha (pixel art achegado polo autor): atlas img/concha.png 4×2 — 0 perfil, 1-3 camiñar, 4 fronte, 5 falando, 6 lendo o xornal, 7 contenta
+  if (!K.sp) {
+    const tex = new THREE.TextureLoader().load('img/concha.png'); tex.magFilter = THREE.NearestFilter; tex.encoding = THREE.sRGBEncoding;
+    const pg = new THREE.PlaneGeometry(1.0, 1.75); pg.translate(0, 0.875, 0);
+    K.sp = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide })); G.scene.add(K.sp); K.fr = -1; K.t = 0;
   }
-  if (K.p && K.p.state === 'npc') { const p = K.p; p.x = K.cx; p.z = K.cz; p.y = groundH(p.x, p.z) + 0.05; const d = Math.hypot(me.x - p.x, me.z - p.z); p.yaw = d < 8 ? Math.atan2(me.x - p.x, me.z - p.z) : K.yaw; p.nod = d < 4 ? Math.max(0, Math.sin(G.t * 3)) * 0.06 : 0; }
+  K.t += dt;
+  const sp = K.sp, y = groundH(K.cx, K.cz) + 0.1; sp.position.set(K.cx, y, K.cz); sp.rotation.y = Math.atan2(camera.position.x - K.cx, camera.position.z - K.cz);
+  sp.material.color.setScalar(1 - 0.5 * (G.night || 0));
+  const dme = Math.hypot(me.x - K.cx, me.z - K.cz), talking = G.dialog && $('dlgName').textContent === 'Dona Concha';
+  const lx = Math.cos(K.yaw) * (camera.position.x - K.cx) - Math.sin(K.yaw) * (camera.position.z - K.cz), lz = Math.sin(K.yaw) * (camera.position.x - K.cx) + Math.cos(K.yaw) * (camera.position.z - K.cz);
+  let f = K.cheer > 0 ? 7 : talking ? (Math.floor(K.t / 0.8) % 2 ? 5 : 4) : dme < 6 ? 4 : 6, flip = false;
+  if (!talking && K.cheer <= 0 && Math.abs(lx) > Math.abs(lz) * 1.3) { f = 0; flip = lx > 0; }
+  if (K.cheer > 0) K.cheer -= dt;
+  if (K.fr !== f || K.flip !== flip) { K.fr = f; K.flip = flip; const t = sp.material.map, c = f % 4, r = Math.floor(f / 4); t.repeat.set(flip ? -0.25 : 0.25, 0.5); t.offset.set(flip ? (c + 1) / 4 : c / 4, r ? 0 : 0.5); }
   if (!G.player.car && !G.dialog && Math.hypot(me.x - K.door.x, me.z - K.door.z) < 2.6) setPrompt(`${isTouch ? '★' : 'E'} · Falar con Dona Concha (quiosco)`);
 }
 /* ---------- novas e información sobre cada evento ---------- */
@@ -69,18 +79,21 @@ function kioskNewspaper() {
   el.hidden = false; G.reading = true;
   el.querySelector('.xn-close').onclick = () => { el.hidden = true; G.reading = false; };
 }
+if (typeof PORTRAIT_IMG !== 'undefined') PORTRAIT_IMG['Dona Concha'] = 'img/concha-face.png';
+const conchaMood = m => () => { if (typeof PORTRAITS !== 'undefined') PORTRAITS['Dona Concha'] = 'img/concha-' + m + '.png'; if (typeof setDialogFace === 'function' && G.dialog) setDialogFace('Dona Concha'); };
 function kioskInteract() {
   const K = G.kiosk; if (!K || G.player.car || G.dialog) return false;
   const me = G.player.ped; if (Math.hypot(me.x - K.door.x, me.z - K.door.z) > 2.6) return false;
   const C = (t, extra) => ({ who: 'Dona Concha', text: t, ...extra });
   const pay = (n) => { if (G.player.money < n) return false; G.player.money -= n; $('money').textContent = G.player.money + ' €'; return true; };
-  const topics = () => C('De que queres saber?', { choices: [...kioskEvents().map(e => ({ t: e.tit, fn: () => [C(e.info), () => { if (e.at) { setWaypoint(e.at[0], e.at[1]); toast('Dona Concha marcouche o sitio no GPS', 2.5); } }, topics()] })), { t: 'Xa abonda, grazas', fn: () => [menu()] }] });
+  const topics = () => C('De que queres saber?', { choices: [...kioskEvents().map(e => ({ t: e.tit, fn: () => [C(e.info), () => { if (e.at) { setWaypoint(e.at[0], e.at[1]); toast('Dona Concha marcouche o sitio no GPS', 2.5); } }, topics()] })), { t: 'Xa abonda, grazas', fn: () => [conchaMood('face'), menu()] }] });
   const menu = () => C('Que che poño, rei?', { choices: [
-    { t: 'O Xornal de Lemos (2 €)', fn: () => pay(2) ? [C('Aquí tes. Vén cheíño de cousas hoxe, non sei como imos dar abasto en Monforte!'), () => kioskNewspaper()] : [C('Non che chega, meu. Son dous euros. Volve cando teñas.'), menu()] },
-    { t: 'Unha bolsa de lambetadas (1 €)', fn: () => pay(1) ? [C('Mestureiche ositos, moras e as de cocacola, que son as que máis saen. Non lle digas nada ao dentista.'), () => toast('Mercaches lambetadas. Ñam.', 2), menu()] : [C('Sen cartos non hai lambetadas, rei.'), menu()] },
-    { t: 'Que hai hoxe pola vila?', fn: () => [C('Uf, hoxe Monforte está que non para. Mira, pregúntame o que queiras.'), topics()] },
+    { t: 'O Xornal de Lemos (2 €)', fn: () => pay(2) ? [conchaMood('chisca'), () => { G.kiosk.cheer = 2.5; }, C('Aquí tes. Vén cheíño de cousas hoxe, non sei como imos dar abasto en Monforte!'), () => kioskNewspaper()] : [conchaMood('enfado'), C('Non che chega, meu. Son dous euros. Volve cando teñas.'), conchaMood('face'), menu()] },
+    { t: 'Unha bolsa de lambetadas (1 €)', fn: () => pay(1) ? [conchaMood('chisca'), () => { G.kiosk.cheer = 2; }, C('Mestureiche ositos, moras e as de cocacola, que son as que máis saen. Non lle digas nada ao dentista.'), () => toast('Mercaches lambetadas. Ñam.', 2), conchaMood('face'), menu()] : [conchaMood('enfado'), C('Sen cartos non hai lambetadas, rei.'), conchaMood('face'), menu()] },
+    { t: 'Que hai hoxe pola vila?', fn: () => [conchaMood('sorpresa'), C('Uf, hoxe Monforte está que non para. Mira, pregúntame o que queiras.'), conchaMood('pensa'), topics()] },
     { t: 'Ata logo, Dona Concha', fn: () => [C('Vai con Deus, e cóidate, que andas moi delgadiño.')] },
   ] });
+  conchaMood('face')();
   openDialog([C(G.kioskMet ? 'Ola outra vez, rei!' : 'Boas tardes! Eu son a Concha, levo corenta anos neste quiosco. Aquí sabemos de todo antes que o xornal.'), menu()]);
   G.kioskMet = true; return true;
 }

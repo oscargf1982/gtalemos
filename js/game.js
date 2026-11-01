@@ -452,6 +452,7 @@ function interact() {
   if (carudeInteract()) return;
   if (typeof kioskInteract === 'function' && kioskInteract()) return;
   if (typeof fraternalInteract === 'function' && fraternalInteract()) return;
+  if (typeof nekaInteract === 'function' && nekaInteract()) return;
   if (storyInteract()) return;
   // comezar misión se estás nun marcador
   for (const m of G.missionMarkers) if (m.near && !G.mission) { startMission(m.def); return; }
@@ -1074,7 +1075,7 @@ function simulate(dt, menu) {
   }
   // peóns
   for (const p of peds) { if (p === pl.ped) continue; pedThink(p, dt, world); }
-  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); updateMedieval(dt); updateAbeledos(dt); updateCows(dt); updateCarmina(dt); if (typeof updateBankQueue === 'function') updateBankQueue(dt); if (typeof updateBikeKid === 'function') updateBikeKid(dt); if (typeof updateKiosk === 'function') updateKiosk(dt); if (typeof updateFraternal === 'function') updateFraternal(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
+  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); updateMedieval(dt); updateAbeledos(dt); updateCows(dt); updateCarmina(dt); if (typeof updateBankQueue === 'function') updateBankQueue(dt); if (typeof updateBikeKid === 'function') updateBikeKid(dt); if (typeof updateKiosk === 'function') updateKiosk(dt); if (typeof updateFraternal === 'function') updateFraternal(dt); if (typeof updateSanPedro === 'function') updateSanPedro(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
   if (!menu && !pl.car && !G.cine) updatePlayerFoot(dt);
   if (!menu) updateCine(dt);
   if (!menu) updateSajoni(dt);
