@@ -5,6 +5,20 @@
    ás damas e ao xadrez. Gañar dálle uns euros (e moita conversa).
    ========================================================== */
 G.fraternal = null;
+/* batallitas do Tío David cando xogaba no Lemos (todas inventadas, coma as boas batallitas) */
+const DAVID_LEMOS = [
+  'Sabes que eu xoguei no Lemos? Extremo dereito. Corría a banda coma un lóstrego. Bueno, coma un lóstrego de antes, que daquela os lóstregos ían máis amodo.',
+  'Unha vez, no Castro de Ribeiras, marquei un gol de cabeza desde o medio campo. Ninguén o viu porque había néboa, pero foi gol. O árbitro deumo porque era do Saviñao e debíame cartos.',
+  'Daquela xogabamos en terra, fillo. Se caías, levabas o campo enteiro na perna. A miña nai aínda me está sacando pedras do xeonllo.',
+  'O míster do Lemos dicíanos: «Rapaces, o balón é coma o polbo: hai que darlle ben antes de servilo». Nunca entendín que quería dicir, pero gañabamos.',
+  'Xogamos un derbi contra o Ourense e fun eu quen lle fixo o túnel ao seu central. Aínda hoxe, cando me ve polo mercado, cambia de beirarrúa.',
+  'Viaxabamos no autobús de liña cos veciños e as galiñas. Unha vez chegamos tarde a Lugo porque unha vaca non quería saír da estrada. Empatamos igual.',
+  'Eu tiña unhas botas de coiro que pesaban dous quilos cada unha. Cando chovía, catro. Por iso hoxe teño estas pernas, mira, mira que xemelgos.',
+  'Unha tempada fun o máximo goleador do Lemos. Bueno, empatado con outros tres. Bueno, un gol cada un. Pero o meu foi o máis bonito.',
+  'Unha vez paramos o partido porque pasaba o tren polo lado do campo e o maquinista era o pai do porteiro. Saudámolo todos. Gol deles nese intre, claro.',
+  'Na celebración do ascenso cantamos ata as catro da mañá na Rúa do Cardeal. O alcalde de daquela tamén cantaba. Peor ca nós, pero cantaba.',
+];
+const davidStory = () => pick(DAVID_LEMOS);
 function fraternalDoor() {
   if (!LM.arenal) return null;
   const [x, z] = LM.arenal.pt(28.3, ARENAL.fl - 1.2); return { x, z };
@@ -23,9 +37,10 @@ function fraternalInteract() {
     { t: 'Brisca', fn: () => [D('Unha brisca a dous. O triunfo é a carta que queda debaixo do mazo. Fai sesenta e un e gañas.'), () => mgOpen('brisca')] },
     { t: 'Damas', fn: () => [D('Damas! Ti levas as brancas e saes ti. Comer é obrigatorio, eh, que aquí somos serios.'), () => mgOpen('damas')] },
     { t: 'Xadrez', fn: () => [D('Xadrez... o xogo dos reis. Ti brancas. E non me fagas esperar, que ás nove pecho o bar.'), () => mgOpen('xadrez')] },
+    { t: 'Cóntame de cando xogabas no Lemos', fn: () => [D(davidStory()), D(pick(['E iso non é nada...', 'Que tempos, rapaz, que tempos.', 'Bueno, iso conto eu. Os outros contano doutra maneira, pero mentiran.'])), games()] },
     { t: 'Hoxe non, Tío David', fn: () => [D('Ti verás. Aquí estarei, coma sempre, entre o café e a partida.')] },
   ] });
-  openDialog([D(G.davidMet ? 'Volves! Xa sabía eu que tiñas gana de perder outra vez.' : 'Hombre! Benvido á Fraternal. Eu son o Tío David. Aquí xogamos desde antes de que houbese televisión.'), D(G.davidMet ? 'Veña, escolle.' : 'Se me gañas, pago eu. Se perdes, polo menos aprendes algo. Que me dis?'), games()]);
+  openDialog([D(G.davidMet ? 'Volves! Xa sabía eu que tiñas gana de perder outra vez.' : 'Hombre! Benvido á Fraternal. Eu son o Tío David. Aquí xogamos desde antes de que houbese televisión.'), D(davidStory()), D(G.davidMet ? 'Veña, escolle.' : 'Se me gañas, pago eu. Se perdes, polo menos aprendes algo. Que me dis?'), games()]);
   G.davidMet = true; return true;
 }
 /* ==================== capa dos minixogos ==================== */
@@ -52,12 +67,13 @@ function mgOpen(kind) {
 }
 function mgClose() { if (MG.el) MG.el.hidden = true; G.minigame = null; MG.game = null; }
 function mgDraw() { const cv = MG.el.querySelector('.mg-cv'), x = cv.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = '#245a36'; x.fillRect(0, 0, cv.width, cv.height); x.fillStyle = 'rgba(0,0,0,.12)'; for (let i = 0; i < 400; i++) x.fillRect(Math.random() * cv.width, Math.random() * cv.height, 2, 2); if (MG.game) MG.game.draw(x, cv.width, cv.height); }
-function mgLater(fn, ms = 650) { MG.busy = true; setTimeout(() => { MG.busy = false; if (!MG.game) return; fn(); mgDraw(); }, ms); }
+function mgLater(fn, ms = 650) { MG.busy = true; setTimeout(() => { MG.busy = false; if (!MG.game) return; fn(); mgDraw(); if (!MG.game.over && Math.random() < 0.12) mgBar(`<i>Tío David: «${davidStory()}»</i>`); }, ms); }
 function mgEnd(won, draw) {
   const pr = { domino: 15, brisca: 15, damas: 20, xadrez: 40 }[G.minigame] || 10;
   if (won) { G.player.money += pr; $('money').textContent = G.player.money + ' €'; }
   const L = won ? [`Gañaches! Toma, ${pr} euros. Mañá non che vai saír tan ben.`, 'Bah, tiveches sorte. Outra?'] : draw ? ['Táboas. Ningún dos dous quere perder, eh?'] : ['Gañei eu! Ai, rapaz, aínda tes moito que aprender.', 'Non te poñas triste, que eu levo setenta anos xogando.'];
   mgMsg(won ? `Gañaches! +${pr} €` : draw ? 'Táboas' : 'Gañou o Tío David');
+  if (Math.random() < 0.6) L.push(...DAVID_LEMOS.map(t => (won ? 'Gañaches, si... ' : 'Iso pásame por xogar coma no Lemos. ') + t));
   const bar = MG.el.querySelector('.mg-bar'); bar.innerHTML = `<i>Tío David: «${pick(L)}»</i> <button class="mg-again">Outra partida</button> <button class="mg-out">Saír</button>`;
   bar.querySelector('.mg-again').onclick = () => { const k = G.minigame; bar.innerHTML = ''; mgOpen(k); };
   bar.querySelector('.mg-out').onclick = () => mgClose();
