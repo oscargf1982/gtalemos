@@ -338,6 +338,12 @@ function collideVehicles(list) {
     const maxd = (A.t.L + B.t.L) / 2 + 0.5;
     if (Math.abs(A.x - B.x) > maxd || Math.abs(A.z - B.z) > maxd) continue;
     if (Math.abs(A.y - B.y) > 2.5) continue;
+    // os coches que non conduce o xogador non chocan entre eles: o de atrás frea e agarda
+    if (A.driver !== 'player' && B.driver !== 'player' && (A.ai || B.ai)) {
+      for (const [P, Q] of [[A, B], [B, A]]) { if (!P.ai) continue; const fx = Math.sin(P.yaw), fz = Math.cos(P.yaw), ahead = (Q.x - P.x) * fx + (Q.z - P.z) * fz, lat = Math.abs(-(Q.x - P.x) * fz + (Q.z - P.z) * fx);
+        if (ahead > 0 && lat < 2.2) { P.inp.throttle = 0; P.inp.brake = 1; const vf = P.vx * fx + P.vz * fz; if (vf > 0) { P.vx -= fx * vf * 0.5; P.vz -= fz * vf * 0.5; } } }
+      continue;
+    }
     A.worldCircles(_ca); B.worldCircles(_cb);
     for (const ca of _ca) for (const cb of _cb) {
       const dx = ca.x - cb.x, dz = ca.z - cb.z, d = Math.hypot(dx, dz), rr = A.rad + B.rad;

@@ -7,7 +7,13 @@
 G.kiosk = null;
 function buildKiosk() {
   const S = LM.station; if (!S || typeof PH === 'undefined') return;
-  const b = PH.river, [x, z] = S.pt(b.x1 + 2.6, b.z0 - 4.5), yaw = S.yaw(Math.PI / 2), y0 = groundH(x, z);
+  // na beirarrúa do Hostal River, pegado á súa fachada lateral que dá á rúa (non no medio da praza)
+  const b = PH.river, cands = [[b.x0 + 7, b.z1 + 2.1, 0], [b.x0 + 7, b.z0 - 2.1, Math.PI], [b.x0 - 2.1, (b.z0 + b.z1) / 2, -Math.PI / 2], [b.x1 - 6, b.z1 + 2.1, 0], [b.x1 - 6, b.z0 - 2.1, Math.PI]];
+  let pick0 = null;
+  for (const [lx, lz, a] of cands) { const [cx, cz] = S.pt(lx, lz), yy = S.yaw(a), ox = Math.sin(yy), oz = Math.cos(yy);
+    if (inRoad(cx, cz, 0) || inStreet(cx, cz, 0)) continue; let ok = false; for (const d of [3, 4.5, 6]) if (inRoad(cx + ox * d, cz + oz * d, 0) || inStreet(cx + ox * d, cz + oz * d, 0)) ok = true; if (ok) { pick0 = [cx, cz, yy]; break; } }
+  if (!pick0) { const [cx, cz] = S.pt(b.x0 + 7, b.z1 + 2.1); pick0 = [cx, cz, S.yaw(0)]; }
+  const [x, z, yaw] = pick0, y0 = groundH(x, z);
   const g = new THREE.Group(); g.position.set(x, y0, z); g.rotation.y = yaw; G.scene.add(g);
   const mk = (geo, mat, px, py, pz, rx = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.rotation.x = rx; m.castShadow = m.receiveShadow = true; g.add(m); return m; };
   const green = std({ color: 0x2f3b34, roughness: 0.5, metalness: 0.4 }), roofM = std({ color: 0x5b5f5c, roughness: 0.6, metalness: 0.3 }), white = std({ color: 0xf2f2ee, roughness: 0.5 });

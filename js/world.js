@@ -103,7 +103,7 @@ function buildWorld(scene, Q) {
   buildGround(scene, Q); lap('ground');
   buildRiverOSM(scene);
   buildRoadsOSM(B); lap('roads');
-  buildBridgesOSM(B, scene);
+  buildBridgesOSM(B, scene); if (typeof fixBridgeRails === 'function') fixBridgeRails();
   buildCastle(B, scene); lap('castle');
   // monumentos deseñados nas súas coordenadas propias e colocados no plano real (OSM)
   { const C = LM.comp; inFrame(B, scene, C.ox, C.oz, C.rot, (LB, g) => { buildCompanhia2(LB, g); buildCompanhiaGarden(LB, g); }); const [sx, sz] = C.pt(G.statue.x, G.statue.z); G.statue = { x: sx, z: sz }; }

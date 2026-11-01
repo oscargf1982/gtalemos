@@ -132,6 +132,28 @@ const BRIDGES = [];
     r.bridge = b2; BRIDGES.push(b2);
   }
 })();
+/* pontes que faltan en OSM: calquera rúa que cruce o leito do Cabe dun lado ao outro leva ponte (se non, o coche caía ao río) */
+(function () {
+  for (const r of ROADS) {
+    if (r.bridge || r.type === 'track' || r.len < 6) continue;
+    let s0 = -1;
+    for (let s = 0; s <= r.len + 0.01; s += 1) {
+      const p = roadPoint(r, Math.min(s, r.len)), inside = riverRaw(p.x, p.z) < 0.5;
+      if (inside && s0 < 0) s0 = s;
+      if ((!inside || s >= r.len) && s0 >= 0) {
+        const s1 = s; if (s0 > 0.5 && !inside && s1 - s0 > 3 && s1 - s0 < 90) {
+          const a = roadPoint(r, Math.max(0, s0 - 2.5)), b = roadPoint(r, Math.min(r.len, s1 + 2.5)), dx = b.x - a.x, dz = b.z - a.z, L = Math.hypot(dx, dz) || 1;
+          if (!BRIDGES.some(q => Math.hypot(q.x - (a.x + b.x) / 2, q.z - (a.z + b.z) / 2) < 10)) {
+            const type = r.type === 'car' ? 'road' : 'wood', hw = type === 'road' ? r.hw + r.sw + 0.4 : Math.max(1.6, r.hw + 0.3);
+            const b2 = { r, type, x: (a.x + b.x) / 2, z: (a.z + b.z) / 2, ux: dx / L, uz: dz / L, half: L / 2 + 0.5, hw, rot: Math.atan2(dx / L, dz / L), auto: true };
+            if (!r.bridge) r.bridge = b2; BRIDGES.push(b2);
+          }
+        }
+        s0 = -1;
+      }
+    }
+  }
+})();
 /* ---------- Marco local: constrúe un monumento nas súas coordenadas de deseño
    e colócao xirado/desprazado no mundo (xeometría, colisións, beirarrúas, luces) ---------- */
 G._frame = null;
@@ -325,6 +347,8 @@ function addSidewalk(x0, z0, x1, z1) { return addSWRect(x0, z0, x1, z1, 0.15); }
 
 /* Resolve círculo vs colisores: devolve normal acumulada ou null */
 const _q = [];
+/* as varandas das pontes ían de -5 a -3 m (debaixo do taboleiro) e os coches atravesábanas: súbense por riba do taboleiro */
+function fixBridgeRails() { for (const o of COLLIDERS) if (o.tag === 'rail' && o.base + o.h < 4) o.h = 4.5 - o.base; }
 function collideCircle(p, r, yLevel, out) {
   G.colGrid.query(p.x, p.z, r + 2, _q);
   let hit = false; out.x = 0; out.z = 0; out.pen = 0;
