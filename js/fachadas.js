@@ -227,7 +227,7 @@ function updateBankQueue(dt) {
     BANKQ.on = true;
     const N = 9, caneM = std({ color: 0x3a2a1c, roughness: 0.6 }), alu = std({ color: 0xb8bcc2, roughness: 0.3, metalness: 0.8 });
     for (let i = 0; i < N; i++) {
-      const p = takePed(); if (!p) break;
+      const p = freePed(); if (!p) break;
       Object.assign(p, { state: 'npc', home: 'npc', npc: 'bancoQ', manual: true, immune: true, visible: true, walk: 0, run: 0, sit: 0, lie: 0, armUp: 0, edge: null });
       const fem = R() < 0.55; p.female = fem;
       Object.assign(p.col, { hair: pick(['#cfcfcf', '#e6e6e6', '#9a9a9a', '#b8b8b8']), shirt: pick(fem ? ['#3a2a40', '#5a4a52', '#2a3040', '#6a5a4a', '#222'] : ['#3a3a3a', '#4a4030', '#2a3040', '#5a5a5a']), pants: pick(['#2a2a2a', '#3a3428', '#222a34']), shoe: '#1a1a1a', sleeve: true });
@@ -243,4 +243,41 @@ function updateBankQueue(dt) {
     }
   }
   for (const q of BANKQ.list) { const p = q.p; if (p.state !== 'npc') { q.g.visible = false; continue; } q.ph += dt; p.yaw += Math.sin(q.ph * 0.4) * 0.002; q.g.position.set(p.x, p.y, p.z); q.g.rotation.y = p.yaw; q.g.scale.setScalar(p.scale || 1); }
+}
+
+/* ---------- neno en bici disfrazado de superheroe (orixinal: "Super Lemos") diante de Doutor Casares 211 ---------- */
+const BIKEKID = { on: false };
+function updateBikeKid(dt) {
+  const E = G.fachadaEdge && G.fachadaEdge.casares211; if (!E || typeof world === 'undefined' || !world.crowd) return;
+  const me = G.player.car || G.player.ped, cx = E.mx + E.ox * 4.2, cz = E.mz + E.oz * 4.2;
+  if (!BIKEKID.on) {
+    if (Math.hypot(me.x - cx, me.z - cz) > 150) return;
+    const p = freePed(); if (!p) return; BIKEKID.on = true;
+    Object.assign(p, { state: 'npc', home: 'npc', npc: 'bikekid', manual: true, immune: true, visible: true, walk: 0, run: 0, sit: 0.72, lie: 0, armUp: 0.45, edge: null, female: false, scale: 0.58 });
+    // traxe de heroe inventado: verde e amarelo, máscara verde (sen deseño de ningún personaxe coñecido)
+    Object.assign(p.col, { shirt: '#1f9a50', pants: '#1f9a50', shoe: '#f2c21b', hair: '#1f9a50', skin: '#1f9a50', sleeve: false }); world.crowd.paint(p);
+    const bike = makeBike(); bike.scale.setScalar(0.62); G.scene.add(bike);
+    const cape = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.55), std({ color: 0xf2c21b, roughness: 0.8, side: THREE.DoubleSide })); cape.castShadow = true; G.scene.add(cape);
+    const star = new THREE.Mesh(new THREE.CircleGeometry(0.07, 5), std({ color: 0xf2c21b, roughness: 0.5, side: THREE.DoubleSide })); G.scene.add(star);
+    Object.assign(BIKEKID, { p, bike, cape, star, a: 0, sp: 1.0 });
+  }
+  const K = BIKEKID, p = K.p; if (p.state !== 'npc') { K.bike.visible = K.cape.visible = K.star.visible = false; return; }
+  K.a += dt * K.sp * (1 + 0.15 * Math.sin(G.t * 0.7)); const R0 = 2.6;
+  const x = cx + Math.cos(K.a) * R0, z = cz + Math.sin(K.a) * R0, tx = -Math.sin(K.a), tz = Math.cos(K.a), yaw = Math.atan2(tx, tz), y = groundH(x, z);
+  K.bike.position.set(x, y, z); K.bike.rotation.set(0, yaw, -0.12);
+  for (const w of K.bike.userData.wheels || []) w.rotation.x += dt * K.sp * R0 / 0.22;
+  p.x = x - tx * 0.1; p.z = z - tz * 0.1; p.y = y + 0.18; p.yaw = yaw; p.sit = 0.72; p.walk = 1; p.phase = (p.phase || 0) + dt * 6; p.armUp = 0.45; p.look = 0; p.nod = 0;
+  // capa ao vento e estrela no peito
+  K.cape.position.set(p.x - tx * 0.18, p.y + 0.62, p.z - tz * 0.18); K.cape.rotation.set(0.5 + Math.sin(G.t * 9) * 0.12, yaw, 0, 'YXZ');
+  K.star.position.set(p.x + tx * 0.09, p.y + 0.72, p.z + tz * 0.09); K.star.rotation.set(0, yaw, 0);
+  // de cando en vez, berra algo ao pasar o xogador
+  K.t = (K.t || 0) - dt;
+  if (!G.player.car && K.t < 0 && Math.hypot(me.x - x, me.z - z) < 6) { K.t = 14; toast(pick(['Neno: «Son SUPER LEMOS! Dou mil voltas sen caer!»', 'Neno: «Míraaa! Sen mans!» (case cae)', 'Neno: «Miña nai aluga o cuarto de arriba. 80 euros e almorzo!»', 'Neno: «Ti es dos malos ou dos bos?»']), 3.5); }
+}
+
+/* veciño libre para un papel (paseantes de calquera tipo, lonxe da cámara se pode ser) */
+function freePed() {
+  const me = G.player.ped, C = world.crowd.peds.filter(q => !q.npc && q !== me && q.state !== 'player' && q.state !== 'seat' && q.state !== 'npc');
+  C.sort((a, b) => Math.hypot(b.x - me.x, b.z - me.z) - Math.hypot(a.x - me.x, a.z - me.z));
+  return C[0] || null;
 }

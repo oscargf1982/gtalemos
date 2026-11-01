@@ -254,21 +254,52 @@ function buildStationFountain(B, scene) {
   const yaw = nr.r ? Math.atan2(nr.ux, nr.uz) : 0, sy = terrainH(S.x, S.z);
   const sg = new THREE.Group(); sg.position.set(S.x, sy, S.z); sg.rotation.y = yaw; scene.add(sg);
   const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; sg.add(m); return m; };
-  const curbY = std({ color: 0xe0b521, roughness: 0.7 });
-  add(new THREE.BoxGeometry(3.6, 0.18, 6.2), curbY, 0, 0.09, 0);
-  add(new THREE.BoxGeometry(3.3, 0.22, 5.9), std({ color: 0xb9b4aa, roughness: 0.85 }), 0, 0.12, 0);
-  add(new THREE.BoxGeometry(2.0, 0.7, 2.6), granite, 0, 0.55, -0.6);
-  const flowers = std({ color: 0xc8202a, roughness: 0.8 }), leaf = std({ color: 0x2f5a24, roughness: 0.9, flatShading: true });
-  for (let i = 0; i < 26; i++) { const f = add(new THREE.IcosahedronGeometry(0.13, 0), i % 3 ? flowers : leaf, RR(-1.2, 1.2), 0.32, RR(1.0, 2.6)); }
-  // figura de pedra branca (abstracta, evoca un ferroviario coa súa ferramenta)
-  const stoneW = std({ color: 0xe4ded2, roughness: 0.9, flatShading: true });
-  const body = add(new THREE.CylinderGeometry(0.42, 0.62, 1.9, 7), stoneW, 0, 1.85, -0.6);
-  const head = add(new THREE.DodecahedronGeometry(0.33, 0), stoneW, 0.05, 3.0, -0.55);
-  const arm = add(new THREE.BoxGeometry(0.28, 1.2, 0.3), stoneW, 0.55, 2.2, -0.4); arm.rotation.z = -0.5;
-  const tool = add(new THREE.BoxGeometry(0.12, 1.6, 0.12), stoneW, 0.95, 2.3, -0.35); tool.rotation.z = -0.25;
-  const wheel = add(new THREE.TorusGeometry(0.45, 0.1, 6, 16), stoneW, -0.55, 1.35, -0.6); wheel.rotation.y = Math.PI / 2;
-  // cordiline (palmeiriña) detrás
-  for (let i = 0; i < 9; i++) { const l = add(new THREE.ConeGeometry(0.05, 1.3, 4), leaf, -0.9, 1.6, -1.6); l.rotation.set(RR(-0.8, 0.8), 0, RR(-0.8, 0.8)); }
+  // xardineira elevada de formigón cuberta de hedras, con pedras e focos
+  const conc = std({ color: 0xa7a49c, roughness: 0.95 }), ivy = std({ color: 0x3f6a2c, roughness: 0.9, flatShading: true }), ivy2 = std({ color: 0x5c8a3a, roughness: 0.9, flatShading: true });
+  add(new THREE.BoxGeometry(3.6, 0.62, 6.2), conc, 0, 0.31, 0);
+  add(new THREE.BoxGeometry(3.3, 0.06, 5.9), std({ color: 0x3b2a1c, roughness: 1 }), 0, 0.64, 0);
+  for (let i = 0; i < 70; i++) { const f = add(new THREE.IcosahedronGeometry(RR(0.14, 0.26), 0), i % 2 ? ivy : ivy2, RR(-1.55, 1.55), 0.7, RR(-2.8, 2.8)); f.scale.y = 0.5; }
+  for (let i = 0; i < 7; i++) add(new THREE.BoxGeometry(0.35, 0.22, 0.3), std({ color: 0x8f8c86, roughness: 0.9 }), -1.0 + i * 0.33, 0.75, -1.9 + (i % 2) * 0.12);
+  for (const [lx, lz] of [[-0.9, 0.3], [0.9, 0.3], [-0.9, -1.5], [0.9, -1.5]]) add(new THREE.CylinderGeometry(0.06, 0.07, 0.12, 8), std({ color: 0x1e2226, roughness: 0.4, metalness: 0.6 }), lx, 0.73, lz);
+  // placa
+  const plq = add(new THREE.BoxGeometry(0.75, 0.42, 0.22), std({ color: 0xd8d2c6, roughness: 0.8 }), 0, 0.85, 0.75); plq.rotation.x = -0.25;
+  const pt = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.3), std({ map: textTex('MONFORTE A LOS FERROVIARIOS', { w: 512, h: 128, bg: '#d8d2c6', fg: '#3a3630', size: 34 }), roughness: 0.8 }));
+  pt.position.set(0, 0.88, 0.87); pt.rotation.x = -0.25; sg.add(pt);
+  // grupo escultórico en pedra branca: o ferroviario (gorra, chaqueta, cesta), o neno da man e o can
+  const stoneW = std({ color: 0xe4ded2, roughness: 0.92 }), stoneD = std({ color: 0xd2c9b8, roughness: 0.95 });
+  const fig = new THREE.Group(); fig.position.set(0, 0.66, -0.55); sg.add(fig);
+  const fa = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = m.receiveShadow = true; fig.add(m); return m; };
+  const lathe = (pts, seg = 14) => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg);
+  fa(new THREE.BoxGeometry(1.1, 0.14, 0.8), stoneD, 0, 0.07, 0); // peaña
+  // home (≈2,2 m): pernas, chaqueta longa, brazos
+  for (const sx of [-0.13, 0.13]) { fa(lathe([[0.09, 0], [0.11, 0.1], [0.1, 0.5], [0.12, 0.95]], 10), stoneW, sx, 0.14, 0.02); fa(new THREE.BoxGeometry(0.16, 0.12, 0.32), stoneW, sx, 0.2, 0.08); }
+  fa(lathe([[0.33, 0], [0.31, 0.3], [0.29, 0.62], [0.3, 0.85], [0.26, 0.98], [0.12, 1.06], [0, 1.08]], 16), stoneW, 0, 0.98, 0).scale.set(1, 1, 0.72);
+  for (const sx of [-1, 1]) fa(new THREE.BoxGeometry(0.03, 0.55, 0.02), stoneD, sx * 0.08, 1.75, 0.2); // solapas
+  fa(new THREE.CylinderGeometry(0.06, 0.07, 0.1, 10), stoneW, 0, 2.1, 0); // pescozo
+  const hd = fa(new THREE.SphereGeometry(0.13, 14, 10), stoneW, 0, 2.25, 0.01); hd.scale.set(0.92, 1.08, 1);
+  fa(new THREE.SphereGeometry(0.03, 6, 4), stoneW, 0, 2.24, 0.13); // nariz
+  fa(new THREE.CylinderGeometry(0.15, 0.15, 0.07, 14), stoneD, 0, 2.38, 0); fa(new THREE.BoxGeometry(0.22, 0.02, 0.14), stoneD, 0, 2.35, 0.14); // gorra con pala
+  // brazo dereito: leva a cesta
+  fa(new THREE.CylinderGeometry(0.065, 0.06, 0.5, 10), stoneW, 0.33, 1.72, 0.03, 0, 0, 0.18); fa(new THREE.CylinderGeometry(0.06, 0.05, 0.42, 10), stoneW, 0.41, 1.33, 0.13, -0.6, 0, 0.1);
+  fa(new THREE.CylinderGeometry(0.17, 0.14, 0.28, 12), stoneD, 0.44, 1.05, 0.27); const asa = fa(new THREE.TorusGeometry(0.12, 0.02, 6, 12, Math.PI), stoneD, 0.44, 1.2, 0.27); asa.rotation.y = Math.PI / 2;
+  // brazo esquerdo: baixa e colle a man do neno
+  fa(new THREE.CylinderGeometry(0.065, 0.06, 0.5, 10), stoneW, -0.33, 1.72, 0.03, 0, 0, -0.2); fa(new THREE.CylinderGeometry(0.06, 0.05, 0.45, 10), stoneW, -0.4, 1.3, 0.06, 0.15, 0, -0.25);
+  // neno (≈1,1 m) á esquerda, mirando cara arriba
+  const kx = -0.55, kz = 0.12;
+  for (const sx of [-0.06, 0.06]) fa(new THREE.CylinderGeometry(0.05, 0.05, 0.45, 8), stoneW, kx + sx, 0.37, kz);
+  fa(lathe([[0.17, 0], [0.16, 0.25], [0.14, 0.42], [0.06, 0.5], [0, 0.51]], 12), stoneW, kx, 0.58, kz).scale.set(1, 1, 0.75);
+  const kh = fa(new THREE.SphereGeometry(0.1, 12, 8), stoneW, kx, 1.17, kz + 0.02); kh.rotation.x = -0.35;
+  fa(new THREE.CylinderGeometry(0.045, 0.04, 0.4, 8), stoneW, kx + 0.12, 0.98, kz, 0, 0, 0.9); // brazo cara a man do pai
+  fa(new THREE.CylinderGeometry(0.04, 0.035, 0.32, 8), stoneW, kx - 0.14, 0.88, kz + 0.08, 0.4, 0, -0.25); // brazo sobre o can
+  // can sentado ao carón do neno
+  const dx = -0.85, dz = 0.2;
+  const dbody = fa(new THREE.SphereGeometry(0.17, 12, 8), stoneW, dx, 0.42, dz); dbody.scale.set(0.8, 1.25, 1.05);
+  fa(new THREE.SphereGeometry(0.1, 10, 8), stoneW, dx, 0.74, dz + 0.08); fa(new THREE.BoxGeometry(0.08, 0.07, 0.12), stoneW, dx, 0.71, dz + 0.18);
+  for (const sx of [-1, 1]) { fa(new THREE.BoxGeometry(0.04, 0.12, 0.06), stoneD, dx + sx * 0.07, 0.83, dz + 0.06, 0, 0, sx * 0.3); fa(new THREE.CylinderGeometry(0.035, 0.03, 0.3, 6), stoneW, dx + sx * 0.06, 0.29, dz + 0.12); }
+  fa(new THREE.CylinderGeometry(0.03, 0.02, 0.25, 6), stoneW, dx, 0.22, dz - 0.18, 1.2);
+  fig.rotation.y = 0.12;
+  // cordilines e herbas altas detrás
+  for (let i = 0; i < 18; i++) { const l = add(new THREE.ConeGeometry(0.04, 1.3, 4), ivy, -1.0 + (i % 2) * 2.0, 1.25, -2.2 + RR(-0.3, 0.3)); l.rotation.set(RR(-0.9, 0.9), 0, RR(-0.9, 0.9)); }
   addOBB(S.x, S.z, 1.8, 3.1, yaw, 0.6, 'illa');
   addCircCol0(S.x, S.z - 0, 1.2, 3.4, 'escultura');
 }

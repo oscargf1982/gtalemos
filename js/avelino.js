@@ -80,6 +80,8 @@ function initStoryWorld() {
   const sj = LM.sajoni; if (sj) { const [x, z] = sj.pt(-2.4, -1.2); add({ id: 'sajoni', label: 'Tumbona do Sajoni', x, z, cost: 0, need: () => G.sajoniDanced, needTxt: 'O Sajoni só deixa durmir na tumbona a quen bailou con el.', why: 'Música ata as tantas, pero a manta é quentiña e Chispa fai de estufa.' }); }
   if (LM.volei) { const [x, z] = LM.volei.pt(-10.2, 0); add({ id: 'currito', label: 'Sofá de Currito', x, z, cost: 0, need: () => save.curritoWin, needTxt: 'Currito só lle deixa o sofá á súa parella do torneo (gaña a proba de pases).', why: 'Currito ensínache trucos de cartas ata as tres da mañá.' }); }
   { const pa = NPCS.find(n => n.id === 'pacho'); if (pa) add({ id: 'pancho', label: 'Casa de Pancho Camisolas', x: pa.p.x + 2, z: pa.p.z + 2, cost: 0, need: () => G.quest.state === 'done', needTxt: 'Pancho Camisolas só acolle a quen lle conseguiu a camiseta do Fener.', why: 'Durmes baixo un póster do Fenerbahçe. Moi amarelo todo.' }); }
+  // casa vermella de Doutor Casares 211: alugan o cuarto de arriba
+  { const E = G.fachadaEdge && G.fachadaEdge.casares211; if (E) { const x = E.ax + E.ux * E.L * 0.5 + E.ox * 1.3, z = E.az + E.uz * E.L * 0.5 + E.oz * 1.3; add({ id: 'casares211', label: 'Casa vermella · 80 €', x, z, cost: 80, why: 'Cuarto de arriba con balcón de ferro. A nai do neno da bici fai filloas para almorzar.' }); } }
   if (LM.fluvial) { const [x, z] = LM.fluvial.pt(-2, 11.6); add({ id: 'fluvial', label: 'Vestiarios do Club Fluvial (risco)', x, z, cost: 0, risk: 0.4, why: 'Un banco duro e cheiro a cloro.' }); }
   // pagar a débeda e mercar o billete
   S.points = [];
