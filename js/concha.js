@@ -90,6 +90,7 @@ const conchaMood = m => () => { if (typeof PORTRAITS !== 'undefined') PORTRAITS[
 function kioskInteract() {
   const K = G.kiosk; if (!K || G.player.car || G.dialog) return false;
   const me = G.player.ped; if (Math.hypot(me.x - K.door.x, me.z - K.door.z) > 2.6) return false;
+  if (typeof melKioskHook === 'function' && melKioskHook()) return true;
   const C = (t, extra) => ({ who: 'Dona Concha', text: t, ...extra });
   const pay = (n) => { if (G.player.money < n) return false; G.player.money -= n; $('money').textContent = G.player.money + ' €'; return true; };
   const topics = () => C('De que queres saber?', { choices: [...kioskEvents().map(e => ({ t: e.tit, fn: () => [C(e.info), () => { if (e.at) { setWaypoint(e.at[0], e.at[1]); toast('Dona Concha marcouche o sitio no GPS', 2.5); } }, topics()] })), { t: 'Xa abonda, grazas', fn: () => [conchaMood('face'), menu()] }] });
