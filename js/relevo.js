@@ -7,7 +7,7 @@
    Así todo — edificios, rúas, monumentos, persoas — senta sobre
    as costas, o monte de San Vicente e a veiga do Cabe reais.
    ========================================================== */
-const RELEVO = { on: false, w: null, nx: 0, nz: 0, x0: 0, z0: 0, st: 8 };
+const RELEVO = { on: false, w: null, nx: 0, nz: 0, x0: 0, z0: 0, st: 8, lods: [] };
 function relevoRaw(i, j) { // relevo real (m) no nodo i,j
   const R = RELEVO; i = i < 0 ? 0 : i >= R.nx ? R.nx - 1 : i; j = j < 0 ? 0 : j >= R.nz ? R.nz - 1 : j;
   return R.w[j * R.nx + i];
@@ -67,6 +67,34 @@ function relevoInit() {
       p.setY(i, p.getY(i) + c - k * 1.2 - 0.05); }
     p.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingSphere(); g.computeBoundingBox();
     G.groundMesh.material.userData.noRelief = true;
+  }
+  // mallas instanciadas estáticas (árbores, travesas, arbustos, postes...): por zonas, cada unha coa súa esfera, para que se descarten as que non se ven
+  if (G.scene) { const ims = []; G.scene.traverse(o => { if (o.isInstancedMesh && o.parent === G.scene) ims.push(o); });
+    const m4 = new THREE.Matrix4(), v = new THREE.Vector3(), T = 320;
+    for (const im of ims) {
+      const geo = im.geometry; if (!geo.boundingSphere) geo.computeBoundingSphere(); const gr = geo.boundingSphere.radius + geo.boundingSphere.center.length();
+      const tiles = new Map();
+      for (let i = 0; i < im.count; i++) { im.getMatrixAt(i, m4); v.setFromMatrixPosition(m4); const k = Math.floor(v.x / T) + ',' + Math.floor(v.z / T); let l = tiles.get(k); if (!l) tiles.set(k, l = []); l.push(i); }
+      for (const l of tiles.values()) {
+        const g2 = new THREE.BufferGeometry(); for (const k in geo.attributes) g2.setAttribute(k, geo.attributes[k]); if (geo.index) g2.setIndex(geo.index); for (const gg of geo.groups) g2.addGroup(gg.start, gg.count, gg.materialIndex);
+        const n = new THREE.InstancedMesh(g2, im.material, l.length); n.frustumCulled = true; n.castShadow = im.castShadow; n.receiveShadow = im.receiveShadow; n.renderOrder = im.renderOrder;
+        let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9, z1 = -1e9, sc = 1;
+        l.forEach((i, j) => { im.getMatrixAt(i, m4); n.setMatrixAt(j, m4); v.setFromMatrixPosition(m4); x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); z0 = Math.min(z0, v.z); z1 = Math.max(z1, v.z); sc = Math.max(sc, m4.getMaxScaleOnAxis());
+          if (im.instanceColor) { const c = new THREE.Color().fromArray(im.instanceColor.array, i * 3); n.setColorAt(j, c); } });
+        g2.boundingSphere = new THREE.Sphere(new THREE.Vector3((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2), Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + gr * sc);
+        n.instanceMatrix.needsUpdate = true; if (n.instanceColor) n.instanceColor.needsUpdate = true;
+        G.scene.add(n);
+        // nivel de detalle: copas de árbore simplificadas lonxe; pezas miúdas (travesas, postes, arbustos) só preto
+        const C = g2.boundingSphere.center, R0 = g2.boundingSphere.radius;
+        if (im.material === MAT.leaves || im.material === MAT.pine) {
+          const lg = im.material === MAT.leaves ? new THREE.IcosahedronGeometry(2.9, 0).translate(0.3, 6.0, 0.15) : new THREE.ConeGeometry(2.6, 9.5, 6).translate(0, 6.6, 0);
+          lg.boundingSphere = g2.boundingSphere.clone();
+          const lo = new THREE.InstancedMesh(lg, im.material, l.length); lo.instanceMatrix.copy(n.instanceMatrix); if (n.instanceColor) lo.instanceColor = n.instanceColor; lo.castShadow = n.castShadow; lo.receiveShadow = n.receiveShadow; lo.visible = false; G.scene.add(lo);
+          RELEVO.lods.push({ hi: n, lo, c: C, r: R0, d: 160 });
+        } else if (gr < 2.2 && !n.castShadow) RELEVO.lods.push({ hi: n, lo: null, c: C, r: R0, d: 220 });
+      }
+      G.scene.remove(im);
+    }
   }
   if (G.scene) G.scene.traverse(o => {
     if (!o.isMesh || o.isInstancedMesh || o === G.groundMesh || !o.geometry || o.geometry.userData.relTess) return;
@@ -163,6 +191,8 @@ gl_Position = projectionMatrix * mvPosition;`);
     sp.copy(g.boundingSphere).applyMatrix4(o.matrixWorld);
     if (RELEVO.on && !(o.material && o.material.userData && o.material.userData.noRelief)) { sp.center.y += relH(sp.center.x, sp.center.z); if (sp.radius > 40) sp.radius += 40; }
     // obxectos pequenos e lonxe da cámara non se debuxan (aforra moitas chamadas de debuxo)
+    // nada máis aló da néboa (≈950 m): o que queda tan lonxe xa non se distingue
+    if (RELEVO.cam) { const c = RELEVO.cam, dd = Math.hypot(sp.center.x - c.x, sp.center.z - c.z) - sp.radius; if (dd > 950) return false; }
     if (sp.radius < 14 && !o.isInstancedMesh && RELEVO.cam) { const c = RELEVO.cam, dx = sp.center.x - c.x, dz = sp.center.z - c.z, lim = 170 + sp.radius * 14; if (dx * dx + dz * dz > lim * lim) return false; }
     return this.intersectsSphere(sp);
   };
@@ -177,8 +207,12 @@ const _relSaved = [];
 let _relLights = [], _relLightT = -1;
 function relevoBegin(scene, camera) {
   if (!RELEVO.on) return;
+  // sombras: se o equipo vai xusto (fotogramas de máis de 20 ms), o mapa de sombras recalcúlase un fotograma si e outro non
+  if (typeof renderer !== 'undefined' && renderer.shadowMap.enabled) { const now = performance.now(), ft = now - (RELEVO.lastT || now); RELEVO.lastT = now; RELEVO.ft = lerp(RELEVO.ft || 16, ft, 0.1); RELEVO.fr = (RELEVO.fr || 0) + 1;
+    renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = RELEVO.ft < 20 || RELEVO.fr % 2 === 0; }
   const now = performance.now();
   if (now - _relLightT > 2000) { _relLightT = now; _relLights = []; scene.traverse(o => { if (o.isPointLight || o.isSpotLight || o.isDirectionalLight) _relLights.push(o); }); }
+  for (const L of RELEVO.lods) { const d = Math.hypot(L.c.x - camera.position.x, L.c.z - camera.position.z) - L.r, near = d < L.d; L.hi.visible = near; if (L.lo) L.lo.visible = !near; }
   _relSaved.length = 0;
   const lift = (o, dy) => { _relSaved.push(o, o.position.y); o.position.y += dy; o.updateMatrixWorld(); };
   RELEVO.cam = camera.position;

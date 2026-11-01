@@ -427,7 +427,7 @@ function toggleCar() {
 function updatePlayerCar(dt) {
   const c = G.player.car, inp = c.inp;
   // a dirección vai entrando aos poucos (teclado = xiro suave e progresivo)
-  const want = clamp(IN.mx, -1, 1), cur = c._st || 0, rate = (Math.sign(want) !== Math.sign(cur) && cur !== 0 ? 6 : 3.2) * dt;
+  const want = clamp(IN.mx, -1, 1), cur = c._st || 0, rate = (want === 0 ? 7 : Math.sign(want) !== Math.sign(cur) && cur !== 0 ? 7 : 3.6) * dt; // ao soltar, o volante volve ao centro axiña
   c._st = cur + clamp(want - cur, -rate, rate); inp.steer = c._st;
   const fs = c.fwdSpeed;
   if (IN.my > 0) { inp.throttle = IN.my; inp.brake = 0; }

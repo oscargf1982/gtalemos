@@ -236,6 +236,14 @@ class Vehicle {
     this.r += torque / this.Iz * dt;
     if (this.onGround && Math.hypot(this.vx, this.vz) < 1.5) { this.r *= Math.pow(0.02, dt); if (!inp.throttle) { this.vx *= Math.pow(0.1, dt); this.vz *= Math.pow(0.1, dt); } }
     this.r *= Math.pow(inp.hand ? 0.7 : 0.35, dt);
+    // axuda á condución (só o xogador; o freo de man desactívaa para derrapar):
+    // control de estabilidade (o coche xira o que pide o volante) e menos esvaramento lateral
+    if (this.driver === 'player' && this.onGround && !inp.hand && !this.inWater && G.assist !== false) {
+      const vfn = this.vx * Math.sin(this.yaw) + this.vz * Math.cos(this.yaw);
+      if (Math.abs(vfn) > 2) { const aMax = t.grip * GRAV * (G.rain ? 0.8 : 1.0), rLim = aMax / Math.abs(vfn), rIdeal = clamp(vfn * Math.tan(this.steer) / t.wb, -rLim, rLim); this.r += (rIdeal - this.r) * Math.min(1, dt * 6); }
+      const lx2 = Math.cos(this.yaw), lz2 = -Math.sin(this.yaw), vl2 = this.vx * lx2 + this.vz * lz2, k = Math.min(1, dt * 6);
+      this.vx -= vl2 * lx2 * k; this.vz -= vl2 * lz2 * k;
+    }
     this.yaw += this.r * dt;
     this.x += this.vx * dt; this.z += this.vz * dt;
     // chan e saltos
@@ -277,11 +285,11 @@ class Vehicle {
         this.x += dx; this.z += dz;
         const vn = this.vx * nx + this.vz * nz;
         if (vn < 0) {
-          const e = 0.25, J = -(1 + e) * vn;
+          const pl = this.driver === 'player' && G.assist !== false, e = pl ? 0.08 : 0.25, J = -(1 + e) * vn;
           this.vx += J * nx; this.vz += J * nz;
           // fricción tanxencial
-          const tx = -nz, tz = nx, vt = this.vx * tx + this.vz * tz; this.vx -= vt * tx * 0.15; this.vz -= vt * tz * 0.15;
-          this.r += off * J * (fz * nx - fx * nz) * this.t.mass / this.Iz * 0.6;
+          const tx = -nz, tz = nx, vt = this.vx * tx + this.vz * tz; this.vx -= vt * tx * (pl ? 0.05 : 0.15); this.vz -= vt * tz * (pl ? 0.05 : 0.15);
+          this.r += off * J * (fz * nx - fx * nz) * this.t.mass / this.Iz * (pl ? 0.2 : 0.6);
           if (-vn > 3) this.onCrash(-vn);
         }
       }
@@ -401,8 +409,8 @@ class Crowd {
     const geo = {
       torso: (() => { const g = new THREE.CylinderGeometry(0.2, 0.16, 0.56, 10); g.scale(1, 1, 0.62); g.translate(0, 0, 0); return mergeGeos([g, xform(new THREE.SphereGeometry(0.2, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0, 0.27, 0, 0, 0, 0, 1, 0.45, 0.62)]); })(),
       hips: (() => { const g = new THREE.CylinderGeometry(0.17, 0.16, 0.2, 10); g.scale(1, 1, 0.65); return g; })(),
-      head: mergeGeos([new THREE.SphereGeometry(0.115, 14, 10).scale(0.92, 1.05, 1), xform(new THREE.CylinderGeometry(0.045, 0.05, 0.12, 8), 0, -0.13, 0), xform(new THREE.SphereGeometry(0.025, 6, 4), 0, -0.01, 0.11)]),
-      hair: (() => { const g = new THREE.SphereGeometry(0.124, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55); g.scale(0.94, 1.0, 1.04); g.translate(0, 0.012, -0.012); return g; })(),
+      head: mergeGeos([new THREE.SphereGeometry(0.115, 11, 8).scale(0.92, 1.05, 1), xform(new THREE.CylinderGeometry(0.045, 0.05, 0.12, 8), 0, -0.13, 0), xform(new THREE.SphereGeometry(0.025, 6, 4), 0, -0.01, 0.11)]),
+      hair: (() => { const g = new THREE.SphereGeometry(0.124, 11, 6, 0, Math.PI * 2, 0, Math.PI * 0.55); g.scale(0.94, 1.0, 1.04); g.translate(0, 0.012, -0.012); return g; })(),
       uarm: (() => { const g = new THREE.CylinderGeometry(0.058, 0.05, 0.3, 8); g.translate(0, -0.15, 0); return g; })(),
       farm: (() => mergeGeos([xform(new THREE.CylinderGeometry(0.048, 0.04, 0.27, 8), 0, -0.135, 0), xform(new THREE.SphereGeometry(0.05, 8, 6), 0, -0.29, 0, 0, 0, 0, 0.8, 1.1, 0.6)]))(),
       thigh: (() => { const g = new THREE.CylinderGeometry(0.085, 0.065, 0.44, 8); g.translate(0, -0.22, 0); return g; })(),
@@ -412,7 +420,7 @@ class Crowd {
     this.meshes = {};
     const mult = { uarm: 2, farm: 2, thigh: 2, shin: 2, shoe: 2 };
     for (const k of PED_PARTS) {
-      const m = new THREE.InstancedMesh(geo[k], mat, max * (mult[k] || 1));
+      const m = new THREE.InstancedMesh(geo[k], mat, max * (mult[k] || 1)); m._mul = mult[k] || 1;
       m.frustumCulled = false; m.castShadow = true; m.receiveShadow = true;
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       const c = new THREE.Color(1, 1, 1); for (let i = 0; i < m.count; i++) m.setColorAt(i, c);
@@ -494,7 +502,11 @@ class Crowd {
       mm.shoe.setMatrixAt(i * 2 + s, T);
     }
   }
-  flush() { for (const k of PED_PARTS) { this.meshes[k].instanceMatrix.needsUpdate = true; } }
+  flush() {
+    // só se debuxan as instancias ata a última persoa visible (as de reserva, ocultas ao final, non contan)
+    let last = 0; for (let i = this.peds.length - 1; i >= 0; i--) { const p = this.peds[i]; if (p.visible !== false && p.state !== 'hidden') { last = p.idx + 1; break; } }
+    for (const k of PED_PARTS) { const m = this.meshes[k], mul = m._mul || 1; m.count = Math.min(this.max, Math.max(last, 1)) * mul; m.instanceMatrix.needsUpdate = true; }
+  }
 }
 
 /* ---------- Comportamento dos peóns ---------- */
