@@ -27,11 +27,11 @@ function updateFraternal(dt) {
   if (!G.fraternal) G.fraternal = { door: fraternalDoor() };
   updateDavid(dt);
   const D = G.fraternal.door; if (!D || G.player.car || G.dialog || G.minigame) return;
-  const me = G.player.ped; if (Math.hypot(me.x - D.x, me.z - D.z) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Entrar na Fraternal`);
+  const me = G.player.ped; if (!G.interior && Math.hypot(me.x - D.x, me.z - D.z) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Entrar na Fraternal`);
 }
-function fraternalInteract() {
-  const F = G.fraternal; if (!F || !F.door || G.player.car || G.dialog || G.minigame) return false;
-  const me = G.player.ped; if (Math.hypot(me.x - F.door.x, me.z - F.door.z) > 3) return false;
+function fraternalInteract(inside) {
+  const F = G.fraternal; if (!F || !F.door || G.dialog || G.minigame) return false;
+  if (!inside) { if (G.player.car || G.interior) return false; const me = G.player.ped; if (Math.hypot(me.x - F.door.x, me.z - F.door.z) > 3) return false; interiorEnter('fraternal'); return true; }
   const D = (t, extra) => ({ who: 'Tío David', text: t, ...extra });
   const games = () => D('A que xogamos? Eu xogo a todo, pero ao dominó non me gaña nin o cura.', { choices: [
     { t: 'Dominó', fn: () => [D('Ao dominó! Colle as túas sete fichas. Sen trampas, que te estou vendo.'), () => mgOpen('domino')] },
@@ -324,6 +324,7 @@ function updateDavid(dt) {
     davidFrame(0, false);
   }
   const me = G.player.ped, h = G.hour, D = DAVID; D.t += dt;
+  if (!(h >= 20 && h < 23.5)) { D.sp.visible = false; return; } D.sp.visible = true; // de día está dentro da Fraternal; á noitiña sae ao banco
   let x, z, face, moving = false;
   const near = !G.player.car && Math.hypot(me.x - Fr.door.x, me.z - Fr.door.z) < 7;
   const sitting = h >= 20 && h < 23.5 && !near && !(G.dialog && $('dlgName').textContent === 'Tío David');

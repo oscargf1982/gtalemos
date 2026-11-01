@@ -94,7 +94,7 @@ function updateMelenas(dt) {
   } else if (MEL.sp) MEL.sp.visible = false;
   // Valerio está dentro da farmacia (Rúa do Cardeal, 3): na porta ofrécese entrar
   if (!G.player.car && !G.dialog && !G.interior && dMe(MEL.farm) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Entrar na farmacia`);
-  if (G.interior === 'farmacia') farmUpdate(dt);
+  if (G.interior) interiorUpdate(dt);
   // Rosiña, a pasteleira (mandil rosa)
   if (dMe(MEL.past) < 120) { const r = melPed('rosina', { female: true, scale: 0.95, col: { shirt: '#f2a6c0', pants: '#f4f0e8', shoe: '#f4f4f4', hair: '#6b4a2e', skin: '#f2d2b6', sleeve: true } });
     if (r) { r.x = MEL.past.x; r.z = MEL.past.z; r.y = groundH(r.x, r.z); r.yaw = dMe(r) < 8 ? Math.atan2(me.x - r.x, me.z - r.z) : MEL.past.face; if (!G.player.car && !G.dialog && dMe(r) < 3) setPrompt(`${isTouch ? '★' : 'E'} · Falar con Rosiña (pastelaría)`); } }
@@ -162,25 +162,36 @@ function melKioskHook() {
   return true;
 }
 
-/* ---------- interior da farmacia (escena pixel art achegada polo autor) ---------- */
-function farmEnter() {
-  let el = $('interior');
+/* ---------- interiores pixel art (farmacia, Fraternal...): escena a pantalla completa cun personaxe ---------- */
+const INTERIORS = {
+  farmacia: { title: 'Farmacia · Rúa do Cardeal, 3', bg: 'img/farmacia-interior.jpg', who: 'Valerio', talk: 'Falar con Valerio', sprite: 'img/valerio.png', aspect: '220 / 310', left: '61%', bottom: '33%', height: '30%', talkFn: () => melInteract() },
+  fraternal: { title: 'La Fraternal · Rúa de Concepción Arenal', bg: 'img/fraternal-interior.jpg', who: 'Tío David', talk: 'Falar co Tío David', sprite: 'img/david.png', aspect: '260 / 300', left: '47%', bottom: '24%', height: '34%', talkFn: () => fraternalInteract(true) },
+};
+function interiorEnter(kind) {
+  const C = INTERIORS[kind]; let el = $('interior');
   if (!el) { el = document.createElement('div'); el.id = 'interior';
-    el.innerHTML = `<div class="in-scene"><div class="in-valerio" title="Falar con Valerio"></div></div><div class="in-bar"><span class="in-title">Farmacia · Rúa do Cardeal, 3</span><button class="in-talk">Falar con Valerio (E)</button><button class="in-exit">Saír (Esc)</button></div>`;
+    el.innerHTML = `<div class="in-scene"><div class="in-valerio"></div></div><div class="in-bar"><span class="in-title"></span><button class="in-talk"></button><button class="in-exit">Saír (Esc)</button></div>`;
     document.body.appendChild(el);
-    el.querySelector('.in-valerio').onclick = e => { e.stopPropagation(); if (!G.dialog) melInteract(); };
-    el.querySelector('.in-talk').onclick = () => { if (!G.dialog) melInteract(); };
-    el.querySelector('.in-exit').onclick = () => farmExit(); }
-  el.hidden = false; G.interior = 'farmacia'; MEL.inT = 0; if (G.sfx && G.sfx.door) G.sfx.door();
+    const talk = () => { if (!G.dialog && !G.minigame && G.interior) INTERIORS[G.interior].talkFn(); };
+    el.querySelector('.in-valerio').onclick = e => { e.stopPropagation(); talk(); };
+    el.querySelector('.in-talk').onclick = talk;
+    el.querySelector('.in-exit').onclick = () => interiorExit(); }
+  el.querySelector('.in-scene').style.backgroundImage = `url(${C.bg})`;
+  const v = el.querySelector('.in-valerio'); Object.assign(v.style, { backgroundImage: `url(${C.sprite})`, aspectRatio: C.aspect, left: C.left, bottom: C.bottom, height: C.height }); v.title = C.talk;
+  el.querySelector('.in-title').textContent = C.title; el.querySelector('.in-talk').textContent = C.talk + ' (E)';
+  el.hidden = false; G.interior = kind; MEL.inT = 0; if (G.sfx && G.sfx.door) G.sfx.door();
   if (document.exitPointerLock) try { document.exitPointerLock(); } catch (e) { }
-  toast('Na farmacia. Fala con Valerio ou sae (Esc).', 2.5);
+  toast(`${C.title.split(' ·')[0]}: ${C.talk.toLowerCase()} ou sae (Esc).`, 2.5);
 }
-function farmExit() { const el = $('interior'); if (el) el.hidden = true; G.interior = null; if (G.dialog && typeof closeDialog === 'function') closeDialog(); }
-function farmUpdate(dt) {
-  const v = document.querySelector('#interior .in-valerio'); if (!v) return;
+function interiorExit() { const el = $('interior'); if (el) el.hidden = true; G.interior = null; if (G.dialog && typeof closeDialog === 'function') closeDialog(); }
+const farmEnter = () => interiorEnter('farmacia'), farmExit = interiorExit;
+function interiorUpdate(dt) {
+  const v = document.querySelector('#interior .in-valerio'); if (!v || !G.interior) return;
   MEL.inT = (MEL.inT || 0) + dt; const bar = document.querySelector('#interior .in-bar'); if (bar) bar.style.visibility = G.dialog ? 'hidden' : 'visible';
-  const talking = G.dialog && $('dlgName').textContent === 'Valerio';
-  const f = talking ? (MEL.vMood === 'ri' ? 9 : MEL.vMood === 'matraz' ? 11 : Math.floor(MEL.inT / 0.9) % 2 ? 8 : 0) : (Math.floor(MEL.inT / 4) % 3 === 2 ? 10 : 0);
+  const C = INTERIORS[G.interior], talking = G.dialog && $('dlgName').textContent === C.who; let f;
+  if (G.interior === 'farmacia') { f = talking ? (MEL.vMood === 'ri' ? 9 : MEL.vMood === 'matraz' ? 11 : Math.floor(MEL.inT / 0.9) % 2 ? 8 : 0) : (Math.floor(MEL.inT / 4) % 3 === 2 ? 10 : 0);
+    if (typeof PORTRAITS !== 'undefined') PORTRAITS['Valerio'] = 'img/valerio-' + ({ ri: 'ri', matraz: 'chisca', enfado: 'enfado', chisca: 'chisca', sorpresa: 'sorpresa' }[MEL.vMood] || 'face') + '.png'; }
+  else f = talking ? (Math.floor(MEL.inT / 0.9) % 2 ? 8 : 9) : (Math.floor(MEL.inT / 5) % 2 ? 10 : 0);
   v.style.backgroundPosition = `${(f % 4) * 100 / 3}% ${Math.floor(f / 4) * 50}%`;
-  if (typeof PORTRAITS !== 'undefined') PORTRAITS['Valerio'] = 'img/valerio-' + ({ ri: 'ri', matraz: 'chisca', enfado: 'enfado', chisca: 'chisca', sorpresa: 'sorpresa' }[MEL.vMood] || 'face') + '.png';
 }
+const farmUpdate = interiorUpdate;
