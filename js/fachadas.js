@@ -349,33 +349,54 @@ function updateBankQueue(dt) {
 }
 
 /* ---------- neno en bici disfrazado de superheroe (orixinal: "Super Lemos") diante de Doutor Casares 211 ---------- */
+/* Neno Super Lemos en bici (sprites pixel art do autor, img/neno-bici.png 8×4):
+   0-3 pedalear, 4-7 pedalear rápido, 8-11 frear, 12-15 parado, 16-19 arrancar, 20-23 salto, 24-27 caída, 28-31 levantarse.
+   Dá voltas diante da casa vermella; de cando en vez pega un brinco; se o tocas (a pé ou en coche) cae e volve levantarse. */
 const BIKEKID = { on: false };
 function updateBikeKid(dt) {
-  const E = G.fachadaEdge && G.fachadaEdge.casares211; if (!E || typeof world === 'undefined' || !world.crowd) return;
+  const E = G.fachadaEdge && G.fachadaEdge.casares211; if (!E) return;
   const me = G.player.car || G.player.ped, cx = E.mx + E.ox * 4.2, cz = E.mz + E.oz * 4.2;
   if (!BIKEKID.on) {
-    if (Math.hypot(me.x - cx, me.z - cz) > 150) return;
-    const p = freePed(); if (!p) return; BIKEKID.on = true;
-    Object.assign(p, { state: 'npc', home: 'npc', npc: 'bikekid', manual: true, immune: true, visible: true, walk: 0, run: 0, sit: 0.72, lie: 0, armUp: 0.45, edge: null, female: false, scale: 0.58 });
-    // traxe de heroe inventado: verde e amarelo, máscara verde (sen deseño de ningún personaxe coñecido)
-    Object.assign(p.col, { shirt: '#1f9a50', pants: '#1f9a50', shoe: '#f2c21b', hair: '#1f9a50', skin: '#1f9a50', sleeve: false }); world.crowd.paint(p);
-    const bike = makeBike(); bike.scale.setScalar(0.62); G.scene.add(bike);
-    const cape = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.55), std({ color: 0xf2c21b, roughness: 0.8, side: THREE.DoubleSide })); cape.castShadow = true; G.scene.add(cape);
-    const star = new THREE.Mesh(new THREE.CircleGeometry(0.07, 5), std({ color: 0xf2c21b, roughness: 0.5, side: THREE.DoubleSide })); G.scene.add(star);
-    Object.assign(BIKEKID, { p, bike, cape, star, a: 0, sp: 1.0 });
+    if (Math.hypot(me.x - cx, me.z - cz) > 160) return;
+    const tex = new THREE.TextureLoader().load('img/neno-bici.png'); tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false; tex.encoding = THREE.sRGBEncoding;
+    const h = 1.65, w = h * 179 / 234, g = new THREE.PlaneGeometry(w, h); g.translate(0, h / 2 - 0.02, 0);
+    const sp = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide })); sp.renderOrder = 2; G.scene.add(sp);
+    const sg = new THREE.CircleGeometry(0.5, 16); sg.rotateX(-Math.PI / 2);
+    const sh = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.28, depthWrite: false })); sh.scale.set(1, 1, 0.45); G.scene.add(sh);
+    Object.assign(BIKEKID, { on: true, sp, sh, a: 0, v: 1.0, st: 'ride', tS: 0, tJ: 5 + Math.random() * 5, fr: -1, flip: false, t: 0 });
   }
-  const K = BIKEKID, p = K.p; if (p.state !== 'npc') { K.bike.visible = K.cape.visible = K.star.visible = false; return; }
-  K.a += dt * K.sp * (1 + 0.15 * Math.sin(G.t * 0.7)); const R0 = 2.6;
-  const x = cx + Math.cos(K.a) * R0, z = cz + Math.sin(K.a) * R0, tx = -Math.sin(K.a), tz = Math.cos(K.a), yaw = Math.atan2(tx, tz), y = groundH(x, z);
-  K.bike.position.set(x, y, z); K.bike.rotation.set(0, yaw, -0.12);
-  for (const w of K.bike.userData.wheels || []) w.rotation.x += dt * K.sp * R0 / 0.22;
-  p.x = x - tx * 0.1; p.z = z - tz * 0.1; p.y = y + 0.18; p.yaw = yaw; p.sit = 0.72; p.walk = 1; p.phase = (p.phase || 0) + dt * 6; p.armUp = 0.45; p.look = 0; p.nod = 0;
-  // capa ao vento e estrela no peito
-  K.cape.position.set(p.x - tx * 0.18, p.y + 0.62, p.z - tz * 0.18); K.cape.rotation.set(0.5 + Math.sin(G.t * 9) * 0.12, yaw, 0, 'YXZ');
-  K.star.position.set(p.x + tx * 0.09, p.y + 0.72, p.z + tz * 0.09); K.star.rotation.set(0, yaw, 0);
+  const K = BIKEKID, R0 = 2.6;
+  if (Math.hypot(me.x - cx, me.z - cz) > 200) { K.sp.visible = K.sh.visible = false; return; }
+  K.sp.visible = K.sh.visible = true; K.tS += dt;
+  const x = cx + Math.cos(K.a) * R0, z = cz + Math.sin(K.a) * R0, tx = -Math.sin(K.a), tz = Math.cos(K.a), y = groundH(x, z);
+  const dMe = Math.hypot(me.x - x, me.z - z), hitR = G.player.car ? 2.0 : 0.75;
+  let f = 0, lift = 0;
+  const go = st => { K.st = st; K.tS = 0; };
+  if (K.st === 'ride' || K.st === 'start' || K.st === 'jump') {
+    if (dMe < hitR) { go('fall'); K.v = 0; if (typeof toast === 'function') toast(pick(['Neno: «Aaaai! Que me tiraches!»', 'Neno: «Ollo, home! Un superheroe tamén cae!»', 'Neno: «Bua... vou chamar á miña nai!»']), 3); }
+  }
+  if (K.st === 'ride') {
+    const slow = !G.player.car && dMe < 3.2; // se te ve diante, frea
+    K.v = lerp(K.v, slow ? 0.35 : 1.0 + 0.35 * Math.max(0, Math.sin(G.t * 0.5)), Math.min(1, dt * 2));
+    K.tJ -= dt; if (K.tJ < 0 && !slow) { go('jump'); K.tJ = 6 + Math.random() * 8; }
+    const ph = Math.floor(G.t * (6 + K.v * 6)) % 4;
+    f = slow ? 8 + ph : K.v > 1.2 ? 4 + ph : ph;
+  } else if (K.st === 'jump') { const u = K.tS / 0.9; f = 20 + Math.min(3, Math.floor(u * 4)); lift = Math.sin(Math.min(1, u) * Math.PI) * 0.35; if (u >= 1) go('ride'); }
+  else if (K.st === 'fall') { f = 24 + Math.min(3, Math.floor(K.tS / 0.16)); if (K.tS > 0.64) go('down'); }
+  else if (K.st === 'down') { f = 27; if (K.tS > 2.2) go('up'); }
+  else if (K.st === 'up') { f = 28 + Math.min(3, Math.floor(K.tS / 0.3)); if (K.tS > 1.2) go('stop'); }
+  else if (K.st === 'stop') { f = 12 + Math.floor(K.tS / 0.25) % 4; if (K.tS > 1.2 && dMe > 1.6) go('start'); }
+  else if (K.st === 'start') { f = 16 + Math.min(3, Math.floor(K.tS / 0.2)); K.v = Math.min(1, K.tS / 0.8); if (K.tS > 0.8) go('ride'); }
+  if (K.st === 'ride' || K.st === 'jump' || K.st === 'start') K.a += dt * K.v;
+  // billboard cara á cámara; o sprite mira á dereita, voltéase se vai cara á esquerda da pantalla
+  const cam = camera.position, yawC = Math.atan2(cam.x - x, cam.z - z), right = tx * Math.cos(yawC) - tz * Math.sin(yawC) >= 0;
+  K.sp.position.set(x, y + lift, z); K.sp.rotation.y = yawC; K.sh.position.set(x, y + 0.03, z); K.sh.rotation.y = Math.atan2(tx, tz);
+  K.sp.material.color.setScalar(1 - 0.45 * (G.night || 0));
+  if (K.fr !== f || K.flip !== !right) { K.fr = f; K.flip = !right; const t = K.sp.material.map, c = f % 8, r = Math.floor(f / 8);
+    t.repeat.set(K.flip ? -1 / 8 : 1 / 8, 1 / 4); t.offset.set(K.flip ? (c + 1) / 8 : c / 8, 1 - (r + 1) / 4); }
   // de cando en vez, berra algo ao pasar o xogador
-  K.t = (K.t || 0) - dt;
-  if (!G.player.car && K.t < 0 && Math.hypot(me.x - x, me.z - z) < 6) { K.t = 14; toast(pick(['Neno: «Son SUPER LEMOS! Dou mil voltas sen caer!»', 'Neno: «Míraaa! Sen mans!» (case cae)', 'Neno: «Miña nai aluga o cuarto de arriba. 80 euros e almorzo!»', 'Neno: «Ti es dos malos ou dos bos?»']), 3.5); }
+  K.t -= dt;
+  if (!G.player.car && K.st === 'ride' && K.t < 0 && dMe < 6) { K.t = 14; toast(pick(['Neno: «Son SUPER LEMOS! Dou mil voltas sen caer!»', 'Neno: «Míraaa! Mira que brinco!»', 'Neno: «Miña nai aluga o cuarto de arriba. 80 euros e almorzo!»', 'Neno: «Ti es dos malos ou dos bos?»']), 3.5); }
 }
 
 /* veciño libre para un papel (paseantes de calquera tipo, lonxe da cámara se pode ser) */
