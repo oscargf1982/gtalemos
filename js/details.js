@@ -54,6 +54,7 @@ function buildCardealDetails(B, scene) {
   for (let s = 10; s < P.len - 6; s += 7) {
     const p = P.at(s), x = p.x - p.uz * side * off, z = p.z + p.ux * side * off;
     if (G.seats.some(q => Math.hypot(q.x - x, q.z - z) < 1.8) || G.bars.some(b => Math.hypot(b.door.x - x, b.door.z - z) < 2.5)) continue;
+    if (typeof FACHADAS !== 'undefined' && FACHADAS.some(F => F.id === 'farmaciaCardeal' && Math.hypot(F.at[0] - x, F.at[1] - z) < 11)) continue; // diante da farmacia non hai laranxeira
     trees.push([x, z, s]);
   }
   const trunk = new THREE.CylinderGeometry(0.09, 0.14, 2.2, 7); trunk.translate(0, 1.1, 0);

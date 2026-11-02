@@ -346,56 +346,61 @@ button, select { font: inherit; }
   </div>
 </div>
 
+<script>/* diagnóstico: se algo rompe (sobre todo no móbil), amósase en pantalla para poder mandar unha captura */
+(function(){var box=null,n=0;function show(m){if(n++>4)return;try{if(!box){box=document.createElement('div');box.id='diag';box.style.cssText='position:fixed;left:6px;right:6px;bottom:6px;z-index:99999;background:rgba(120,0,0,.88);color:#fff;font:11px/1.35 monospace;padding:6px 8px;border-radius:6px;max-height:40vh;overflow:auto;white-space:pre-wrap;pointer-events:auto';box.onclick=function(){box.remove();box=null};document.body.appendChild(box)}box.textContent+=(box.textContent?'\n':'')+String(m).slice(0,400)}catch(e){}}
+window.__diag=show;window.addEventListener('error',function(e){show('Erro: '+e.message+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});window.addEventListener('unhandledrejection',function(e){show('Erro: '+(e.reason&&e.reason.message||e.reason))});
+var ce=console.error;console.error=function(){try{var t=Array.prototype.join.call(arguments,' ');if(/THREE|WebGL|shader|GL_/i.test(t))show(t.replace(/\n\s*\d+:/g,' ').slice(0,400))}catch(e){}return ce.apply(console,arguments)};
+document.addEventListener('webglcontextlost',function(){show('Perdeuse o contexto WebGL (memoria gráfica esgotada?). Proba calidade Baixa e recarga.')},true)})();</script>
 <script src="vendor/three.min.js"></script>
-<script src="js/osmdata.js?v=1793579784"></script>
-<script src="js/catastro.js?v=1793579784"></script>
-<script src="js/alturas.js?v=1793579784"></script>
-<script src="js/enderezos.js?v=1793579784"></script>
-<script src="js/comercios.js?v=1793579784"></script>
-<script src="js/fachadas.js?v=1793579784"></script>
-<script src="js/ceip.js?v=1793579784"></script>
-<script src="js/osmfix.js?v=1793579784"></script>
-<script src="js/core.js?v=1793579784"></script>
-<script src="js/relevo_data.js?v=1793579784"></script>
-<script src="js/relevo.js?v=1793579784"></script>
-<script src="js/world.js?v=1793579784"></script>
-<script src="js/monuments.js?v=1793579784"></script>
-<script src="js/city.js?v=1793579784"></script>
-<script src="js/places.js?v=1793579784"></script>
-<script src="js/actors.js?v=1793579784"></script>
-<script src="js/pacho.js?v=1793579784"></script>
-<script src="js/band.js?v=1793579784"></script>
-<script src="js/portraits.js?v=1793579784"></script>
-<script src="js/volei.js?v=1793579784"></script>
-<script src="js/fluvial.js?v=1793579784"></script>
-<script src="js/sajoni.js?v=1793579784"></script>
-<script src="js/arenal.js?v=1793579784"></script>
-<script src="js/ucelers.js?v=1793579784"></script>
-<script src="js/avelino.js?v=1793579784"></script>
-<script src="js/aventura.js?v=1793579784"></script>
-<script src="js/plazahotels.js?v=1793579784"></script>
-<script src="js/goyanes.js?v=1793579784"></script>
-<script src="js/cena.js?v=1793579784"></script>
-<script src="js/tren.js?v=1793579784"></script>
-<script src="js/heroes.js?v=1793579784"></script>
-<script src="js/virginia.js?v=1793579784"></script>
-<script src="js/carude.js?v=1793579784"></script>
-<script src="js/concello.js?v=1793579784"></script>
-<script src="js/medieval.js?v=1793579784"></script>
-<script src="js/zonas.js?v=1793579784"></script>
-<script src="js/radio.js?v=1793579784"></script>
-<script src="js/carmina.js?v=1793579784"></script>
-<script src="js/riders.js?v=1793579784"></script>
-<script src="js/works.js?v=1793579784"></script>
-<script src="js/fair.js?v=1793579784"></script>
-<script src="js/details.js?v=1793579784"></script>
-<script src="js/travel.js?v=1793579784"></script>
-<script src="js/concha.js?v=1793579784"></script>
-<script src="js/fraternal.js?v=1793579784"></script>
-<script src="js/melenas.js?v=1793579784"></script>
-<script src="js/sanpedro.js?v=1793579784"></script>
-<script src="js/avesprite.js?v=1793579784"></script>
-<script src="js/game.js?v=1793579784"></script>
+<script src="js/osmdata.js?v=1793581016"></script>
+<script src="js/catastro.js?v=1793581016"></script>
+<script src="js/alturas.js?v=1793581016"></script>
+<script src="js/enderezos.js?v=1793581016"></script>
+<script src="js/comercios.js?v=1793581016"></script>
+<script src="js/fachadas.js?v=1793581016"></script>
+<script src="js/ceip.js?v=1793581016"></script>
+<script src="js/osmfix.js?v=1793581016"></script>
+<script src="js/core.js?v=1793581016"></script>
+<script src="js/relevo_data.js?v=1793581016"></script>
+<script src="js/relevo.js?v=1793581016"></script>
+<script src="js/world.js?v=1793581016"></script>
+<script src="js/monuments.js?v=1793581016"></script>
+<script src="js/city.js?v=1793581016"></script>
+<script src="js/places.js?v=1793581016"></script>
+<script src="js/actors.js?v=1793581016"></script>
+<script src="js/pacho.js?v=1793581016"></script>
+<script src="js/band.js?v=1793581016"></script>
+<script src="js/portraits.js?v=1793581016"></script>
+<script src="js/volei.js?v=1793581016"></script>
+<script src="js/fluvial.js?v=1793581016"></script>
+<script src="js/sajoni.js?v=1793581016"></script>
+<script src="js/arenal.js?v=1793581016"></script>
+<script src="js/ucelers.js?v=1793581016"></script>
+<script src="js/avelino.js?v=1793581016"></script>
+<script src="js/aventura.js?v=1793581016"></script>
+<script src="js/plazahotels.js?v=1793581016"></script>
+<script src="js/goyanes.js?v=1793581016"></script>
+<script src="js/cena.js?v=1793581016"></script>
+<script src="js/tren.js?v=1793581016"></script>
+<script src="js/heroes.js?v=1793581016"></script>
+<script src="js/virginia.js?v=1793581016"></script>
+<script src="js/carude.js?v=1793581016"></script>
+<script src="js/concello.js?v=1793581016"></script>
+<script src="js/medieval.js?v=1793581016"></script>
+<script src="js/zonas.js?v=1793581016"></script>
+<script src="js/radio.js?v=1793581016"></script>
+<script src="js/carmina.js?v=1793581016"></script>
+<script src="js/riders.js?v=1793581016"></script>
+<script src="js/works.js?v=1793581016"></script>
+<script src="js/fair.js?v=1793581016"></script>
+<script src="js/details.js?v=1793581016"></script>
+<script src="js/travel.js?v=1793581016"></script>
+<script src="js/concha.js?v=1793581016"></script>
+<script src="js/fraternal.js?v=1793581016"></script>
+<script src="js/melenas.js?v=1793581016"></script>
+<script src="js/sanpedro.js?v=1793581016"></script>
+<script src="js/avesprite.js?v=1793581016"></script>
+<script src="js/game.js?v=1793581016"></script>
 
 </body>
 </html>

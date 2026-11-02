@@ -21,7 +21,7 @@ function relH(x, z) {
 }
 /* desprazamento dispoñible xa durante a construción (para edificios ríxidos) */
 function relW(x, z) {
-  const R = RELEVO; if (!R.w) { if (typeof RELEVO_DATA === 'undefined') return 0; relevoPrep(); }
+  const R = RELEVO; if (typeof RELEVO_DATA === 'undefined') return 0; if (R.gpu === undefined) relevoCheck(); if (!R.gpu) return 0;
   const gx = (x - R.x0) / R.st, gz = (z - R.z0) / R.st, i = Math.floor(gx), j = Math.floor(gz), fx = gx - i, fz = gz - j;
   const a = relevoRaw(i, j), b = relevoRaw(i + 1, j), c = relevoRaw(i, j + 1), d = relevoRaw(i + 1, j + 1);
   return (a * (1 - fx) + b * fx) * (1 - fz) + (c * (1 - fx) + d * fx) * fz;
@@ -48,15 +48,48 @@ function relevoPrep() {
   }
   RELEVO.w = w;
 }
-function relevoInit() {
-  if (typeof RELEVO_DATA === 'undefined' || RELEVO.on) return;
-  relevoPrep(); const D = RELEVO_DATA, w = RELEVO.w;
+function relevoGPUtest() {
+  try {
+    if (typeof renderer === 'undefined' || !renderer) return true;
+    const gl = renderer.getContext(); if (!(gl.getParameter(gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS) > 0)) return false;
+    // nodos da malla con desniveis distintos (dentro de ±45 m) e o valor que debería dar o sombreador
+    const D = RELEVO_DATA, w = RELEVO.w, pts = [], exp = [];
+    const want = [-30, -12, -4, 0, 4, 12, 30, 0];
+    for (const t of want) { let bk = -1, bd = 1e9; for (let k = 0; k < w.length; k += 7) { const d = Math.abs(w[k] - t); if (d < bd) { bd = d; bk = k; } } if (bk < 0) continue;
+      const i = bk % D.nx, j = Math.floor(bk / D.nx); pts.push(D.x0 + i * D.step, 0, D.z0 + j * D.step); exp.push(Math.round(w[bk] * 100) / 100); }
+    const N = exp.length, ix = new Float32Array(N); for (let k = 0; k < N; k++) ix[k] = k;
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); g.setAttribute('pidx', new THREE.Float32BufferAttribute(ix, 1));
+    const m = new THREE.ShaderMaterial({ uniforms: RELEVO.U, depthTest: false, depthWrite: false,
+      vertexShader: RELEVO_GLSL + 'attribute float pidx; varying float vH; void main(){ vH = relieveH(position.xz); gl_Position = vec4((pidx + 0.5) / ' + N.toFixed(1) + ' * 2.0 - 1.0, 0.0, 0.0, 1.0); gl_PointSize = 1.0; }',
+      fragmentShader: 'varying float vH; void main(){ float v = clamp((vH + 50.0) / 100.0, 0.0, 1.0); gl_FragColor = vec4(v, 0.0, 0.0, 1.0); }' });
+    const sc = new THREE.Scene(), cam = new THREE.Camera(), pt = new THREE.Points(g, m); pt.frustumCulled = false; sc.add(pt);
+    const rt = new THREE.WebGLRenderTarget(N, 1, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
+    const prev = renderer.getRenderTarget(), cc = new THREE.Color(), ca = renderer.getClearAlpha(); renderer.getClearColor(cc); renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc, cam);
+    const px = new Uint8Array(N * 4); renderer.readRenderTargetPixels(rt, 0, 0, N, 1, px); renderer.setRenderTarget(prev); renderer.setClearColor(cc, ca);
+    rt.dispose(); g.dispose(); m.dispose();
+    let bad = 0; const got = []; for (let k = 0; k < N; k++) { const h = px[k * 4] / 255 * 100 - 50; got.push(h.toFixed(1)); if (px[k * 4 + 3] < 128 || Math.abs(h - Math.max(-50, Math.min(50, exp[k]))) > 1.2) bad++; }
+    RELEVO.test = { exp, got, bad };
+    return bad === 0;
+  } catch (e) { console.warn('relevo: proba GPU fallou', e); return false; }
+}
+function relevoCheck() {
+  if (RELEVO.gpu !== undefined) return RELEVO.gpu;
+  if (!RELEVO.w) relevoPrep(); const D = RELEVO_DATA, w = RELEVO.w;
   // textura RGBA (16 bits en R,G) para o sombreador
   const px = new Uint8Array(w.length * 4);
   for (let k = 0; k < w.length; k++) { const u = clamp(Math.round(w[k] * 100) + 32768, 0, 65535); px[k * 4] = u >> 8; px[k * 4 + 1] = u & 255; px[k * 4 + 3] = 255; }
   const tex = new THREE.DataTexture(px, D.nx, D.nz, THREE.RGBAFormat, THREE.UnsignedByteType);
   tex.magFilter = tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false; tex.needsUpdate = true;
   RELEVO.U = { relTex: { value: tex }, relO: { value: new THREE.Vector2(D.x0, D.z0) }, relStep: { value: D.step }, relN: { value: new THREE.Vector2(D.nx, D.nz) } };
+  // hai GPUs (sobre todo de móbil) que non len texturas no sombreador de vértices ou o fan con pouca precisión:
+  // compróbase cunha proba diminuta; se falla, o xogo segue co terreo de sempre (sen relevo) en vez de verse negro
+  let ok = relevoGPUtest(); try { if (localStorage.getItem('lemosRelevo') === 'off' || /relevo=off/.test(location.search)) ok = false; } catch (e) { }
+  RELEVO.gpu = ok; if (!ok) { console.warn('relevo desactivado', JSON.stringify(RELEVO.test || {})); if (window.__diag && (!RELEVO.test || RELEVO.test.bad)) window.__diag('Aviso: esta GPU non le ben o relevo (' + (RELEVO.test ? RELEVO.test.got.join(' ') : 'sen texturas en vértices') + '); xógase co terreo sen relevo. Toca para pechar.'); }
+  return ok;
+}
+function relevoInit() {
+  if (typeof RELEVO_DATA === 'undefined' || RELEVO.on) return;
+  if (!relevoCheck()) return;
   RELEVO.on = true;
   // o chan bákease na xeometría (para ter normais boas nas costas)
   if (G.groundMesh) {
@@ -158,7 +191,7 @@ function relevoTess(g, maxLen = 6, scale = 1) {
 }
 /* ---- sombreadores: todo material érguese co relevo ---- */
 const RELEVO_GLSL = `
-uniform sampler2D relTex; uniform vec2 relO; uniform float relStep; uniform vec2 relN;
+uniform highp sampler2D relTex; uniform vec2 relO; uniform float relStep; uniform vec2 relN;
 float relS(vec2 ij){ ij = clamp(ij, vec2(0.0), relN - 1.0); vec4 t = texture2D(relTex, (ij + 0.5) / relN); return ((t.r * 65280.0 + t.g * 255.0) - 32768.0) * 0.01; }
 float relieveH(vec2 p){ vec2 g = (p - relO) / relStep; vec2 i = floor(g); vec2 f = g - i;
   return mix(mix(relS(i), relS(i + vec2(1.0, 0.0)), f.x), mix(relS(i + vec2(0.0, 1.0)), relS(i + vec2(1.0, 1.0)), f.x), f.y); }
