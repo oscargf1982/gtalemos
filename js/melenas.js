@@ -41,11 +41,47 @@ function melInit() {
   const FE = G.fachadaEdge && G.fachadaEdge.farmaciaCardeal;
   const fw = FE ? { px: FE.ax + FE.ux * FE.L * 0.75, pz: FE.az + FE.uz * FE.L * 0.75, nx: FE.ox, nz: FE.oz } : atWall(f ? f[2] : -93, f ? f[3] : 375.7);
   if (fw) { MEL.farm = { x: fw.px + fw.nx * 1.1, z: fw.pz + fw.nz * 1.1, face: Math.atan2(fw.nx, fw.nz) };
-    const cr = new THREE.Group(), gm = nightMat(std({ color: 0x18a050, emissive: 0x30ff80, emissiveIntensity: 0.3, roughness: 0.4 }), 0.4, 1.6);
-    cr.add(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.3, 0.12), gm), new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.9, 0.12), gm));
-    const cx = fw.px + fw.nx * 0.5, cz = fw.pz + fw.nz * 0.5; cr.position.set(cx + (FE ? -FE.ux * FE.L * 0.6 : 0), groundH(cx, cz) + (FE ? 5.2 : 3.6), cz + (FE ? -FE.uz * FE.L * 0.6 : 0)); if (FE) { cr.scale.setScalar(1.2); const arm = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.8), std({ color: 0x9a9a9a })); arm.position.set(0, 0, -0.4); cr.add(arm); } cr.rotation.y = Math.atan2(fw.nx, fw.nz) + (FE ? 0 : Math.PI / 2); G.scene.add(cr); }
+    if (FE) melFarmaciaProps(FE); else { const cr = new THREE.Group(), gm = nightMat(std({ color: 0x18a050, emissive: 0x30ff80, emissiveIntensity: 0.3, roughness: 0.4 }), 0.4, 1.6);
+      cr.add(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.3, 0.12), gm), new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.9, 0.12), gm));
+      const cx = fw.px + fw.nx * 0.5, cz = fw.pz + fw.nz * 0.5; cr.position.set(cx, groundH(cx, cz) + 3.6, cz); cr.rotation.y = Math.atan2(fw.nx, fw.nz) + Math.PI / 2; G.scene.add(cr); } }
   else MEL.farm = f ? near(f[2], f[3]) : near(-93, 375.7);
   MEL.past = d ? near(d[2], d[3]) : near(-8.2, 287.1);
+}
+/* Farmacia do Cardeal 23: toldo raiado vermello e branco que sae cara á rúa (co letreiro FARMACIA na baranda) e cruz verde de neon en bandeira */
+function melFarmaciaProps(FE) {
+  const H = FE.H || 12, g = Math.min(4.2, H * 0.36), u0 = FE.L * 0.05, u1 = FE.L * 0.9, tw = u1 - u0;
+  const mx = FE.ax + FE.ux * (u0 + u1) / 2, mz = FE.az + FE.uz * (u0 + u1) / 2, base = groundH(mx + FE.ox, mz + FE.oz);
+  const yT = base + g - 0.2, out = 1.9, drop = 0.75, vh = 0.42;
+  // lona: raias ao longo da pendente
+  const c = cnv(256, 64), x = c.getContext('2d'), n = Math.max(6, Math.round(tw / 0.32));
+  for (let i = 0; i < n; i++) { x.fillStyle = i % 2 ? '#f3efe6' : '#b51f2a'; x.fillRect(i * 256 / n, 0, 256 / n + 1, 64); }
+  const tex = toTex(c, false); const lona = std({ map: tex, roughness: 0.85, side: THREE.DoubleSide });
+  const P = (u, o, y) => [FE.ax + FE.ux * u + FE.ox * o, y, FE.az + FE.uz * u + FE.oz * o];
+  const quadG = (A, B, C, D) => { const gq = new THREE.BufferGeometry(); gq.setAttribute('position', new THREE.Float32BufferAttribute([...A, ...B, ...C, ...D], 3)); gq.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 0], 2)); gq.setIndex([0, 1, 2, 0, 2, 3]); gq.computeVertexNormals(); return gq; };
+  const grp = new THREE.Group();
+  const top = new THREE.Mesh(quadG(P(u0, 0.08, yT), P(u1, 0.08, yT), P(u1, out, yT - drop), P(u0, out, yT - drop)), lona); top.castShadow = true; grp.add(top);
+  // baranda con ondas e o rótulo FARMACIA
+  const cv = cnv(512, 64), v = cv.getContext('2d'), nv = n;
+  for (let i = 0; i < nv; i++) { v.fillStyle = i % 2 ? '#f3efe6' : '#b51f2a'; const w = 512 / nv; v.beginPath(); v.moveTo(i * w, 0); v.lineTo(i * w + w, 0); v.lineTo(i * w + w, 44); v.arc(i * w + w / 2, 44, w / 2, 0, Math.PI); v.closePath(); v.fill(); }
+  v.fillStyle = '#efe9dc'; v.fillRect(0, 0, 512, 10); v.font = 'bold 26px Georgia, serif'; v.textAlign = 'center'; v.textBaseline = 'middle'; v.fillStyle = '#2b1e16';
+  v.fillText('F  A  R  M  A  C  I  A', 256, 30);
+  const vt = toTex(cv, false); const val = new THREE.MeshBasicMaterial({ map: vt, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide });
+  grp.add(new THREE.Mesh(quadG(P(u0, out, yT - drop), P(u1, out, yT - drop), P(u1, out, yT - drop - vh), P(u0, out, yT - drop - vh)), val));
+  // brazos laterais
+  const am = std({ color: 0xd8d8d0, metalness: 0.5, roughness: 0.4 });
+  for (const u of [u0 + 0.05, u1 - 0.05]) { const p0 = P(u, 0.05, yT - 0.6), p1 = P(u, out, yT - drop), L = Math.hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]);
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, L, 5), am); arm.position.set((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2);
+    arm.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]).normalize()); grp.add(arm); }
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(tw, 0.06, 0.06), am); const pb = P((u0 + u1) / 2, out, yT - drop); bar.position.set(pb[0], pb[1], pb[2]); bar.rotation.y = Math.atan2(FE.uz, FE.ux) * -1; grp.add(bar);
+  G.scene.add(grp);
+  // cruz verde de neon en bandeira (perpendicular á fachada), enriba do escaparate esquerdo, á altura do primeiro balcón
+  const cr = new THREE.Group(), gm = nightMat(new THREE.MeshStandardMaterial({ color: 0x1fd060, emissive: 0x22ff66, emissiveIntensity: 0.9, roughness: 0.3 }), 0.9, 2.2);
+  const frame = std({ color: 0x0f5a2a, roughness: 0.5 }), s = 1.15;
+  cr.add(new THREE.Mesh(new THREE.BoxGeometry(0.2, s * 0.36, s), gm), new THREE.Mesh(new THREE.BoxGeometry(0.2, s, s * 0.36), gm));
+  cr.add(new THREE.Mesh(new THREE.BoxGeometry(0.16, s + 0.06, s * 0.36 + 0.06), frame), new THREE.Mesh(new THREE.BoxGeometry(0.16, s * 0.36 + 0.06, s + 0.06), frame));
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.7), std({ color: 0x8a8a8a, metalness: 0.6 })); arm.position.set(0, 0, -0.85); cr.add(arm);
+  const pc = P(FE.L * 0.12, 1.2, base + g + 1.3); cr.position.set(pc[0], pc[1], pc[2]); cr.rotation.y = Math.atan2(FE.ox, FE.oz);
+  cr.traverse(o => { if (o.isMesh) o.castShadow = true; }); G.scene.add(cr);
 }
 function melPed(key, look) {
   if (MEL.npcs[key] && MEL.npcs[key].state === 'npc') return MEL.npcs[key];

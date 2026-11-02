@@ -303,6 +303,7 @@ function buildCardealOSM(B, F, scene) {
     while (s < P.len - 8) {
       const lw = RR(8, 12), p = P.at(s + lw / 2), nx = -p.uz * side, nz = p.ux * side, d = facade(p.x, p.z, nx, nz);
       if (d < 4 || d > 13) { s += 3; continue; }
+      { const qx = p.x + nx * d, qz = p.z + nz * d; if (typeof FACHADAS !== 'undefined' && FACHADAS.some(F => F.at && Math.hypot(F.at[0] - qx, F.at[1] - qz) < 10)) { s += lw; continue; } } // fachadas propias (farmacia do 23): sen bar nin terraza diante
       const isBar = bi < BAR_NAMES.length && R() < 0.8;
       if (isBar) {
         const name = BAR_NAMES[bi], col = BAR_COLORS[bi]; bi++;

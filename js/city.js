@@ -492,7 +492,7 @@ function buildOSMBuildings(B, F) {
       const ox = -dz / L, oz = dx / L, mx = (a[0] + c[0]) / 2, mz = (a[1] + c[1]) / 2;
       if (!spB && SPEC_SEGS.length && underSpec(b, a, c)) { acc += L; continue; }
       if (spB && spB.has(i)) { const sp = spB.get(i); let sg = specG.get(sp.F); if (!sg) specG.set(sp.F, sg = { pos: [], uv: [], idx: [], Lt: sp.Lt }); quad(sg, [a[0] + ox * 0.06, a[1] + oz * 0.06], [c[0] + ox * 0.06, c[1] + oz * 0.06], yb, y0 + H, sp.u0, sp.u1, (yb - y0) / H, 1);
-        (G.fachadaEdge = G.fachadaEdge || {})[sp.F.id] = { ax: a[0], az: a[1], ux: dx / L, uz: dz / L, ox, oz, L, mx, mz, door: L * 0.875 };
+        (G.fachadaEdge = G.fachadaEdge || {})[sp.F.id] = { ax: a[0], az: a[1], ux: dx / L, uz: dz / L, ox, oz, L, mx, mz, door: L * 0.875, H, y0 };
         acc += L; continue; }
       let street = null; if (shopMode && L >= 2.5) { const pr = poi ? 6 : 3, px = mx + ox * pr, pz = mz + oz * pr; street = inStreet(px, pz, 1) || inRoad(px, pz, 1, true); if (street && !poi && use === 1 && !SHOP_STREETS.has(street.name)) street = null; }
       const fu0 = acc / FAC_TILE[0], fu1 = (acc + L) / FAC_TILE[0];
