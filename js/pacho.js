@@ -77,6 +77,7 @@ function nextLine() {
   const L = D.lines[D.i];
   if (typeof L === 'function') { L(); return nextLine(); }
   $('dlgName').textContent = L.who; $('dlgName').dataset.who = L.who === 'Ti' ? 'me' : 'npc';
+  if (L.who === 'Ti' && typeof aveMoodFor === 'function') PORTRAITS['Ti'] = 'img/ave-' + (L.mood || aveMoodFor(L.text || '')) + '.png';
   setDialogFace(L.who);
   D.full = L.text; D.shown = 0; D.typing = true; $('dlgText').textContent = '';
   $('dlgChoices').innerHTML = ''; $('dlgHint').hidden = true;

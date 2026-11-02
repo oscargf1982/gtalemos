@@ -313,6 +313,7 @@ function setupInput() {
   $('optQuality').onchange = e => { try { localStorage.setItem('lemosQ', e.target.value); } catch (er) { } $('qNote').hidden = false; };
   $('optTime').onchange = e => { G.hour = +e.target.value; envTimer = 0; lastEnvHour = -99; };
   $('optRain').onchange = e => { G.rain = e.target.value === 'rain'; };
+  if ($('optAve')) { $('optAve').value = AVS.on ? 'pixel' : '3d'; $('optAve').onchange = e => aveSet(e.target.value); }
   if ($('optPix')) { $('optPix').value = String(typeof PIX !== 'undefined' ? PIX.size : 0); $('optPix').onchange = e => pixSet(e.target.value); }
   $('btnMapClose').onclick = () => toggleMap(false);
   $('btnTravel').onclick = () => openTravel();
@@ -1083,8 +1084,10 @@ function simulate(dt, menu) {
   if (!menu) updateCine(dt);
   if (!menu) updateSajoni(dt);
   G.poseDt = dt;
+  const _ave = typeof aveActive === 'function' && aveActive(), _avV = G.player.ped && G.player.ped.visible; if (_ave) G.player.ped.visible = false;
   for (const p of peds) world.crowd.pose(p);
   if (typeof updateHeroes === 'function') updateHeroes();
+  if (_ave) G.player.ped.visible = _avV; if (typeof updateAveSprite === 'function') updateAveSprite();
   if (typeof virginiaOverlays === 'function') virginiaOverlays();
   if (typeof carudeOverlays === 'function') carudeOverlays();
   if (typeof medTunics === 'function') medTunics();

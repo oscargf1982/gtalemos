@@ -113,7 +113,7 @@ function melBillboard(img, w, h) {
 }
 function melBillboardUpdate(M, x, z, front, face) {
   const cam = camera.position, yawC = Math.atan2(cam.x - x, cam.z - z), rel = Math.atan2(Math.sin(face - yawC), Math.cos(face - yawC));
-  let f = front; if (Math.abs(rel) > 2.5) f = 2; else if (Math.abs(rel) > 0.8) f = rel > 0 ? 3 : 1;
+  let f = front; if (Math.abs(rel) > 2.5) f = 2; else if (Math.abs(rel) > 0.8) f = rel > 0 ? 1 : 3;
   M.visible = true; M.position.set(x, groundH(x, z), z); M.rotation.y = yawC; M.material.color.setScalar(1 - 0.5 * (G.night || 0));
   if (M.userData.fr !== f) { M.userData.fr = f; const t = M.material.map, c = f % 4, r = Math.floor(f / 4); t.repeat.set(0.25, 1 / 3); t.offset.set(c / 4, 1 - (r + 1) / 3); }
 }
