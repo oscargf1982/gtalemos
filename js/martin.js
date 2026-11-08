@@ -22,6 +22,7 @@ const MART_STEPS = {
   casa: 'Volve á Casa Juana (Doutor Casares, 211) e descansa',
   fin1: 'Durme na Casa Juana (Doutor Casares, 211) para empezar o acto 2',
   a2: 'Reencontros: Valerio (farmacia), Mega Andrés (Fluvial) e Xoán (Malecón)',
+  a2_taller: 'Investiga o vello taller da Casa Juana (Doutor Casares, 211)',
   a3_ivan: 'Pregúntalle a Iván Nogal, na estación, polo «tren pantasma»',
   a3_pistas: 'Investiga arredor do Museo do Ferrocarril (Q: ollo de maquinista)',
   a3_noite: 'Volve ás cocheiras do museo despois das 23:00',
@@ -31,7 +32,7 @@ const MART_STEPS = {
   a5_noite: 'Domingo, 6:00: Iván espérate no vestíbulo da estación, diante do mural',
   fin: 'Vía morta · historia completada',
 };
-const MART_ACT = { concha: 1, piso: 1, concello: 1, amparo: 1, carreira: 1, esperar: 1, casa: 1, fin1: 1, a2: 2, a3_ivan: 3, a3_pistas: 3, a3_noite: 3, a4: 4, a4_fin: 4, a5: 5, a5_noite: 5, fin: 5 };
+const MART_ACT = { concha: 1, piso: 1, concello: 1, amparo: 1, carreira: 1, esperar: 1, casa: 1, fin1: 1, a2: 2, a2_taller: 2, a3_ivan: 3, a3_pistas: 3, a3_noite: 3, a4: 4, a4_fin: 4, a5: 5, a5_noite: 5, fin: 5 };
 const MART_DIAS = ['Luns', 'Martes', 'Mércores', 'Xoves', 'Venres', 'Sábado', 'Domingo'];
 const MA = (t, extra) => ({ who: 'Martín', text: t, ...extra });
 const MX = who => (t, extra) => ({ who, text: t, ...extra });
@@ -78,7 +79,7 @@ function initMartinMenu() {
 function martinActSave(n) {
   const base = { money: 120, day: 0, flags: { eladio: 'record', asubio: true } }, F = base.flags;
   if (n <= 1) return { step: 'concha', money: 120, flags: {}, day: 0 };
-  if (n >= 3) Object.assign(F, { valerio: true, andres: true, xoan: true, xoanVisto: true, ivanMural: true });
+  if (n >= 3) Object.assign(F, { tallerDone: true, valerio: true, andres: true, xoan: true, xoanVisto: true, ivanMural: true });
   if (n >= 4) Object.assign(F, { p_graxa: true, p_pegadas: true, p_pizarra: true, p_motor: true });
   if (n >= 5) Object.assign(F, { valvulaCarga: true, valvula: true, parte: true, parteBusca: true, carbon: true, permiso: true, permisoPaso: 'ok' });
   return { ...base, step: { 2: 'fin1', 3: 'a3_ivan', 4: 'a3_noite', 5: 'a5' }[n], day: { 2: 0, 3: 2, 4: 2, 5: 4 }[n], hour: { 2: 23, 3: 10, 4: 22.8, 5: 20.5 }[n], startAct: n };
@@ -155,7 +156,7 @@ function martinWaypoint(step) {
   const M = G.martin, S = save.martin, F = S.flags;
   if (step === 'a2') return !F.valerio ? M.farm : !F.andres ? M.andres : !F.xoan ? M.xoan : null;
   if (step === 'a4') return F.parteBusca && !F.parte ? M.flat : !F.valvula ? (F.valvulaCarga ? M.museo : M.taller) : !F.carbon ? M.andres : !F.permiso ? (F.permisoPaso === 'concha' || F.permisoPaso === 'agarda' ? M.kiosk : M.conc) : M.museo;
-  return { concha: M.kiosk, piso: M.flat, concello: M.conc, amparo: M.frat, carreira: M.conc, esperar: M.conc, casa: M.flat, fin1: M.flat, a3_ivan: M.ivan, a3_pistas: M.museo, a3_noite: M.museo, a4_fin: M.museo, a5: M.museo, a5_noite: M.ivan }[step] || null;
+  return { concha: M.kiosk, piso: M.flat, concello: M.conc, amparo: M.frat, carreira: M.conc, esperar: M.conc, casa: M.flat, fin1: M.flat, a2_taller: M.flat, a3_ivan: M.ivan, a3_pistas: M.museo, a3_noite: M.museo, a4_fin: M.museo, a5: M.museo, a5_noite: M.ivan }[step] || null;
 }
 function martinInsert(lines) { const D = G.dialog; if (D) D.lines.splice(D.i + 1, 0, ...lines); }
 const martinDia = () => MART_DIAS[((save.martin.day || 0) % 7 + 7) % 7];
@@ -191,9 +192,11 @@ function updateMartin(dt) {
   martinChampions();
   if (M.carry && !S.flags.valvula && G.player.ped) G.player.ped.run = 0;
   martinSparkles(dt);
+  if (typeof updateOjo === 'function') updateOjo(dt);
+  if (typeof ojoButton === 'function') ojoButton();
   if (S.step === 'a2' && !S.flags.xoan && !M.xoanNPC && (M.xoanTry = (M.xoanTry || 0) - dt) <= 0) { M.xoanTry = 2; martinSpawnXoan(); }
   if (!G.dialog) { if ($('martinMural') && !$('martinMural').hidden) martinMural(false); if (M.inCasa && !M.sleeping) martinCasaOut(); }
-  if (M.finale) return;
+  if (M.finale || M.inTaller) return;
   if (G.player.car || G.dialog || G.cine) return;
   const n = martinNear(); if (n) setPrompt(`${isTouch ? '★' : 'E'} · ${n.label}`);
 }
@@ -289,7 +292,7 @@ function martinSleep() {
   }, 900);
 }
 function martinNear() {
-  const S = save.martin, M = G.martin, me = G.player.ped, F = S.flags; if (!M || !me) return null;
+  const S = save.martin, M = G.martin, me = G.player.ped, F = S.flags; if (!M || !me || M.inTaller) return null;
   const d = p => p ? Math.hypot(me.x - p.x, me.z - p.z) : 1e9;
   const dCasa = Math.min(d(M.flat), d(M.flatDoor)), nearCasa = dCasa < 4.8;
   if (S.step === 'concha' && G.kiosk && Math.min(d(M.kiosk), d({ x: G.kiosk.cx, z: G.kiosk.cz })) < 3.6) return { id: 'concha', label: 'Falar con Dona Concha' };
@@ -300,6 +303,7 @@ function martinNear() {
   if (S.step === 'concha' && nearCasa) return { id: 'pechada', label: 'Casa Juana (pechada)' };
   if (['concello', 'amparo', 'carreira', 'esperar'].includes(S.step) && nearCasa) return { id: 'senauga', label: 'Entrar na casa' };
   if (S.step === 'a4' && F.parteBusca && !F.parte && nearCasa) return { id: 'carpintaria', label: 'Rexistrar a vella carpintaría' };
+  if (S.step === 'a2_taller' && nearCasa) return { id: 'taller', label: 'Entrar no taller vello' };
   if (late && nearCasa) return (G.hour >= 21.5 || G.hour < 6) ? { id: 'sleep', label: 'Durmir na casa' } : { id: 'casaDia', label: 'Entrar na casa' };
   if (S.step === 'a2') {
     if (!F.valerio && d(M.farm) < 3.4) return { id: 'valerio', label: 'Entrar na farmacia (Valerio)' };
@@ -330,7 +334,7 @@ function martinInteract() {
     valerio: martinValerio, ivanMural: martinIvanMural, andres: martinAndres, xoan: martinXoan, ivan: martinIvan, pista: () => martinPista(n.p), noite: martinNoite,
     pepe: martinPepe, entregar: martinEntrega, carpintaria: martinCarpintaria, carbon: martinCarbon, permiso: martinPermiso, firmas: martinFirmas, a4fin: martinA4Fin, final: martinFinal, vilatan: martinVilatan, pechada: () => openDialog([MA('Cerrada. Normal: las llaves las tiene Concha, en el quiosco de la plaza de la estación. Primero el quiosco, luego la casa.', { mood: 'esceptico' })]),
     senauga: () => openDialog([MA('Sin agua y sin luz no hay nada que hacer aquí dentro. Primero, el papeleo. Que Dios me pille confesado.', { mood: 'frustrado' })]),
-    casaDia: () => { martinCasaIn(); openDialog([MA(pick(['Casa Juana. Más de cien años, varios dueños y un taller atrás con argollas en el techo. Y ahora, un maquinista.', 'Café, ducha y a la calle. Monforte no se descubre desde el sofá.', 'Desde el balcón se ve el depósito. Quien eligió esta casa sabía lo que hacía.'])), () => martinCasaOut()]); }, muralCine: martinMuralCine })[n.id]();
+    casaDia: () => { martinCasaIn(); openDialog([MA(pick(['Casa Juana. Más de cien años, varios dueños y un taller atrás con argollas en el techo. Y ahora, un maquinista.', 'Café, ducha y a la calle. Monforte no se descubre desde el sofá.', 'Desde el balcón se ve el depósito. Quien eligió esta casa sabía lo que hacía.'])), () => martinCasaOut()]); }, muralCine: martinMuralCine, taller: martinTaller })[n.id]();
   return true;
 }
 
@@ -515,8 +519,9 @@ function martinA2Check() {
     setTimeout(() => openDialog([
       MA('Valerio, Andrés, Xoán... Unos se fueron, otros se quedaron, y todos tienen menos pelo que en el instituto. Excepto yo. Que conste.'),
       MA('Esta noche lo he vuelto a oír. El silbato. Dos veces, larguísimo, como cuando una máquina pide vía.'),
-      MA('Mañana le pregunto a Iván, el de Renfe. Si alguien sabe qué pasa en las vías de Monforte, es él.'),
-      () => { bigMsg('FIN DO ACTO 2', 'O reencontro'); setTimeout(() => { bigMsg('ACTO 3', 'A curiosidade'); martinGo('a3_ivan'); }, 3200); },
+      MA('Y no venía de la estación. Venía de detrás de mi casa. Del taller viejo de la Casa Juana, ese que nadie abre desde hace años.', { mood: 'preocupado' }),
+      MA('Antes de preguntarle a nadie, voy a mirar yo. Que soy maquinista, no vidente.'),
+      () => martinGo('a2_taller'),
     ]), 1200);
   } else martinGo('a2', true);
 }
@@ -647,9 +652,11 @@ function martinIvan() {
     MA('Me lo apunto para el próximo concurso de la tele. Iván, céntrate.'),
     IV('... O tren pantasma. Ha! Sabía que acabarías preguntando. A Concha di que o oe os xoves. O Tío David di que o oe sempre que perde o Lemos.'),
     IV('Eu non creo en pantasmas. Pero si che digo unha cousa: alguén leva semanas collendo graxa do almacén. E non son eu.'),
+    MA('Otra cosa. En el taller de mi casa hay una foto de 1949: el carpintero con tres aprendices. Uno firma «Xosé N.». ¿Te suena?', { mood: 'dudoso' }),
+    IV('Xosé N.? Home... Nogal é un apelido moi común en Monforte. Ou non. Pásame a graxa, digo... deixa.', { mood: 'neutro' }),
     MA('Grasa, silbatos y un candado nuevo. O es un fantasma muy mañoso, o aquí hay alguien trabajando a escondidas.'),
     IV('Pois mira ti mesmo. Ti tes ollo de maquinista. Eu teño ollo de cansado.'),
-    () => { martinGo('a3_pistas'); setTimeout(() => toast(isTouch ? 'Achégate ás cocheiras do museo: as pistas brillan cando estás preto' : 'Preme Q (ollo de maquinista) preto das cocheiras para resaltar as pistas', 5), 4800); },
+    () => { martinGo('a3_pistas'); setTimeout(() => toast(isTouch ? 'Toca o botón OLLO preto das cocheiras: o mundo vólvese gris e as pistas, amarelas' : 'Preme Q (ollo de maquinista) preto das cocheiras: o mundo vólvese gris e as pistas, amarelas', 5), 4800); },
   ]);
 }
 const MART_PISTAS = {
@@ -673,7 +680,7 @@ function martinSparkles(dt) {
   const M = G.martin, S = save.martin; if (!M || !M.pistas) return;
   if (!M.spk) { M.spk = M.pistas.map(() => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: martinSparkTex(), color: 0xffe36b, transparent: true, depthWrite: false })); sp.visible = false; G.scene.add(sp); return sp; }); }
   const me = G.player.ped, on = S.step === 'a3_pistas', eye = (M.eyeT || 0) > 0; M.eyeT = Math.max(0, (M.eyeT || 0) - dt);
-  M.pistas.forEach((p, i) => { const sp = M.spk[i], d = Math.hypot(me.x - p.x, me.z - p.z), vis = on && !S.flags['p_' + p.id] && (d < 7 || (eye && d < 45));
+  M.pistas.forEach((p, i) => { const sp = M.spk[i], d = Math.hypot(me.x - p.x, me.z - p.z), vis = on && !S.flags['p_' + p.id] && (d < 7 || (eye && d < 12));
     sp.visible = vis; if (vis) { const k = 0.6 + Math.sin(G.t * 6 + i) * 0.2 + (eye ? 0.4 : 0); sp.scale.set(k, k, k); sp.position.set(p.x, groundH(p.x, p.z) + 0.6, p.z); } });
 }
 let _mspk = null;
@@ -683,11 +690,6 @@ function martinSparkTex() {
   x.fillStyle = g; x.fillRect(0, 0, 64, 64); x.fillStyle = '#fff'; x.fillRect(30, 4, 4, 56); x.fillRect(4, 30, 56, 4);
   return _mspk = new THREE.CanvasTexture(c);
 }
-window.addEventListener('keydown', e => {
-  if (!G.martin || !G.started || G.paused || G.dialog || e.code !== 'KeyQ') return;
-  if (save.martin.step !== 'a3_pistas') return;
-  G.martin.eyeT = 5; toast(pick(['Martín: «Ojo de maquinista. Treinta mil kilómetros mirando señales sirven para algo.»', 'Martín: «A ver... detalles. Los detalles nunca mienten. Las personas, a veces.»']), 3);
-});
 function martinNoite() {
   const S = save.martin;
   if (!(G.hour >= 23 || G.hour < 5)) {
@@ -768,11 +770,8 @@ function martinEntrega() {
 /* a nave de atrás da Casa Juana: na primeira transmisión (dez metros, sete poleas) Xosé Nogal escondeu o parte de 1958 */
 function martinCarpintaria() {
   const F = save.martin.flags;
-  martinCasaIn();
-  openDialog([
-    MA('La nave de atrás. Huele a serrín viejo y a humedad. Ni una máquina: solo las marcas en el suelo de donde estaban atornilladas.'),
-    MA('Arriba, la viga de la primera transmisión: diez metros, siete soportes para siete poleas. Uno, dos, tres... el séptimo tiene la tapa soldada. Los otros, no.', { mood: 'pensativo' }),
-    MA('Si yo tuviera que esconder algo en un taller de correas, lo escondería donde nadie mete la mano mientras las poleas giran.'),
+  tallerOpen('parte', () => openDialog([
+    MA('El séptimo soporte. Subo al banco, meto la navaja por la soldadura... cede. Si yo tuviera que esconder algo en un taller de correas, lo escondería donde nadie mete la mano mientras las poleas giran.'),
     MA('... Una lata de tabaco. Dentro, un papel doblado, amarillo. «Parte de incidencia. 14 de xaneiro de 1958». Y una nota: «Para quen veña buscar. X. N.».', { mood: 'sorprendido' }),
     MA('Freno automático de los vagones a tres kilos. El mínimo es cinco. Lo midió varias veces, con hora. Y abajo, otra firma: «Reparación denegada. O xefe de depósito».', { mood: 'preocupado' }),
     MA('Quien escribió esto avisó semanas antes de que esos vagones no frenaban. Y lo escondió en la casa donde aprendió a trabajar con máquinas.'),
@@ -785,8 +784,21 @@ function martinCarpintaria() {
     MA('¿Tu abuelo? ¿Quién era tu abuelo, Iván? ¿Qué pasó esa noche?', { mood: 'dudoso' }),
     IV('O sábado. O sábado cóntocho todo, diante de quen ten que oílo. Prometido. Gárdao ti: eu agora non sei se o podería ter na man.'),
     MA('Vaya. Así que el de la letra bonita de la pizarra eras tú. Y yo pensando que el fantasma llevaba zapatillas de casa.', { mood: 'esceptico' }),
-    () => { martinCasaOut(); F.parte = true; persist(); martinA4Check(); },
-  ]);
+    () => { F.parte = true; persist(); martinA4Check(); },
+  ]));
+}
+/* acto 2 → o taller da Casa Juana (escena de investigación) */
+function martinTaller() {
+  tallerOpen('investigar', () => {
+    save.martin.flags.tallerDone = true; persist();
+    openDialog([
+      MA('Vamos a ordenar esto, como un parte de servicio. Una carpintería con motor Siemens de diez caballos y dos transmisiones. Escritura 375, 2 de junio de 1952: se vende entera, de la sierra de cinta a la última prensa, por treinta mil pesetas a un ingeniero de Caminos y a un contratista.', { mood: 'pensativo' }),
+      MA('En la foto de 1949, tres aprendices. Uno, «Xosé N.». Y alguien que ha estado aquí hace nada, buscando algo bajo el séptimo soporte... sin encontrarlo, o no habría vuelto.', { mood: 'dudoso' }),
+      MA('¿Y adónde va a parar la maquinaria de una carpintería que compra un ingeniero de Caminos? A lo mejor a un sitio con vías. Con locomotoras. Con un depósito.', { mood: 'convencido' }),
+      MA('Esto es una hipótesis mía, ojo. Pero el silbato, el taller y el depósito están en la misma línea. Literalmente: se ve uno desde el otro.'),
+      () => { bigMsg('FIN DO ACTO 2', 'O reencontro'); setTimeout(() => { bigMsg('ACTO 3', 'A curiosidade'); martinGo('a3_ivan'); }, 3200); },
+    ]);
+  });
 }
 function martinCarbon() {
   const F = save.martin.flags;
