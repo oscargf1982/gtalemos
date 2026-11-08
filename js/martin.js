@@ -61,17 +61,28 @@ function initMartinMenu() {
   const b = document.createElement('button'); b.className = 'btn'; b.id = 'btnMartin'; b.innerHTML = 'Vía morta<br>Martín Pardo'; b.style.lineHeight = '0.95';
   after.after(b);
   const box = document.createElement('div'); box.id = 'martinBox'; box.hidden = true;
-  box.innerHTML = `<span>Tes unha partida de Martín gardada</span><div class="pwrow"><button class="btn small" id="martinCont" type="button">Continuar</button><button class="btn small" id="martinNew" type="button">Comezar de novo</button></div>`;
+  box.innerHTML = `<span id="martinSaved">Tes unha partida de Martín gardada</span><div class="pwrow"><button class="btn small" id="martinCont" type="button">Continuar</button><button class="btn small" id="martinNew" type="button">Comezar de novo (acto 1)</button></div><span style="opacity:.75">Ou empezar nun acto:</span><div class="pwrow">${[1, 2, 3, 4, 5].map(n => `<button class="btn small" data-acto="${n}" type="button">${n}</button>`).join('')}</div>`;
   b.after(box);
   const st = document.createElement('style');
   st.textContent = `#martinBox{display:flex;flex-direction:column;gap:6px;color:#e9e2d0;font-family:Barlow,sans-serif;font-size:14px}#martinBox[hidden]{display:none}#martinBox .pwrow{display:flex;gap:8px}#martinBox .btn.small{font-size:18px;padding:8px 12px}`;
   document.head.appendChild(st);
   const has = () => save.martin && save.martin.step && save.martin.step !== 'concha';
-  b.onclick = () => { if (has()) box.hidden = !box.hidden; else startMartin(false); };
+  b.onclick = () => { if (!has()) { startMartin(false); return; } box.hidden = !box.hidden;
+    const S = save.martin; $('martinSaved').textContent = `Tes unha partida de Martín no acto ${MART_ACT[S.step] || 1}.`; if (!box.hidden) setTimeout(() => box.scrollIntoView({ block: 'end', behavior: 'smooth' }), 30); };
+  box.querySelectorAll('[data-acto]').forEach(x => x.onclick = () => { save.martin = martinActSave(+x.dataset.acto); startMartin(false); });
   $('martinCont').onclick = () => startMartin(false);
   $('martinNew').onclick = () => { save.martin = null; startMartin(true); };
 }
 
+/* partida no comezo de cada acto (selector do menú) */
+function martinActSave(n) {
+  const base = { money: 120, day: 0, flags: { eladio: 'record', asubio: true } }, F = base.flags;
+  if (n <= 1) return { step: 'concha', money: 120, flags: {}, day: 0 };
+  if (n >= 3) Object.assign(F, { valerio: true, andres: true, xoan: true, xoanVisto: true, ivanMural: true });
+  if (n >= 4) Object.assign(F, { p_graxa: true, p_pegadas: true, p_pizarra: true });
+  if (n >= 5) Object.assign(F, { valvulaCarga: true, valvula: true, parte: true, carbon: true, permiso: true, permisoPaso: 'ok' });
+  return { ...base, step: { 2: 'fin1', 3: 'a3_ivan', 4: 'a3_noite', 5: 'a5' }[n], day: { 2: 0, 3: 2, 4: 2, 5: 4 }[n], hour: { 2: 23, 3: 10, 4: 22.8, 5: 20.5 }[n], startAct: n };
+}
 /* ---------- comezo ---------- */
 function startMartin(fresh) {
   if (!save.martin || fresh) save.martin = { step: 'concha', money: 120, flags: {}, day: 0 };
@@ -94,7 +105,7 @@ function startMartin(fresh) {
     PORTRAITS['Nai'] = pixelFace({ skin: '#ecc7ab', skinD: '#cfa588', hair: '#6a4a3a', shirt: '#8a2a4a', collar: '#f6f1e4', smile: true, bg: '#4a2a3a', bg2: '#9a5a7a' });
   }
   startGame();
-  G.hour = S.step === 'concha' ? 10.25 : Math.max(9, Math.min(S.hour || 11, 18)); envTimer = 0; lastEnvHour = -99;
+  G.hour = S.step === 'concha' ? 10.25 : S.startAct ? S.hour : Math.max(9, Math.min(S.hour || 11, 18)); envTimer = 0; lastEnvHour = -99;
   martinPlaces();
 }
 function martinPlaces() {
@@ -126,6 +137,10 @@ function martinAfterIntro() {
       MA('La dueña del piso me dijo que dejaba las llaves en el quiosco de la estación. Si es el de Concha, seguro que sigue abierto: ese quiosco ha sobrevivido a tres crisis y al euro.'),
       () => martinGo('concha'),
     ]);
+  } else if (S.startAct) {
+    const n = S.startAct; delete S.startAct; persist();
+    if (n === 2) { toast('Acto 2 · Durme na casa vermella (Doutor Casares, 211) para comezar o día', 5); martinGo('fin1', true); }
+    else { bigMsg('ACTO ' + n, { 3: 'A curiosidade', 4: 'A implicación', 5: 'O descubrimento' }[n]); martinGo(S.step); if (n === 4) toast('Son case as 23:00: vai ás cocheiras do Museo do Ferrocarril', 5); }
   } else { martinGo(S.step, true); if (S.step === 'a2') martinSpawnXoan(); toast('Vía morta · ' + (MART_STEPS[S.step] || ''), 5); }
 }
 function martinGo(step, quiet) {
