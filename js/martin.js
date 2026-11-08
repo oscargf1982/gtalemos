@@ -100,7 +100,7 @@ function startMartin(fresh) {
 function martinPlaces() {
   const M = G.martin; if (!M) return;
   let fl = null; const E = G.fachadaEdge && G.fachadaEdge.casares211;
-  if (E) fl = { x: E.ax + E.ux * E.L * 0.5 + E.ox * 1.4, z: E.az + E.uz * E.L * 0.5 + E.oz * 1.4 };
+  if (E) { fl = { x: E.ax + E.ux * E.L * 0.5 + E.ox * 1.4, z: E.az + E.uz * E.L * 0.5 + E.oz * 1.4 }; M.flatDoor = { x: E.ax + E.ux * (E.door || E.L * 0.85) + E.ox * 1.2, z: E.az + E.uz * (E.door || E.L * 0.85) + E.oz * 1.2 }; }
   M.flat = fl || { x: 432, z: -492 };
   M.kiosk = G.kiosk ? G.kiosk.door : null;
   M.conc = G.concelloDoor || { x: -315, z: 183 };
@@ -251,12 +251,15 @@ function martinSleep() {
 function martinNear() {
   const S = save.martin, M = G.martin, me = G.player.ped, F = S.flags; if (!M || !me) return null;
   const d = p => p ? Math.hypot(me.x - p.x, me.z - p.z) : 1e9;
+  const dCasa = Math.min(d(M.flat), d(M.flatDoor)), nearCasa = dCasa < 4.8;
   if (S.step === 'concha' && G.kiosk && Math.min(d(M.kiosk), d({ x: G.kiosk.cx, z: G.kiosk.cz })) < 3.6) return { id: 'concha', label: 'Falar con Dona Concha' };
-  if ((S.step === 'piso' || S.step === 'casa') && d(M.flat) < 3.6) return { id: S.step, label: S.step === 'piso' ? 'Abrir o piso' : 'Entrar no piso' };
+  if ((S.step === 'piso' || S.step === 'casa') && nearCasa) return { id: S.step, label: S.step === 'piso' ? 'Abrir o piso' : 'Entrar no piso' };
   if (['concello', 'carreira', 'esperar'].includes(S.step) && d(M.conc) < 5) return { id: S.step, label: 'Ventanilla do Concello' };
   if (S.step === 'amparo' && d(M.frat) < 3.4) return { id: 'amparo', label: 'Entrar na Fraternal' };
   const late = MART_ACT[S.step] >= 2 || S.step === 'fin1';
-  if (late && d(M.flat) < 3.6) return (G.hour >= 21.5 || G.hour < 6) ? { id: 'sleep', label: 'Durmir no piso' } : null;
+  if (S.step === 'concha' && nearCasa) return { id: 'pechada', label: 'Casa vermella (pechada)' };
+  if (['concello', 'amparo', 'carreira', 'esperar'].includes(S.step) && nearCasa) return { id: 'senauga', label: 'Entrar na casa' };
+  if (late && nearCasa) return (G.hour >= 21.5 || G.hour < 6) ? { id: 'sleep', label: 'Durmir na casa' } : { id: 'casaDia', label: 'Entrar na casa' };
   if (S.step === 'a2') {
     if (!F.valerio && d(M.farm) < 3.4) return { id: 'valerio', label: 'Entrar na farmacia (Valerio)' };
     if (!F.andres && d(M.andres) < 3.2) return { id: 'andres', label: 'Falar con Mega Andrés' };
@@ -283,7 +286,9 @@ function martinInteract() {
   const n = martinNear(); if (!n) return false;
   ({ concha: martinConcha, piso: martinPiso, concello: martinConcello1, amparo: martinAmparo, carreira: martinConcello2, esperar: martinConcello2, casa: martinCasa, sleep: martinSleep,
     valerio: martinValerio, ivanMural: martinIvanMural, andres: martinAndres, xoan: martinXoan, ivan: martinIvan, pista: () => martinPista(n.p), noite: martinNoite,
-    pepe: martinPepe, entregar: martinEntrega, carbon: martinCarbon, permiso: martinPermiso, firmas: martinFirmas, a4fin: martinA4Fin, final: martinFinal, vilatan: martinVilatan, muralCine: martinMuralCine })[n.id]();
+    pepe: martinPepe, entregar: martinEntrega, carbon: martinCarbon, permiso: martinPermiso, firmas: martinFirmas, a4fin: martinA4Fin, final: martinFinal, vilatan: martinVilatan, pechada: () => openDialog([MA('Cerrada. Normal: las llaves las tiene Concha, en el quiosco de la plaza de la estación. Primero el quiosco, luego la casa.', { mood: 'esceptico' })]),
+    senauga: () => openDialog([MA('Sin agua y sin luz no hay nada que hacer aquí dentro. Primero, el papeleo. Que Dios me pille confesado.', { mood: 'frustrado' })]),
+    casaDia: () => { martinCasaIn(); openDialog([MA(pick(['Mi casa. Bueno, la de Amparo. Bueno, la de Elvira. Aquí todo tiene varios dueños y un balcón.', 'Café, ducha y a la calle. Monforte no se descubre desde el sofá.', 'Desde el balcón se ve el depósito. Quien eligió esta casa sabía lo que hacía.'])), () => martinCasaOut()]); }, muralCine: martinMuralCine })[n.id]();
   return true;
 }
 
