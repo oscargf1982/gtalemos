@@ -96,7 +96,7 @@ function updateCine(dt) {
   } else if (C.phase === 'hop') {
     C.speed = 0;
     const fx = Math.sin(C.yaw), fz = Math.cos(C.yaw), tx = C.stop.x - fx * 0.42, tz = C.stop.z - fz * 0.42, k = Math.min(1, C.t / 0.9);
-    if (C.t < 0.05) C.hop0 = { x: me.x, z: me.z, y: me.y };
+    if (!C.hop0) C.hop0 = { x: me.x, z: me.z, y: me.y }; // (antes «C.t < 0.05»: con fotogramas lentos, dt = 0.05 e nunca se gardaba)
     me.x = lerp(C.hop0.x, tx, k); me.z = lerp(C.hop0.z, tz, k); me.y = C.hop0.y + Math.sin(k * Math.PI) * 0.45 + k * 0.16; me.yaw += angDiff(me.yaw, C.yaw) * Math.min(1, dt * 8);
     me.walk = k < 1 ? 1 : 0; me.phase += dt * 6;
     placePellas(C.stop.x, C.stop.z, C.yaw, false);
