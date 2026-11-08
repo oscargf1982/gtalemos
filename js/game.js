@@ -747,7 +747,9 @@ function drawMinimap() {
   x.drawImage(mapBase, -(me.x - MAPO.x) * MAPS * sc, -(me.z - MAPO.z) * MAPS * sc, mapBase.width * sc, mapBase.height * sc);
   const W = (wx, wz) => [(wx - me.x) * MAPS * sc, (wz - me.z) * MAPS * sc];
   // ruta GPS
-  if (G.route && G.route.length > 1) { x.strokeStyle = '#c36bff'; x.lineWidth = 4; x.lineJoin = 'round'; x.beginPath(); x.moveTo(0, 0); for (const n of G.route) x.lineTo(...W(n.x, n.z)); if (G.waypoint) x.lineTo(...W(G.waypoint.x, G.waypoint.z)); x.stroke(); }
+  const raceR = G.martin && G.martin.race && G.martin.race.type === 'cp'; // carreira de Martín: ruta amarela e grosa
+  if (G.route && G.route.length > 1) { if (raceR) { x.strokeStyle = 'rgba(0,0,0,.55)'; x.lineWidth = 9; x.lineJoin = 'round'; x.beginPath(); x.moveTo(0, 0); for (const n of G.route) x.lineTo(...W(n.x, n.z)); if (G.waypoint) x.lineTo(...W(G.waypoint.x, G.waypoint.z)); x.stroke(); }
+    x.strokeStyle = raceR ? '#ffd23a' : '#c36bff'; x.lineWidth = raceR ? 6 : 4; x.lineJoin = 'round'; x.beginPath(); x.moveTo(0, 0); for (const n of G.route) x.lineTo(...W(n.x, n.z)); if (G.waypoint) x.lineTo(...W(G.waypoint.x, G.waypoint.z)); x.stroke(); }
   // vehículos policiais e tren
   for (const v of world.vehicles) if (v.t.livery === 'police' && v.ai && v.ai.mode === 'chase') { const [a, b] = W(v.x, v.z); x.fillStyle = Math.floor(G.t * 6) % 2 ? '#2b5cff' : '#ff2b3a'; x.beginPath(); x.arc(a, b, 5, 0, 7); x.fill(); }
   if (G.trainBox) { const [a, b] = W(world.train.x, world.train.z); x.save(); x.translate(a, b); x.rotate(-world.train.yaw); x.fillStyle = '#e8e2d2'; x.fillRect(-3, -world.train.len / 2 * MAPS * sc, 6, world.train.len * MAPS * sc); x.restore(); }
@@ -762,6 +764,7 @@ function drawMinimap() {
   if (!G.mission) for (const m of G.missionMarkers) blip(m.def.at[0], m.def.at[1], save.done[m.def.id] ? '#9bd28a' : '#f2a33a', 'sq');
   if (G.curTarget) blip(G.curTarget.x, G.curTarget.z, '#ff3d6e');
   if (G.mission && G.mission.def.steps === 'bars' && G._barMarkers) for (const b of G._barMarkers) blip(b.door.x, b.door.z, '#ffd75e');
+  if (G.martin && G.martin.race && G.martin.race.type === 'cp') { const R = G.martin.race; R.cps.forEach((c, i) => { if (i >= R.i) blip(c.x, c.z, i === R.i ? '#ffd23a' : '#b8a35a'); }); }
   if (G.waypoint) blip(G.waypoint.x, G.waypoint.z, '#c36bff');
   if (G.works) blip(G.works.center.x, G.works.center.z, '#ff8a1a', 'sq');
   // xogador
@@ -862,6 +865,8 @@ function updateRoute(dt) {
   if (Math.hypot(me.x - G.waypoint.x, me.z - G.waypoint.z) < 12) { setWaypoint(null); toast('Chegaches ao destino'); return; }
   G._routeT -= dt; if (G._routeT > 0) return; G._routeT = 1.2;
   const f = n => n.edges.some(e => e.road.type === 'car');
+  // a pé tamén valen rúas peonís, escaleiras e camiños (se non, as prazas peonís quedaban sen ruta)
+  if (!G.player.car) { const r = pathTo(nearestNode(me.x, me.z), nearestNode(G.waypoint.x, G.waypoint.z), false); if (r) { G.route = r; return; } }
   const a = nearestNode(me.x, me.z, f), b = nearestNode(G.waypoint.x, G.waypoint.z, f);
   G.route = pathTo(a, b) || null;
 }

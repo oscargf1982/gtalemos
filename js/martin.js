@@ -209,8 +209,15 @@ function martinHudWire(hud) {
 }
 window.addEventListener('keydown', e => { if (G.martin && G.started && !G.paused && !G.dialog && e.code === 'KeyO' && !e.repeat) martinHudToggle(); });
 /* carreiras: contra o reloxo ata un punto ('goto') ou por controis ('cp') */
+function martinCpMesh(c) {
+  const M = G.martin;
+  if (!M.cpMesh && G.cpMesh) { M.cpMesh = G.cpMesh.clone(); G.scene.add(M.cpMesh); }
+  if (!M.cpMesh) return;
+  M.cpMesh.visible = !!c; if (!c) return;
+  M.cpMesh.position.set(c.x, groundH(c.x, c.z), c.z); M.cpMesh.scale.setScalar(c.r / 2.5); M.cpMesh.rotation.y += 0.03;
+}
 function martinRaces(dt) {
-  const M = G.martin, R = M.race; if (!R) return;
+  const M = G.martin, R = M.race; if (!R) { if (M.cpMesh) M.cpMesh.visible = false; return; }
   const me = G.player.car || G.player.ped;
   if (R.type === 'goto') {
     R.t -= dt;
@@ -219,11 +226,12 @@ function martinRaces(dt) {
   }
   if (R.type === 'cp') {
     if (G.player.car) { M.race = null; toast('Xoán: «En coche non vale, chulo! Volve ao Malecón e repetimos.»', 4.5); setWaypoint(M.xoan.x, M.xoan.z); return; }
-    R.el += dt; const c = R.cps[R.i];
+    R.el += dt; const c = R.cps[R.i]; martinCpMesh(c);
+    { const dme = Math.hypot(me.x - c.x, me.z - c.z); if (dme > 14 && (!G.waypoint || Math.hypot(G.waypoint.x - c.x, G.waypoint.z - c.z) > 1)) { G.waypoint = { x: c.x, z: c.z }; G._routeT = 0; } }
     if (Math.hypot(me.x - c.x, me.z - c.z) < c.r) {
       R.i++; if (G.sfx && G.sfx.bell) G.sfx.bell(c);
       if (R.i >= R.cps.length) { M.race = null; martinXoanFin(R.el, R.target); return; }
-      const nx = R.cps[R.i]; setWaypoint(nx.x, nx.z); toast(`Control ${R.i}/${R.cps.length} · ${R.el.toFixed(1)} s`, 1.6);
+      const nx = R.cps[R.i]; setWaypoint(nx.x, nx.z); toast(`✔ ${c.n} · ${R.el.toFixed(1)} s → agora: ${nx.n}`, 2.4);
     }
   }
 }
@@ -573,14 +581,31 @@ function martinXoan() {
     ] }),
   ]);
 }
+/* A Volta do Castelo (curta): Malecón → Praza do Doutor Goyanes → Praza de España → Castelo (porta) → Malecón.
+   Os controis colócanse en chan accesible (nunca dentro dun edificio) e márcanse con aros e ruta amarela no GPS */
+function martinFreePoint(x, z) {
+  const inside = (px, pz) => (G.buildingsList || []).some(b => b.poly && Math.abs(b.cx - px) < 60 && Math.abs(b.cz - pz) < 60 && inPoly(px, pz, b.poly));
+  if (!inside(x, z)) return { x, z };
+  for (let r = 2; r <= 30; r += 2) for (let a = 0; a < 16; a++) { const px = x + Math.cos(a / 16 * Math.PI * 2) * r, pz = z + Math.sin(a / 16 * Math.PI * 2) * r; if (!inside(px, pz)) return { x: px, z: pz }; }
+  return { x, z };
+}
+function martinRaceCps() {
+  const M = G.martin, out = [], add = (p, r, n) => { if (p) out.push({ ...martinFreePoint(p.x, p.z), r, n }); };
+  const gz = (G.namedZones || []).find(z => z.n === 'Praza do Doutor Goyanes');
+  add(gz ? (([x, z]) => ({ x, z }))(polyCentroid(gz.p)) : null, 9, 'Praza do Doutor Goyanes');
+  const esp = typeof DESTS !== 'undefined' && DESTS.find(d => d.n === 'Praza de España');
+  add(esp ? { x: esp.x, z: esp.z } : { x: 54, z: 263 }, 9, 'Praza de España');
+  add(G.castleGate || M.castelo, 10, 'Castelo de San Vicente');
+  add(M.xoan, 8, 'Malecón (meta)');
+  return out;
+}
 function martinXoanStart() {
-  const M = G.martin;
-  const cps = [M.comp, M.castelo, M.xoan].filter(Boolean).map((p, i, a) => ({ x: p.x, z: p.z, r: i === 1 ? 16 : 8 }));
+  const M = G.martin, cps = martinRaceCps();
   let L = 0, prev = M.xoan; for (const c of cps) { L += Math.hypot(c.x - prev.x, c.z - prev.z); prev = c; }
-  const target = L * 1.35 / 6.9 + 12;
+  const target = L * 1.3 / 6.9 + 15;
   M.race = { type: 'cp', cps, i: 0, el: 0, target };
   setWaypoint(cps[0].x, cps[0].z);
-  toast(`Volta do Castelo: Praza da Compañía → castelo → Malecón. Récord de Xoán: ${target.toFixed(0)} s. A pé!`, 5);
+  toast(`Volta do Castelo: ${cps.map(c => c.n).join(' → ')}. Récord de Xoán: ${target.toFixed(0)} s. A pé!`, 6);
 }
 function martinXoanFin(t, target) {
   const F = save.martin.flags, win = t <= target;
