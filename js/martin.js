@@ -186,6 +186,7 @@ function updateMartin(dt) {
   martinChampions();
   if (M.carry && !S.flags.valvula && G.player.ped) G.player.ped.run = 0;
   martinSparkles(dt);
+  if (S.step === 'a2' && !S.flags.xoan && !M.xoanNPC && (M.xoanTry = (M.xoanTry || 0) - dt) <= 0) { M.xoanTry = 2; martinSpawnXoan(); }
   if (!G.dialog) { if ($('martinMural') && !$('martinMural').hidden) martinMural(false); if (M.inCasa && !M.sleeping) martinCasaOut(); }
   if (M.finale) return;
   if (G.player.car || G.dialog || G.cine) return;
@@ -535,8 +536,10 @@ function martinAndresFin(won) {
   ]);
 }
 function martinSpawnXoan() {
-  const M = G.martin; if (!M.xoan || M.xoanNPC || typeof spawnNPC !== 'function') return;
-  M.xoanNPC = spawnNPC({ id: 'xoan', name: 'Xoán «o Galgo»', x: M.xoan.x, z: M.xoan.z, yaw: M.xoan.yaw, scale: 1.0, colors: { shirt: '#e2452a', pants: '#17181b', skin: '#e3b48f', hair: '#2a1d14', shoe: '#f2f2f2', sleeve: false } });
+  const M = G.martin; if (!M || !M.xoan || M.xoanNPC || typeof spawnNPC !== 'function') return;
+  // spawnNPC só colle peóns que van camiñando; se nese momento non hai ningún libre, prepárase un calquera
+  if (!world.crowd.peds.some(q => q.state === 'walk' && !q.npc && q !== G.player.ped)) { const q = world.crowd.peds.find(q => !q.npc && q !== G.player.ped && !q.role); if (q) q.state = 'walk'; }
+  M.xoanNPC = spawnNPC({ id: 'xoan', name: 'Xoán «o Galgo»', x: M.xoan.x, z: M.xoan.z, yaw: M.xoan.yaw, scale: 1.0, colors: { shirt: '#e2452a', pants: '#17181b', skin: '#e3b48f', hair: '#2a1d14', shoe: '#f2f2f2', sleeve: false } }) || null;
 }
 function martinXoan() {
   const M = G.martin; if (M.race) return;
