@@ -28,7 +28,7 @@ const MART_STEPS = {
   a4: 'Axuda aos do vapor: válvula (Taller Ford), carbón (Mega Andrés) e permiso (Concello)',
   a4_fin: 'Volve ás cocheiras: Don Anxo espérate',
   a5: 'Sábado ás 21:00: a Mikado sae da estación. Sube á cabina (cocheiras do museo)',
-  a5_noite: 'Domingo en Vilatán: vai xantar coa túa nai (sae da cidade pola estación)',
+  a5_noite: 'Domingo, 6:00: Iván espérate no vestíbulo da estación, diante do mural',
   fin: 'Vía morta · historia completada',
 };
 const MART_ACT = { concha: 1, piso: 1, concello: 1, amparo: 1, carreira: 1, esperar: 1, casa: 1, fin1: 1, a2: 2, a3_ivan: 3, a3_pistas: 3, a3_noite: 3, a4: 4, a4_fin: 4, a5: 5, a5_noite: 5, fin: 5 };
@@ -275,7 +275,7 @@ function martinNear() {
   }
   if (S.step === 'a4_fin' && d(M.museo) < 3.6) return { id: 'a4fin', label: 'Entrar nas cocheiras' };
   if (S.step === 'a5' && d(M.museo) < 3.6) return { id: 'final', label: 'Subir á cabina da Mikado' };
-  if (S.step === 'a5_noite' && d(M.ivan) < 4) return { id: 'vilatan', label: 'Coller o tren a Vilatán (Escairón)' };
+  if (S.step === 'a5_noite' && d(M.ivan) < 4) return { id: 'muralCine', label: 'Falar con Iván (antes do tren a Vilatán)' };
   return null;
 }
 function martinInteract() {
@@ -283,7 +283,7 @@ function martinInteract() {
   const n = martinNear(); if (!n) return false;
   ({ concha: martinConcha, piso: martinPiso, concello: martinConcello1, amparo: martinAmparo, carreira: martinConcello2, esperar: martinConcello2, casa: martinCasa, sleep: martinSleep,
     valerio: martinValerio, ivanMural: martinIvanMural, andres: martinAndres, xoan: martinXoan, ivan: martinIvan, pista: () => martinPista(n.p), noite: martinNoite,
-    pepe: martinPepe, entregar: martinEntrega, carbon: martinCarbon, permiso: martinPermiso, firmas: martinFirmas, a4fin: martinA4Fin, final: martinFinal, vilatan: martinVilatan })[n.id]();
+    pepe: martinPepe, entregar: martinEntrega, carbon: martinCarbon, permiso: martinPermiso, firmas: martinFirmas, a4fin: martinA4Fin, final: martinFinal, vilatan: martinVilatan, muralCine: martinMuralCine })[n.id]();
   return true;
 }
 
@@ -885,8 +885,56 @@ function martinFinaleEnd() {
     MA('(suena el móvil) ¿Sí? ... Sí, soy yo. ... ¿Valencia? ¿Jefe de maquinistas del corredor? ... ¿Desde el uno del mes que viene?', { mood: 'sorprendido' }),
     MA('... Les contesto el lunes. Gracias. Sí. Sí, es una gran oportunidad. Ya lo sé.', { mood: 'pensativo' }),
     MA('Valencia. Sol, playa, terrazas, un ascenso... y una semana en Monforte que pesa más que ocho años allí. Fantástico. Justo lo que necesitaba: una decisión.', { mood: 'frustrado' }),
-    () => { S.day += 1; G.hour = 11; envTimer = 0; lastEnvHour = -99; martinGo('a5_noite'); toast('Domingo · Colle o tren a Vilatán na estación (fala con Iván)', 5); },
+    () => { S.day += 1; G.hour = 11; envTimer = 0; lastEnvHour = -99; G.hour = 5.9; G.martin.prevH = 5.9; envTimer = 0; lastEnvHour = -99; martinGo('a5_noite'); toast('Domingo, 6:00 · Iván escribiuche: «Antes de que collas o tren, pasa polo vestíbulo. Diante do mural.»', 6); },
   ]);
+}
+/* CINEMÁTICA CLAVE: Iván e Martín diante do mural da estación (imaxe do autor).
+   Pecha o misterio e abre a decisión de Martín: todas as liñas do mural pasan por Monforte. */
+function martinMuralCine() {
+  let el = $('muralCine');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'muralCine';
+    el.innerHTML = '<div class="mc-img"></div><div class="mc-bar mc-top"></div><div class="mc-bar mc-bot"></div><div class="mc-title"><b>DOMINGO · 6:05</b><span>Vestíbulo da estación de Monforte</span></div>';
+    const st = document.createElement('style');
+    st.textContent = `#muralCine{position:fixed;inset:0;z-index:24;background:#000;overflow:hidden}#muralCine[hidden]{display:none}
+#muralCine .mc-img{position:absolute;inset:-4%;background:url(img/mural-ivan-martin.jpg) center 30%/cover no-repeat;image-rendering:pixelated;animation:mcZoom 70s ease-out forwards;opacity:0;transition:opacity 1.6s}
+#muralCine.on .mc-img{opacity:1}
+@keyframes mcZoom{from{transform:scale(1.18) translateY(6%)}to{transform:scale(1.0) translateY(0)}}
+#muralCine .mc-bar{position:absolute;left:0;right:0;height:9vh;background:#000}#muralCine .mc-top{top:0}#muralCine .mc-bot{bottom:0}
+#muralCine .mc-title{position:absolute;top:12vh;left:0;right:0;text-align:center;color:#f4ead2;text-shadow:0 2px 10px #000;font-family:"Big Shoulders Display",sans-serif;opacity:0;transition:opacity 1.2s}
+#muralCine .mc-title b{display:block;font-size:clamp(28px,5vw,54px);letter-spacing:.08em}#muralCine .mc-title span{font:600 16px Barlow,sans-serif;letter-spacing:.2em;text-transform:uppercase}
+#muralCine.title .mc-title{opacity:1}`;
+    document.head.appendChild(st); document.body.appendChild(el);
+  }
+  const img = el.querySelector('.mc-img'); img.style.animation = 'none'; void img.offsetWidth; img.style.animation = '';
+  el.hidden = false; el.classList.remove('on', 'title'); G.martin.muralCine = true;
+  setTimeout(() => el.classList.add('on', 'title'), 60);
+  setTimeout(() => el.classList.remove('title'), 4200);
+  const end = () => { el.classList.remove('on'); setTimeout(() => { el.hidden = true; G.martin.muralCine = false; martinVilatan(); }, 1500); };
+  setTimeout(() => openDialog([
+    IV('Madrugaches.'),
+    MA('No he dormido. Tenía un silbato metido en la cabeza. Y una oferta de Valencia en el móvil.', { mood: 'pensativo' }),
+    IV('Xa mo contou a Concha. A Concha sábeo todo antes ca ti.'),
+    MA('Esa mujer debería trabajar en el CNI.', { mood: 'sonriente' }),
+    IV('...'),
+    IV('Sabes por que me sentaba sempre aquí? Mira o emigrante, o de Vigo. O meu pai tiña oito anos cando colleron ese tren. Eu sempre digo «collemos». Non sei por que.'),
+    IV('Pasei a infancia en Xenebra mirando mapas de Galicia. Este non o vin ata os corenta e catro anos. E cando o vin, entendín unha cousa.'),
+    MA('¿Qué?', { mood: 'dudoso' }),
+    IV('Mira as liñas. Coruña, Vigo, Ourense, Lugo... todas pasan por Monforte. Dende aquí pódese ir a calquera sitio. Pero para volver, case sempre se pasa por aquí.'),
+    MA('Eso es muy bonito, Iván. Y muy de jefe de estación.', { mood: 'risueno' }),
+    IV('Ha! Pode. Pero o meu avó marchou e non volveu. A miña avoa quedou e non marchou. E eu pasei vinte anos indo e vindo diante deste mural sen saber cal das dúas cousas era a boa.'),
+    MA('¿Y cuál era?', { mood: 'pensativo' }),
+    IV('Ningunha. O bo é volver cando tes algo que facer. E ti agora tes que decidir se tes algo que facer aquí.'),
+    MA('... Llevo ocho años conduciendo trenes y nadie me había explicado un mapa tan bien.', { mood: 'convencido' }),
+    IV('Iso é porque os maquinistas non mirades os mapas. Mirades as sinais.'),
+    MA('Miramos la vía. Y la mía, ahora mismo, tiene una bifurcación.', { mood: 'preocupado' }),
+    IV('Pois vai a Vilatán, come o caldo da túa nai e decide coma un home de Monforte: despois da sobremesa.'),
+    MA('Gracias, Iván. Por el silbato de la primera noche. Por todo.', { mood: 'aliviado' }),
+    IV('Grazas a ti. A placa irá aquí, xusto debaixo do emigrante. Para que o meu avó o vexa marchar e volver todos os días.'),
+    () => { if (G.sfx && G.sfx.trainHorn && world.train) G.sfx.trainHorn(world.train); },
+    IV('Ala, que chega o teu. Vía 1. Coma sempre.'),
+    end,
+  ]), 4600);
 }
 function martinVilatan() {
   const S = save.martin;
@@ -904,7 +952,7 @@ function martinVilatan() {
     return k === 'ir' ? [
       MA('Me voy, mamá. A Valencia. Es una oportunidad que no vuelve.', { mood: 'convencido' }),
       NA('Pois vai, fillo. Que as raíces non son para quedar quieto: son para saber onde volver.'),
-      MA('Volveré. Cada vez que haya Champions en la Fraternal. Y en Navidad. Y cuando Xoán intente batir mi récord.', { mood: 'sonriente' }),
+      MA('Como dice Iván: todas las líneas pasan por Monforte. Volveré. Cada vez que haya Champions en la Fraternal. Y en Navidad. Y cuando Xoán intente batir mi récord.', { mood: 'sonriente' }),
       NA('E o sábado da locomotora, que? Iso tamén foi para saber onde volver?'),
       MA('... Eso fue para que Monforte sepa que no me he ido del todo. Aunque me vaya.', { mood: 'pensativo' }),
     ] : [
