@@ -140,7 +140,9 @@ function startArrivalIntro() {
   G.cine = { intro: true, t: 0, phase: 'train', look: new THREE.Vector3(tr.x, 3, tr.z) };
   $('hud').classList.add('cine'); $('skipIntro').innerHTML = 'Saltar intro <kbd>Espazo</kbd>'; $('skipIntro').hidden = false;
   if (G.sfx.trainHorn) G.sfx.trainHorn(tr);
-  bigMsg('MONFORTE DE LEMOS', G.story ? 'Rexional procedente de Santiago · vía 1' : 'Rexional procedente de Ourense · vía 1');
+  bigMsg('MONFORTE DE LEMOS', G.martin ? 'Rexional procedente de Ourense · maquinista: Martín Pardo' : G.story ? 'Rexional procedente de Santiago · vía 1' : 'Rexional procedente de Ourense · vía 1');
+  if (G.martin) { const say = (t, s) => setTimeout(() => { if (G.cine && G.cine.intro) toast('Martín: «' + t + '»', 5); }, s * 1000);
+    say('Señal en amarillo, vía uno. Ocho años después y Monforte sigue en el mismo sitio. Algo es algo.', 1.5); say('El mismo andén, el mismo reloj... y la misma cola de taxis. Vacía, también como siempre.', 7.5); say('Bueno, Martín. Bienvenido a casa. O a lo que quede de ella.', 13.5); }
 }
 function endIntro() {
   const me = G.player.ped, p = G.startPos;
@@ -148,6 +150,7 @@ function endIntro() {
   camYaw = p.yaw + Math.PI; camPitch = 0.22; camIdle = 0; camera._init = 0;
   G.cine = null; $('hud').classList.remove('cine'); $('skipIntro').hidden = true; $('fade').classList.remove('on');
   if (G.story) { storyAfterIntro(); return; }
+  if (G.martin) { martinAfterIntro(); return; }
   setTimeout(() => toast('Benvido a Monforte! Iván Nogal, o de Renfe que está aí ao lado, pode axudarche. Pancho Camisolas espérate na Praza da Compañía (marcada no GPS).', 6), 400);
   setTimeout(() => toast(isTouch ? 'A túa berlina clásica granate está aparcada aí diante, na Praza da Estación (⇅ para subir)' : 'A túa berlina clásica granate está aparcada aí diante, na Praza da Estación (F para subir)', 5), 6200);
   setTimeout(() => { if (G._worksIntro) toast(G._worksIntro, 5); }, 11800);
@@ -175,6 +178,13 @@ function updateIntro(dt) {
 function introCamera(dt) {
   const C = G.cine, tr = world.train, F = LM.station;
   let tgt, look;
+  if (G.martin && C.phase === 'train') {
+    // Martín vai aos mandos: cámara na cabina da cabeza do tren
+    const s0 = tr.s + tr.dir * (tr.len / 2 + 0.4), a = tr.at(s0), b = tr.at(s0 + tr.dir * 60);
+    tgt = new THREE.Vector3(a.x, 3.05, a.z); look = new THREE.Vector3(b.x, 2.4, b.z);
+    if (!C.camInit || C.phase !== C.lastPhase) { camera.position.copy(tgt); C.look.copy(look); C.camInit = true; C.lastPhase = C.phase; }
+    camera.position.copy(tgt); C.look.lerp(look, 1 - Math.pow(0.02, dt)); camera.lookAt(C.look); camera.fov = lerp(camera.fov, 62, dt * 2); camera.updateProjectionMatrix(); return;
+  }
   if (C.phase === 'train' || C.phase === 'doors') {
     // cámara fixa no andén 1, do lado polo que entra o tren
     if (C.sgn === undefined) { const a = tr.at(tr.stopS - 80); C.sgn = F.inv(a.x, a.z)[1] < 0 ? -1 : 1; }

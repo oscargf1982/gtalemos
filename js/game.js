@@ -307,7 +307,7 @@ function setupInput() {
   hold('tbHorn', () => { if (G.player.car) G.sfx.horn(G.player.car, 1); }); hold('tbCam', () => cycleCam()); hold('tbMap', () => toggleMap()); hold('tbPause', () => togglePause()); hold('tbAct', () => { if (G.player.car && G.player.car.type === 'taxi') taxiShift(); else interact(); });
   // botóns do menú
   $('btnPlay').onclick = startGame;
-  initModes();
+  initModes(); if (typeof initMartinMenu === 'function') initMartinMenu();
   $('skipIntro').onclick = e => { e.stopPropagation(); if (G.cine && G.cine.dinner) skipCena(); else if (G.cine && G.cine.phone) endTrainPhone(); else if (G.cine && !G.cine.intro) skipTravel(); else skipIntro(); };
   $('dialog').addEventListener('click', () => dialogAdvance()); $('btnResume').onclick = () => togglePause(false);
   $('optQuality').onchange = e => { try { localStorage.setItem('lemosQ', e.target.value); } catch (er) { } $('qNote').hidden = false; };
@@ -371,7 +371,7 @@ function updatePlayerFoot(dt) {
     const wx = fx * my + rx * mx, wz = fz * my + rz * mx, l = Math.hypot(wx, wz) || 1;
     const want = Math.atan2(wx / l, wz / l);
     p.yaw += angDiff(p.yaw, want) * Math.min(1, dt * 12);
-    const sp = (IN.run ? 5.6 : 1.9) * mag;
+    const sp = (IN.run ? (G.martin ? 7.6 : 5.6) : 1.9) * mag;
     p.speed = lerp(p.speed, sp, Math.min(1, dt * 8));
   } else p.speed = lerp(p.speed, 0, Math.min(1, dt * 10));
   p.x += Math.sin(p.yaw) * p.speed * dt; p.z += Math.cos(p.yaw) * p.speed * dt;
@@ -450,6 +450,7 @@ function toggleCarForce() { const c = G.player.car; if (!c) return; c.driver = n
 function interact() {
   if (G.voley && G.voley.on) { voleyHit(); return; }
   if (G.story && storyInteractHook()) return;
+  if (G.martin && typeof martinInteract === 'function' && martinInteract()) return;
   if (plazaHotelsInteract()) return;
   if (fineInteract()) return;
   if (carudeInteract()) return;
@@ -1010,7 +1011,7 @@ function startGame() {
 function togglePause(force) {
   if (!G.started) return;
   G.paused = force !== undefined ? force : !G.paused;
-  $('menu').hidden = !G.paused; $('btnPlay').hidden = true; $('btnStory').hidden = true; $('storyPwd').hidden = true; $('btnResume').hidden = false; $('btnReset').hidden = !G.player.car;
+  $('menu').hidden = !G.paused; $('btnPlay').hidden = true; $('btnStory').hidden = true; $('storyPwd').hidden = true; if ($('btnMartin')) { $('btnMartin').hidden = true; $('martinBox').hidden = true; } $('btnResume').hidden = false; $('btnReset').hidden = !G.player.car;
   if (G.paused && document.exitPointerLock) document.exitPointerLock();
   updateMenuStats();
 }
@@ -1080,7 +1081,7 @@ function simulate(dt, menu) {
   }
   // peóns
   for (const p of peds) { if (p === pl.ped) continue; pedThink(p, dt, world); }
-  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); updateMedieval(dt); updateAbeledos(dt); updateCows(dt); updateCarmina(dt); if (typeof updateBankQueue === 'function') updateBankQueue(dt); if (typeof updateBikeKid === 'function') updateBikeKid(dt); if (typeof updateKiosk === 'function') updateKiosk(dt); if (typeof updateMelenas === 'function') updateMelenas(dt); if (typeof updateFraternal === 'function') updateFraternal(dt); if (typeof updateAndres === 'function') updateAndres(dt); if (typeof updateAndres === 'function') updateAndres(dt); if (typeof updateSanPedro === 'function') updateSanPedro(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
+  updateRiders(dt); updateWorks(dt); updateFair(dt); if (!menu) { updateVirginia(dt); updateCarude(dt); updateConcello(dt); updateMedieval(dt); updateAbeledos(dt); updateCows(dt); updateCarmina(dt); if (typeof updateBankQueue === 'function') updateBankQueue(dt); if (typeof updateBikeKid === 'function') updateBikeKid(dt); if (typeof updateKiosk === 'function') updateKiosk(dt); if (typeof updateMelenas === 'function') updateMelenas(dt); if (typeof updateFraternal === 'function') updateFraternal(dt); if (typeof updateAndres === 'function') updateAndres(dt); if (G.martin) updateMartin(dt); if (typeof updateAndres === 'function') updateAndres(dt); if (typeof updateSanPedro === 'function') updateSanPedro(dt); } updateBand(dt); updateBandMusic(dt); updateFluvial(dt);
   if (!menu && !pl.car && !G.cine) updatePlayerFoot(dt);
   if (!menu) updateCine(dt);
   if (!menu) updateSajoni(dt);

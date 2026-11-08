@@ -5,12 +5,18 @@
    ou o modelo 3D de sempre. Atlas img/avelino-sprite.png: 8×7 celas de 191×196 px;
    AVL di que celas forman cada animación (catro direccións: fronte, costas, dereita, esquerda).
    ========================================================== */
-const AVL = {"idleF":[0,1,2,3,4],"walkF":[5,6,7,8],"runR":[9,10,11,12],"idleR":[13,14],"walkR":[15,16,17,18,19,20,21],"idleL":[22],"walkL":[23,24,25,26,27,28,29,30],"jump":[31,32,33,34],"idleB":[35,36,37,38,39],"walkB":[40,41,42,43],"talk":[44,45,46,47],"sit":[48],"sleep":[49]};
-const AVC = { cw: 191, ch: 196, cols: 8, rows: 7, idleH: 190 };
-const AVS = { on: true, mesh: null, shadow: null, fr: -1, flip: false };
+const AVL_AVE = {"idleF":[0,1,2,3,4],"walkF":[5,6,7,8],"runR":[9,10,11,12],"idleR":[13,14],"walkR":[15,16,17,18,19,20,21],"idleL":[22],"walkL":[23,24,25,26,27,28,29,30],"jump":[31,32,33,34],"idleB":[35,36,37,38,39],"walkB":[40,41,42,43],"talk":[44,45,46,47],"sit":[48],"sleep":[49]};
+const AVC_AVE = { cw: 191, ch: 196, cols: 8, rows: 7, idleH: 190, tall: 1.8, img: 'img/avelino-sprite.png' };
+/* Martín Pardo («Vía morta»): img/martin-sprite.png. Non ten andar de fronte/costas: úsase a pose parada cun bambeo;
+   cara á esquerda vólvese o perfil dereito */
+const MVL = (() => { const L = {"idleF":[0],"idleB":[1],"idleR":[2],"idleL":[3],"walkR":[4,5,6,7,8,9],"runR":[10,11,12,13,14],"jump":[15,16,17,18],"fall":[19,20,21,22,23,24],"up":[25,26,27,28,29],"crouch":[30,31,32,33],"point":[34,35,36,37],"hurt":[38,39,40],"die":[41,42,43],"interact":[44,45]};
+  return { ...L, walkL: null, walkF: null, walkB: null, idleL: L.idleL, talk: [L.point[0], L.point[1], L.idleF[0], L.point[1]], sit: [L.crouch[3]], sleep: [L.fall[5]] }; })();
+const MVC = { cw: 150, ch: 203, cols: 8, rows: 6, idleH: 197, tall: 1.86, img: 'img/martin-sprite.png' };
+let AVL = AVL_AVE, AVC = AVC_AVE;
+const AVS = { on: true, mesh: null, shadow: null, fr: -1, flip: false, char: null };
 try { AVS.on = (localStorage.getItem('lemosAvelino') || 'pixel') === 'pixel'; } catch (e) { }
 function aveSet(v) { AVS.on = v === 'pixel'; try { localStorage.setItem('lemosAvelino', v); } catch (e) { } }
-function aveActive() { return AVS.on && G.started && G.player && !G.player.car && G.player.ped; }
+function aveActive() { return (AVS.on || G.martin) && G.started && G.player && !G.player.car && G.player.ped; }
 function aveFrame(f, flip) {
   if (AVS.fr === f && AVS.flip === flip) return; AVS.fr = f; AVS.flip = flip;
   const t = AVS.mesh.material.map, c = f % AVC.cols, r = Math.floor(f / AVC.cols);
@@ -18,9 +24,12 @@ function aveFrame(f, flip) {
 }
 const aveCyc = (L, u) => L[Math.floor(((u % 1) + 1) % 1 * L.length) % L.length];
 function updateAveSprite() {
+  const ch = G.martin ? 'martin' : 'ave';
+  if (AVS.mesh && AVS.char !== ch) { G.scene.remove(AVS.mesh, AVS.shadow); AVS.mesh.material.map.dispose(); AVS.mesh = null; AVS.fr = -1; }
   if (!AVS.mesh) {
-    const tex = new THREE.TextureLoader().load('img/avelino-sprite.png'); tex.magFilter = THREE.LinearFilter; tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false; tex.encoding = THREE.sRGBEncoding;
-    const h = 1.8 * AVC.ch / AVC.idleH, w = h * AVC.cw / AVC.ch, g = new THREE.PlaneGeometry(w, h); g.translate(0, h / 2 - 0.03, 0);
+    AVS.char = ch; AVL = ch === 'martin' ? MVL : AVL_AVE; AVC = ch === 'martin' ? MVC : AVC_AVE;
+    const tex = new THREE.TextureLoader().load(AVC.img); tex.magFilter = THREE.LinearFilter; tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false; tex.encoding = THREE.sRGBEncoding;
+    const h = AVC.tall * AVC.ch / AVC.idleH, w = h * AVC.cw / AVC.ch, g = new THREE.PlaneGeometry(w, h); g.translate(0, h / 2 - 0.03, 0);
     AVS.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide })); AVS.mesh.renderOrder = 2; G.scene.add(AVS.mesh);
     const sg = new THREE.CircleGeometry(0.42, 16); sg.rotateX(-Math.PI / 2);
     AVS.shadow = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false })); AVS.shadow.scale.set(1, 1, 0.6); G.scene.add(AVS.shadow);
@@ -33,15 +42,19 @@ function updateAveSprite() {
   AVS.mesh.material.color.setScalar(1 - 0.45 * (G.night || 0));
   const rel = Math.atan2(Math.sin(p.yaw - yawC), Math.cos(p.yaw - yawC)), view = Math.abs(rel) < 0.7 ? 'F' : Math.abs(rel) > 2.45 ? 'B' : rel > 0 ? 'R' : 'L';
   const ph = (p.phase || 0) / (Math.PI * 2), T = G.t || 0;
-  let f = 0, flip = false;
+  let f = 0, flip = false, bob = 0;
   if ((p.lie || 0) > 0.5) f = AVL.sleep[0];
   else if ((p.sit || 0) > 0.4) f = AVL.sit[0];
   else if (p.y > gy + 0.25) { const vy = p.y - (AVS.lastY ?? p.y), J = AVL.jump; f = vy > 0.01 ? J[1] : vy < -0.01 ? J[3] : J[2]; flip = view === 'L'; }
-  else if ((p.run || 0) > 0.5 && (p.speed || 0) > 0.5) { if (view === 'F') f = aveCyc(AVL.walkF, ph); else if (view === 'B') f = aveCyc(AVL.walkB, ph); else { f = aveCyc(AVL.runR, ph); flip = view === 'L'; } }
-  else if ((p.walk || 0) > 0.35 && (p.speed || 0) > 0.15) f = aveCyc(view === 'F' ? AVL.walkF : view === 'B' ? AVL.walkB : view === 'R' ? AVL.walkR : AVL.walkL, ph);
-  else if (G.dialog && $('dlgName').textContent === 'Ti') f = aveCyc(AVL.talk, T / 2.4);
+  else if ((p.run || 0) > 0.5 && (p.speed || 0) > 0.5) { if (view === 'F') f = AVL.walkF ? aveCyc(AVL.walkF, ph) : (bob = 0.07, AVL.idleF[0]); else if (view === 'B') f = AVL.walkB ? aveCyc(AVL.walkB, ph) : (bob = 0.07, AVL.idleB[0]); else { f = aveCyc(AVL.runR, ph); flip = view === 'L'; } }
+  else if ((p.walk || 0) > 0.35 && (p.speed || 0) > 0.15) {
+    if (view === 'F' && !AVL.walkF) { f = AVL.idleF[0]; bob = 0.045; } else if (view === 'B' && !AVL.walkB) { f = AVL.idleB[0]; bob = 0.045; }
+    else if (view === 'L' && !AVL.walkL) { f = aveCyc(AVL.walkR, ph); flip = true; }
+    else f = aveCyc(view === 'F' ? AVL.walkF : view === 'B' ? AVL.walkB : view === 'R' ? AVL.walkR : AVL.walkL, ph); }
+  else if (G.dialog && /^(Ti|Martín)$/.test($('dlgName').textContent)) f = aveCyc(AVL.talk, T / 2.4);
   else f = view === 'F' ? aveCyc(AVL.idleF, T / 3) : view === 'B' ? aveCyc(AVL.idleB, T / 3) : view === 'R' ? aveCyc(AVL.idleR, T / 2.4) : AVL.idleL[0];
   AVS.lastY = p.y;
+  if (bob) { AVS.mesh.position.y += Math.abs(Math.sin(ph * Math.PI * 2)) * bob; AVS.mesh.rotation.z = Math.sin(ph * Math.PI * 2) * 0.03; } else AVS.mesh.rotation.z = 0;
   aveFrame(f, flip);
 }
 
