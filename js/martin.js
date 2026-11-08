@@ -21,11 +21,11 @@ const MART_STEPS = {
   esperar: 'Eladio marchou ao café. Volve ao Concello en canto abra',
   casa: 'Volve á casa vermella de Doutor Casares e descansa',
   fin1: 'Durme na casa vermella (Doutor Casares, 211) para empezar o acto 2',
-  a2: 'Reencontros: Valerio (farmacia do Cardeal), Mega Andrés (Club Fluvial) e Xoán «o Galgo» (Malecón)',
+  a2: 'Reencontros: Valerio (farmacia), Mega Andrés (Fluvial) e Xoán (Malecón)',
   a3_ivan: 'Pregúntalle a Iván Nogal, na estación, polo «tren pantasma»',
   a3_pistas: 'Investiga arredor do Museo do Ferrocarril (Q: ollo de maquinista)',
   a3_noite: 'Volve ás cocheiras do museo despois das 23:00',
-  a4: 'Axuda aos do vapor: válvula (Taller Ford), carbón (Mega Andrés) e permiso (Concello)',
+  a4: 'Axuda aos do vapor: válvula, carbón e permiso',
   a4_fin: 'Volve ás cocheiras: Don Anxo espérate',
   a5: 'Sábado ás 21:00: a Mikado sae da estación. Sube á cabina (cocheiras do museo)',
   a5_noite: 'Domingo, 6:00: Iván espérate no vestíbulo da estación, diante do mural',
@@ -162,9 +162,9 @@ const martinDia = () => MART_DIAS[((save.martin.day || 0) % 7 + 7) % 7];
 const martinChampDay = () => { const w = ((save.martin.day || 0) % 7 + 7) % 7; return w === 1 || w === 2; };
 function martinChecklist() {
   const S = save.martin, F = S.flags, ok = (b, t) => `<br><span class="${b ? 'ok' : ''}">${b ? '✔' : '·'} ${t}</span>`;
-  if (S.step === 'a2') return ok(F.valerio, 'Valerio') + ok(F.andres, 'Mega Andrés') + ok(F.xoan, 'Xoán «o Galgo»');
+  if (S.step === 'a2') return ok(F.valerio, 'Valerio · farmacia do Cardeal') + ok(F.andres, 'Mega Andrés · Club Fluvial') + ok(F.xoan, 'Xoán «o Galgo» · Malecón');
   if (S.step === 'a3_pistas') return ok(F.p_graxa, 'Graxa no carril') + ok(F.p_pegadas, 'Pegadas') + ok(F.p_pizarra, 'Pizarra');
-  if (S.step === 'a4') return ok(F.valvula, 'Válvula de seguridade' + (F.valvulaCarga && !F.valvula ? ' (cárgala ata o museo)' : '')) + ok(F.carbon, 'Carbón') + ok(F.permiso, 'Permiso do Concello');
+  if (S.step === 'a4') return ok(F.valvula, 'Válvula · Taller Ford' + (F.valvulaCarga && !F.valvula ? ' (cárgala ata o museo)' : '')) + ok(F.carbon, 'Carbón · Mega Andrés') + ok(F.permiso, 'Permiso · Concello');
   return '';
 }
 function updateMartin(dt) {
@@ -174,12 +174,17 @@ function updateMartin(dt) {
   if (M.prevH !== undefined && G.hour < M.prevH - 12) { S.day = (S.day || 0) + 1; persist(); toast(`${martinDia()} · ${martinChampDay() ? 'hoxe hai Champions ás 20:00 na Fraternal' : 'novo día en Monforte'}`, 3.5); }
   M.prevH = G.hour;
   if (hud) {
-    let h = `<b>VÍA MORTA · ACTO ${MART_ACT[S.step] || 1}</b>${MART_STEPS[S.step] || ''}${martinChecklist()}`;
-    if (M.race && M.race.type === 'goto') { const t = Math.max(0, M.race.t); h += `<br><span class="${t < 15 ? 'warn' : 'ok'}">⏱ ${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}</span>`; }
-    if (M.race && M.race.type === 'cp') h += `<br><span class="ok">⏱ ${M.race.el.toFixed(1)} s · récord de Xoán ${M.race.target.toFixed(0)} s · control ${M.race.i + 1}/${M.race.cps.length}</span>`;
-    if (S.step === 'esperar') { const m = Math.max(0, Math.ceil((M.waitUntil - G.hour) * 60)); h += `<br><span class="cold">Abre en ${m} min</span>`; }
-    if (S.flags.permisoPaso === 'agarda') { const m = Math.max(0, Math.ceil((S.flags.firmasAt - G.hour) * 60)); h += `<br><span class="cold">Sinaturas: ${m > 0 ? 'Concha necesita ' + m + ' min' : 'listas no quiosco'}</span>`; }
-    h += `<br><span class="cold">${martinDia()}${martinChampDay() ? ' · Champions 20:00' : ''}</span>`;
+    const min = martinHudMin(); let h = `<b class="sh-t">VÍA MORTA · ACTO ${MART_ACT[S.step] || 1}<i>${min ? '▸' : '▾'}</i></b>`; let body = `${MART_STEPS[S.step] || ''}${martinChecklist()}`;
+    if (M.race && M.race.type === 'goto') { const t = Math.max(0, M.race.t); body += `<br><span class="${t < 15 ? 'warn' : 'ok'}">⏱ ${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}</span>`; }
+    if (M.race && M.race.type === 'cp') body += `<br><span class="ok">⏱ ${M.race.el.toFixed(1)} s · récord de Xoán ${M.race.target.toFixed(0)} s · control ${M.race.i + 1}/${M.race.cps.length}</span>`;
+    if (S.step === 'esperar') { const m = Math.max(0, Math.ceil((M.waitUntil - G.hour) * 60)); body += `<br><span class="cold">Abre en ${m} min</span>`; }
+    if (S.flags.permisoPaso === 'agarda') { const m = Math.max(0, Math.ceil((S.flags.firmasAt - G.hour) * 60)); body += `<br><span class="cold">Sinaturas: ${m > 0 ? 'Concha necesita ' + m + ' min' : 'listas no quiosco'}</span>`; }
+    body += `<br><span class="cold">${martinDia()}${martinChampDay() ? ' · Champions 20:00' : ''}</span>`;
+    // minimizada: só o título e, se hai carreira, o cronómetro
+    if (min) { const t = M.race ? (M.race.type === 'goto' ? ` · ⏱ ${Math.ceil(Math.max(0, M.race.t))} s` : ` · ⏱ ${M.race.el.toFixed(0)} s`) : ''; h = h.replace('</b>', `</b><span class="sh-mini">${martinDia()}${t}</span>`); }
+    else h += `<div class="sh-b">${body}</div>`;
+    if (!hud._wired) martinHudWire(hud);
+    hud.classList.toggle('min', min);
     if (hud._h !== h) { hud.innerHTML = h; hud._h = h; } hud.hidden = false;
   }
   if (!G.paused && !G.dialog && !G.cine) martinRaces(dt);
@@ -192,6 +197,17 @@ function updateMartin(dt) {
   if (G.player.car || G.dialog || G.cine) return;
   const n = martinNear(); if (n) setPrompt(`${isTouch ? '★' : 'E'} · ${n.label}`);
 }
+/* a tarxeta de obxectivos pódese minimizar: tocándoa ou coa tecla O (gárdase a preferencia) */
+function martinHudMin() { if (G.martin.hudMin === undefined) { try { G.martin.hudMin = localStorage.getItem('lemosHudMin') === '1'; } catch (e) { G.martin.hudMin = false; } } return G.martin.hudMin; }
+function martinHudToggle() { const v = !martinHudMin(); G.martin.hudMin = v; try { localStorage.setItem('lemosHudMin', v ? '1' : '0'); } catch (e) { } const hud = $('storyHud'); if (hud) hud._h = ''; }
+function martinHudWire(hud) {
+  hud._wired = true; hud.style.pointerEvents = 'auto'; hud.style.cursor = 'pointer'; hud.title = 'Minimizar / amosar (O)';
+  hud.addEventListener('click', e => { if (G.martin) { e.stopPropagation(); martinHudToggle(); } });
+  const st = document.createElement('style');
+  st.textContent = '#storyHud .sh-t i{font-style:normal;margin-left:8px;opacity:.7;font-size:.8em}#storyHud.min{min-width:0;padding:5px 10px}#storyHud .sh-mini{display:block;font-size:13px;opacity:.85}#storyHud .sh-b{max-width:340px}@media (pointer:coarse){#storyHud .sh-b{max-width:240px}}';
+  document.head.appendChild(st);
+}
+window.addEventListener('keydown', e => { if (G.martin && G.started && !G.paused && !G.dialog && e.code === 'KeyO' && !e.repeat) martinHudToggle(); });
 /* carreiras: contra o reloxo ata un punto ('goto') ou por controis ('cp') */
 function martinRaces(dt) {
   const M = G.martin, R = M.race; if (!R) return;
