@@ -26,6 +26,23 @@ const MA = (t, extra) => ({ who: 'Martín', text: t, ...extra });
 const MX = who => (t, extra) => ({ who, text: t, ...extra });
 const CO = MX('Dona Concha'), EL = MX('Don Eladio'), AM = MX('Dona Amparo'), DV = MX('Tío David'), NA = MX('Nai');
 
+
+/* cara de Martín nos diálogos: img/mf-<emoción>.png (15 emocións do autor). L.mood manda; se non, polo texto */
+const MART_MOOD_RX = [
+  [/última vez que bajé|ocho horas de cabina|será el cansancio/i, 'pensativo'], [/progreso, lo llaman|palomas|sistema redondo|surrealista|lambretta|cuenta como calentamiento|respeto\.|cuentan como fruta|ositos de gominola/i, 'risueno'],
+  [/ni una gota|me da miedo|estoy bien, mamá/i, 'preocupado'], [/¿número\?|usted está en la ventanilla|no me lo diga/i, 'esceptico'],
+  [/eso ha sido un silbato|no puede ser/i, 'sorprendido'], [/palabra mágica|^¿correr/i, 'entusiasmado'], [/tiempo récord|apúntelo|kilómetros|traerle los trenes|del dépor/i, 'orgulloso'],
+  [/me ganó|transbordos|cuarenta y ocho/i, 'frustrado'], [/agua: sí|ganarse un amigo|prometido/i, 'aliviado'], [/por curiosidad|mañana me paso/i, 'convencido'],
+  [/hola, mamá|unas llaves|martín pardo/i, 'sonriente'], [/más pequeño|vergüenza|perdón/i, 'avergonzado'], [/\bjaja|ja, ja/i, 'risueno'], [/joder|maldit|basta ya/i, 'enfadado'], [/¿[^?]*\?\s*$/, 'dudoso'],
+];
+const MART_FROM_AVE = { sonriente: 'sonriente', rie: 'risueno', asustado: 'preocupado', enojado: 'enfadado', avergonzado: 'avergonzado', cansado: 'frustrado', confundido: 'dudoso', pensativo: 'pensativo', sorprendido: 'sorprendido' };
+function martinMoodFor(t) {
+  t = t || ''; for (const [rx, m] of MART_MOOD_RX) if (rx.test(t)) return m;
+  if (/[áéíóú]|\b(el|la|los|las|que|pero|una)\b/i.test(t) && !/\b(o|a|os|as|unha|non|moi)\b/i.test(t)) return /!/.test(t) ? 'entusiasmado' : 'sonriente';
+  return typeof aveMoodFor === 'function' ? (MART_FROM_AVE[aveMoodFor(t)] || 'neutro') : 'neutro';
+}
+function martinFaceFor(L) { return 'img/mf-' + (L.mood || martinMoodFor(L.text)) + '.png'; }
+
 /* ---------- menú ---------- */
 function initMartinMenu() {
   if ($('btnMartin')) return;
