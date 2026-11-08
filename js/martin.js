@@ -27,7 +27,7 @@ const MART_STEPS = {
   a3_noite: 'Volve ás cocheiras do museo despois das 23:00',
   a4: 'Axuda aos do vapor: válvula (Taller Ford), carbón (Mega Andrés) e permiso (Concello)',
   a4_fin: 'Volve ás cocheiras: Don Anxo espérate',
-  a5: 'Sábado ás 12:00: a Mikado sae da estación. Sube á cabina (cocheiras do museo)',
+  a5: 'Sábado ás 21:00: a Mikado sae da estación. Sube á cabina (cocheiras do museo)',
   a5_noite: 'Domingo en Vilatán: vai xantar coa túa nai (sae da cidade pola estación)',
   fin: 'Vía morta · historia completada',
 };
@@ -171,6 +171,7 @@ function updateMartin(dt) {
   martinChampions();
   if (M.carry && !S.flags.valvula && G.player.ped) G.player.ped.run = 0;
   martinSparkles(dt);
+  if (!G.dialog) { if ($('martinMural') && !$('martinMural').hidden) martinMural(false); if (M.inCasa && !M.sleeping) martinCasaOut(); }
   if (M.finale) return;
   if (G.player.car || G.dialog || G.cine) return;
   const n = martinNear(); if (n) setPrompt(`${isTouch ? '★' : 'E'} · ${n.label}`);
@@ -219,6 +220,7 @@ function martinChampScene() {
       DV(pick(['Chegas xusto, rapaz! Aquí tes a túa cadeira, a de sempre. Ben, a de sempre dende o martes pasado.', 'Ven, senta, que xa sae o himno! Ese himno ponme os pelos de punta, e mira que me quedan poucos.', 'Martiño! Pon unha caña, Manolo, que chega o maquinista!'])),
       DV(`Hoxe xogan o ${a} e o ${b}. Que dis? Cinco euros, coma sempre?`, { choices: [{ t: `Gaña o ${a}`, fn: pickBet(0) }, { t: 'Empate', fn: pickBet(1) }, { t: `Gaña o ${b}`, fn: pickBet(2) }] }),
       DV(pick(['Ese dianteiro non remata nin unha papeleta. Eu, co Lemos, aquela contra o Ourense en Terceira, metina de cabeza no segundo pau. Ti viches que salto?', 'Isto antes era fútbol de verdade. Eu marqueille ao Ourense en Terceira cun barro ata os nocellos. Hoxe con este céspede marco eu sete.', 'Mira, mira! Iso é o que fixen eu contra o Ourense en Terceira! Ben... parecido. Eu fíxeno de cabeza e con máis estilo.'])),
+      ...(!S.flags.ivanChamp ? [IV('Boas! Hai sitio para un do apoio? Traio pipas.'), DV('Iván! Senta. Contáballe ao rapaz o do meu gol ao Ourense, en Terceira, un domingo de sol...'), IV('Foi en mércores, David. E chovía. Saíches na foto do xornal co barro ata os xeonllos.'), DV('... Pois é verdade. E ti como sabes iso, se naciches en Suíza?'), IV('Lin moito xornal vello. Hai que entreterse en algo nas noites de inverno.'), () => { S.flags.ivanChamp = true; }] : []),
       MA(pick(['David, si me cuentas otra vez lo del Ourense, me lo aprendo de memoria y lo narro yo en la próxima.', 'Lo del Ourense en Tercera. Lo sé. Segundo palo. De cabeza. Barro hasta los tobillos. David, eres una leyenda.', 'Yo una vez vi a Fran hacer eso en Riazor. Bueno, en la tele del bar de Vilatán. Bueno, se parecía a Fran.'])),
       () => { $('fade').classList.add('on'); setTimeout(() => { G.hour = 23.0; envTimer = 0; lastEnvHour = -99; $('fade').classList.remove('on'); }, 700); },
       DV(`Final: ${a} ${ga}, ${b} ${gb}. ${res === 1 ? 'Empate, que aburrimento!' : `Gañou o ${res === 0 ? a : b}.`}`),
@@ -236,9 +238,9 @@ function martinChampScene() {
 /* durmir no piso: pasa ao día seguinte ás 8:00 */
 function martinSleep() {
   const S = save.martin, M = G.martin;
-  martinCasaIn(); $('fade').classList.add('on');
+  M.sleeping = true; martinCasaIn(); $('fade').classList.add('on');
   setTimeout(() => {
-    martinCasaOut();
+    M.sleeping = false; martinCasaOut();
     if (G.hour > 12) S.day = (S.day || 0) + 1;
     G.hour = 8.0; M.prevH = 8; envTimer = 0; lastEnvHour = -99; persist();
     $('fade').classList.remove('on');
@@ -261,6 +263,7 @@ function martinNear() {
     if (!F.xoan && d(M.xoan) < 3.2) return { id: 'xoan', label: M.race ? 'Carreira en curso' : 'Falar con Xoán «o Galgo»' };
   }
   if (S.step === 'a3_ivan' && d(M.ivan) < 3.4) return { id: 'ivan', label: 'Falar con Iván Nogal' };
+  if (!F.ivanMural && ['piso', 'concello', 'amparo', 'esperar', 'casa', 'fin1', 'a2'].includes(S.step) && d(M.ivan) < 3.4) return { id: 'ivanMural', label: 'Falar con Iván Nogal' };
   if (S.step === 'a3_pistas') { for (const p of M.pistas || []) if (!F['p_' + p.id] && d(p) < 2.6) return { id: 'pista', p, label: 'Examinar' }; }
   if ((S.step === 'a3_noite' || S.step === 'a3_pistas') && d(M.museo) < 3.6 && S.step === 'a3_noite') return { id: 'noite', label: (G.hour >= 23 || G.hour < 5) ? 'Agardar nas cocheiras' : 'Esperar ata as 23:00' };
   if (S.step === 'a4') {
@@ -279,7 +282,7 @@ function martinInteract() {
   if (!G.martin || G.player.car || G.dialog || G.cine || G.minigame || G.martin.finale) return false;
   const n = martinNear(); if (!n) return false;
   ({ concha: martinConcha, piso: martinPiso, concello: martinConcello1, amparo: martinAmparo, carreira: martinConcello2, esperar: martinConcello2, casa: martinCasa, sleep: martinSleep,
-    valerio: martinValerio, andres: martinAndres, xoan: martinXoan, ivan: martinIvan, pista: () => martinPista(n.p), noite: martinNoite,
+    valerio: martinValerio, ivanMural: martinIvanMural, andres: martinAndres, xoan: martinXoan, ivan: martinIvan, pista: () => martinPista(n.p), noite: martinNoite,
     pepe: martinPepe, entregar: martinEntrega, carbon: martinCarbon, permiso: martinPermiso, firmas: martinFirmas, a4fin: martinA4Fin, final: martinFinal, vilatan: martinVilatan })[n.id]();
   return true;
 }
@@ -412,6 +415,33 @@ function martinCasa() {
   ]);
 }
 
+/* Iván Nogal (o de Renfe) e o mural de 1954 do vestíbulo: conversa opcional dos actos 1-2.
+   Ollo: Iván é o neto de Xosé Nogal e Elvira (a da casa vermella). Todo o que di aquí é pista para o final. */
+function martinMural(on) {
+  let el = $('martinMural');
+  if (!el) { el = document.createElement('div'); el.id = 'martinMural'; el.style.cssText = 'position:fixed;inset:0;z-index:24;background:#14110d url(img/mural-estacion.jpg) center 38%/contain no-repeat;box-shadow:inset 0 0 160px #000'; document.body.appendChild(el); }
+  el.hidden = !on;
+}
+function martinIvanMural() {
+  const F = save.martin.flags; F.ivanMural = true; persist();
+  openDialog([
+    IV('Benvido ao nó ferroviario de Galicia! Ben, ao que queda del. Es o maquinista novo, non? Iván Nogal, apoio de Renfe. E guía turístico non oficial.'),
+    MA('Martín Pardo. ¿Guía de qué? Si aquí lo único que hay para ver es la máquina de café.'),
+    () => martinMural(true),
+    IV('O mural do vestíbulo, home! Pintouno en 1954 un delineante de Renfe de León, Cándido Fernández Inchaurbe. Monforte á dereita, co seu redondel azul, e as liñas saíndo cara a Lugo, Ourense e Castela. E non sae a liña de Zamora, porque aínda non existía.'),
+    MA('¿Tú te sabes de memoria todos los murales o solo este?'),
+    MA('Hay hasta un castillo encima de Monforte. Y abajo, junto a Tuy, una firma con fecha: 1954.'),
+    IV('Inchaurbe, 1954. Tes bo ollo: ninguén se fixa na firma. E respondendo á túa pregunta: só me sei os murais que me deixan sentar diante. Mira o emigrante, o que espera o barco en Vigo. Leva setenta anos esperando. Coma alguén que eu coñezo.'),
+    MA('¿Quién?'),
+    IV('Eu, cando chega o rexional das seis. Ha! E onde vives, compañeiro?'),
+    () => martinMural(false),
+    MA('En la casa roja de Doctor Casares. La de al lado de la gasolinera.'),
+    IV('... Bo balcón. Dende el vese o depósito.', { mood: 'neutro' }),
+    MA('¿Has estado dentro?'),
+    IV('Iso díxomo a Amparo, vaia. Aquí todo o mundo sabe todo de todas as casas. Ala, que chega o de Ourense e hai que contar maletas.'),
+  ]);
+}
+
 /* ==========================================================
    ACTO 2 · O reencontro
    ========================================================== */
@@ -450,6 +480,8 @@ function martinValerio() {
     MA('Más que nunca. Correr aquí es fácil: no hay nadie con quien chocarse.'),
     VA('Iso é verdade... Antes isto estaba cheo. Agora, cando pecha a tenda dun veciño, o local queda con cartel de «Se aluga» ata que o cartel se cae de vello.'),
     MA('... Ya. Me fijé al venir. La zapatería de la esquina, el videoclub... Monforte está como una estación de paso: todo el mundo parece que se va.'),
+    VA('Pero algúns quedamos. E outros chegan: o Iván, o de Renfe, o suízo. Vén cada semana buscar as pastillas da súa tía Amparo e quédase unha hora falando de trens. Coma ti de correr.'),
+    MA('¿Iván es sobrino de Amparo? Entonces el sobrino de Suiza del que me habló... Vaya. Monforte es un pañuelo. Un pañuelo muy pequeño.'),
     VA('Pero algúns quedamos. E agora ti volviches. Iso conta, Martín.'),
     MA('Cuenta. Aunque no sé si he vuelto o si estoy de paso. Ya te diré.'),
     () => { if (inside) interiorExit(); save.martin.flags.valerio = true; persist(); martinA2Check(); },
@@ -535,7 +567,10 @@ function martinIvan() {
     IV('Ola, compañeiro! Que tal o primeiro turno? Pasáchelo ben co rexional das seis e media? Ese tren ten máis anos ca min.'),
     MA('Iván, pregunta rara: ¿alguien ha movido alguna máquina en el museo últimamente? ¿Pruebas, traslados...?'),
     IV('No museo? Que va. Esas locomotoras están máis quietas ca un xubilado ás tres da tarde. Por que?'),
-    MA('Porque por las noches oigo un silbato de vapor. Y yo distingo un silbato de vapor de un pito de árbitro, te lo aseguro.'),
+    MA('Porque por las noches oigo un silbato de vapor. Y yo distingo un silbato de vapor de un pito de árbitro, te lo aseguro. Siempre igual: dos largos y uno corto.'),
+    IV('...', { mood: 'neutro' }),
+    IV('Dous longos e un curto. Iso non é ningunha sinal do regulamento. Será algún graciosiño. Por certo, sabías que en 1958 o rexional das nove e media saía dez minutos tarde todos os días? Dez. Todos.'),
+    MA('Me lo apunto para el próximo concurso de la tele. Iván, céntrate.'),
     IV('... O tren pantasma. Ha! Sabía que acabarías preguntando. A Concha di que o oe os xoves. O Tío David di que o oe sempre que perde o Lemos.'),
     IV('Eu non creo en pantasmas. Pero si che digo unha cousa: alguén leva semanas collendo graxa do almacén. E non son eu.'),
     MA('Grasa, silbatos y un candado nuevo. O es un fantasma muy mañoso, o aquí hay alguien trabajando a escondidas.'),
@@ -546,7 +581,7 @@ function martinIvan() {
 const MART_PISTAS = {
   graxa: [MA('Grasa en el carril de la Mikado. Fresca, brillante, sin polvo. Este carril lleva décadas muerto... y alguien lo está engrasando como si fuera a salir mañana.')],
   pegadas: [MA('Pisadas con carbonilla. Botas de trabajo, de las antiguas. Y unas zapatillas de andar por casa. ¿Quién va a un depósito en zapatillas de casa? Alguien que vive cerca. Y que tiene muchos años.')],
-  pizarra: [MA('Una pizarra en la puerta. Escrito a mano: «Presión: 9 kg. Probar inxector. Mércores: tubos». Esto no es un fantasma. Es un plan de mantenimiento. Y con mejor letra que la de Renfe.')],
+  pizarra: [MA('Una pizarra en la puerta. «Presión: 9 kg. Probar inxector. Mércores: tubos». Con una letra preciosa, de las de antes, todas las letras iguales. Esto no es un fantasma: es un plan de mantenimiento. Y el que lo escribe es muy, muy ordenado.')],
 };
 function martinPista(p) {
   const F = save.martin.flags;
@@ -598,6 +633,9 @@ function martinNoite() {
     RE('E eu, Remedios. Trinta anos no taller do depósito. Se ten parafusos, eu arránxoo. Se ten sentimentos, arránxao el.'),
     MA('Entonces... el silbato, la grasa, la pizarra... ¿Están restaurando la Mikado? ¿Ustedes dos? ¿De noche?'),
     DA('Nós e outros catro xubilados, que hoxe non viñeron porque había Champions. Si. A Mikado vai saír unha última vez antes de que a leven.'),
+    RE('E alguén que nos trae as listas de pezas, cunha letra que dá envexa. Pero ese non quere que se saiba quen é, así que non preguntes.'),
+    MA('¿Esta máquina tuvo algún accidente? Tiene una abolladura en el tope que no es de museo.'),
+    DA('... Hai noites que mellor non lembrar, rapaz.'),
     MA('¿Que se la llevan? ¿Adónde?'),
     RE('A un museo de Madrid. Ou a chatarra, segundo quen pregunte. O mes que vén. E Monforte, que foi a cidade do tren, quedará cun cartel e unha foto.'),
     DA('Por iso queremos facer unha viaxe. Unha soa. Que a vexa toda a cidade, cheo de vapor e co asubío. Para lembrarlles quen fomos.'),
@@ -628,7 +666,10 @@ function martinPepe() {
     PE('Boas! Que lle pasa ao coche? Ruído? Fume? Luz amarela? Non me digas que é a luz amarela.'),
     MA('No tengo coche. Vengo por una válvula de seguridad de locomotora de vapor. De parte de Remedios.'),
     PE('Da Remedios! Ai, a Remedios... ensinoume a soldar cando eu tiña quince anos. Espera.'),
-    PE('Aquí está: válvula de seguridade da Mikado, con caixa orixinal e todo. Pesa corenta quilos. Nin a levantes de golpe, que se che vai a riñonada.'),
+    PE('Aquí está: válvula de seguridade da Mikado, con caixa orixinal e todo. Chegou ao taller do meu pai no 87, dun desguace. Pesa corenta quilos. Nin a levantes de golpe, que se che vai a riñonada.'),
+    PE('Ah, e que saibas que o suízo ese da estación veu tres veces a querer mercarma. Tres! A el non lla vendo: fala demasiado ben.'),
+    MA('¿Iván? ¿Para qué querría Iván una válvula de cuarenta kilos?'),
+    PE('Pois iso pregunteille eu. Díxome que era «por un asunto de familia». Ti vés de parte da Remedios: a ti si.'),
     MA('Cuarenta kilos. Bueno. Llevo años levantando la persiana de una cabina, no será tan... uf. Vale. Es peor.'),
     PE('Ha! Ata o museo hai un bo cacho. Correndo con iso no colo non chegas nin ao semáforo. Ou camiñas, ou buscas algo con rodas.'),
     MA('Correr no me va a servir. Primera vez en mi vida que lo digo. Que no salga de aquí.'),
@@ -640,7 +681,19 @@ function martinEntrega() {
   openDialog([
     RE('A válvula! E sen abolladuras! Ti es dos bos, rapaz.'),
     MA('Cuarenta kilos, Remedios. Tengo los brazos como un tren de mercancías: largos y sin fuerza.'),
-    () => { F.valvula = true; M.carry = false; persist(); martinA4Check(); },
+    IV('Boas noites... Pasaba por aquí. Vin luz.', { mood: 'neutro' }),
+    MA('¿Iván? ¿A estas horas? Pues mira, ya que pasabas: ayúdame a abrir esta caja, que la tapa está oxidada.'),
+    IV('... Esa é a caixa da válvula.'),
+    MA('Hay un papel dentro. Doblado, amarillo... «Parte de incidencia. 14 de xaneiro de 1958».', { mood: 'sorprendido' }),
+    IV('(sen achegarse) Esa letra...'),
+    MA('Freno automático de los vagones a tres kilos. El mínimo es cinco. Lo midió varias veces, con hora. Y abajo, otra firma: «Reparación denegada. O xefe de depósito».', { mood: 'pensativo' }),
+    MA('Iván, quien escribió esto avisó de que esos vagones no frenaban. Semanas antes de lo que fuera que pasó esa noche.', { mood: 'preocupado' }),
+    IV('Xa o sei, Martín. Levo vinte anos sabéndoo. O que nunca tiven foi o papel.'),
+    MA('¿Cómo que lo sabes? ¿Quién lo escribió? ¿Qué pasó esa noche?', { mood: 'dudoso' }),
+    IV('O sábado. O sábado cóntocho todo, prometido. Gárdao ti, que eu agora non sei se o podería ter na man. Boas noites.'),
+    RE('... Ese rapaz levaba un ano traéndonos as listas de pezas. Agora entendo por que choraba co inxector.'),
+    MA('Vaya. Así que el de la letra bonita era él. Y yo pensando que el fantasma llevaba zapatillas de casa.', { mood: 'esceptico' }),
+    () => { F.valvula = true; F.parte = true; M.carry = false; persist(); martinA4Check(); },
   ]);
 }
 function martinCarbon() {
@@ -681,7 +734,7 @@ function martinPermiso() {
   openDialog([
     EL('Vostede outra vez. Que é hoxe? Auga? Luz? Un canario?'),
     MA('Un permiso para que una locomotora de vapor circule el sábado por la vía. Una hora. Con toda la ciudad mirando.'),
-    EL('... Iso non existe. Ben: existe, pero ninguén o pide dende 1974. Precisa o modelo T-14, a autorización de Adif e... cen sinaturas de veciños empadroados.'),
+    EL('... Iso é o modelo T-14. O último que mo pediu foi un tal Nogal, o mes pasado, para a vía morta da Barreira. Fáltanlle as sinaturas. Precisa a autorización de Adif e... cen sinaturas de veciños empadroados.'),
     MA('¿Cien firmas? ¿En Monforte? Si a las nueve de la noche no hay cien personas en toda la calle.'),
     EL('Iso non é cousa miña. Cen sinaturas. Ventanilla 1. Que agora tamén é a 3.'),
     MA('Cien firmas... Hay una persona en Monforte que habla con cien personas antes del mediodía. Y vende gominolas.'),
@@ -728,7 +781,9 @@ function martinA4Fin() {
     RE('Bueno, xa está ben de poesía. Falta a cuarta cousa, Anxo. Díllo.'),
     DA('A cuarta cousa é un maquinista con licenza en vigor. Eu teño setenta e oito anos e cataratas. Remedios non ten licenza. E ti...'),
     MA('... ¿Yo? ¿Conducir la Mikado? ¿Por Monforte? ¿Con toda la ciudad mirando?', { mood: 'sorprendido' }),
-    DA('Contigo na cabina. E eu ao teu lado, contándoche onde frear. Sábado, ás doce.'),
+    MA('Anxo, ese parte de 1958 que encontré en la caja... usted estaba aquí entonces, ¿verdad?', { mood: 'preocupado' }),
+    DA('... O sábado, rapaz. Iván ten dereito a contalo el primeiro. Eu levo moito tempo calado; podo calar tres días máis.'),
+    DA('Contigo na cabina. E eu ao teu lado, contándoche onde frear. De fogoneiro virá un voluntario que sabe de caldeiras. Sábado, ás nove da noite.'),
     MA('Llevo ocho años conduciendo trenes que no se acuerdan de nadie. Para una vez que uno se va a acordar de mí... Vale. Acepto.', { mood: 'entusiasmado' }),
     () => { bigMsg('FIN DO ACTO 4', 'A implicación'); setTimeout(() => { bigMsg('ACTO 5', 'O descubrimento'); martinGo('a5'); }, 3200); },
   ]);
@@ -741,8 +796,8 @@ function martinFinal() {
   const S = save.martin, M = G.martin;
   $('fade').classList.add('on');
   setTimeout(() => {
-    const w = ((S.day % 7) + 7) % 7; S.day += (5 - w + 7) % 7; G.hour = 12.0; M.prevH = 12; envTimer = 0; lastEnvHour = -99; persist();
-    $('fade').classList.remove('on'); bigMsg('SÁBADO · 12:00', 'A última viaxe da Mikado');
+    const w = ((S.day % 7) + 7) % 7; S.day += (5 - w + 7) % 7; G.hour = 21.0; M.prevH = 21; envTimer = 0; lastEnvHour = -99; persist();
+    $('fade').classList.remove('on'); bigMsg('SÁBADO · 21:00', 'A última viaxe da Mikado');
     martinFinaleStart();
   }, 1000);
 }
@@ -759,7 +814,8 @@ function martinFinaleStart() {
   if (G.sfx && G.sfx.trainHorn) G.sfx.trainHorn(tr);
 }
 const MART_FINALE_LINES = [
-  [1.0, 'Don Anxo: «Presión a nove. Regulador... suave, rapaz, coma quen colle unha nena no colo.»'],
+  [1.0, 'Iván (de fogoneiro): «Presión a nove. Carbón dentro. Cando queiras, maquinista.»'],
+  [3.0, 'Don Anxo: «Regulador... suave, rapaz, coma quen colle unha nena no colo.»'],
   [5.0, 'Martín: «Está viva. Lo noto en las manos. Esto no es un tren: es un animal respirando.»'],
   [9.0, 'Dona Concha: «Martiñooo! O dos cromos do Dépor! É el, é el!»'],
   [12.5, 'Tío David: «Asubía, rapaz, asubía! Coma o día que lle marquei ao Ourense!»'],
@@ -767,11 +823,13 @@ const MART_FINALE_LINES = [
   [19.5, 'Don Eladio: «Selado e asinado! ... (sorrí, por primeira vez en trinta anos)»'],
   [23.0, 'Xoán e Valerio: «Vai, Martín, vai!»'],
   [26.5, 'Martín: «Media ciudad en el andén. Media ciudad que no veía desde que tenía diecisiete años.»'],
+  [30.0, 'Don Anxo: «Agora, rapaz... a agulla vella da esquerda. Á Barreira. Non preguntes.»'],
 ];
 function updateMartinFinale(dt) {
   const M = G.martin, Fz = M && M.finale; if (!Fz) return false;
   const tr = world.train; Fz.t += dt;
-  Fz.v = Math.min(9, Fz.v + dt * 0.8); Fz.s += Fz.v * dt;
+  if (Fz.t < 33) Fz.v = Math.min(9, Fz.v + dt * 0.8); else Fz.v = Math.max(0, Fz.v - dt * 2.2);
+  Fz.s += Fz.v * dt;
   const a = tr.at(Fz.s), b = tr.at(Fz.s + 2); const yaw = Math.atan2(b.x - a.x, b.z - a.z);
   Fz.loco.position.set(a.x, (a.y || 0) + 0.35, a.z); Fz.loco.rotation.y = yaw;
   Fz.puff -= dt; if (Fz.puff <= 0 && world.smoke) { Fz.puff = 0.12; const fx = Math.sin(yaw), fz = Math.cos(yaw); world.smoke.emit(a.x + fx * 3.6, (a.y || 0) + 4.4, a.z + fz * 3.6, RR(-0.4, 0.4), RR(2, 3), RR(-0.4, 0.4), 1.4, 3.5, 0xe8e8e8, 0.6); }
@@ -782,8 +840,33 @@ function updateMartinFinale(dt) {
   const side = Fz.t < 14 ? 1 : -1, dist = Fz.t < 14 ? 11 : 14;
   const tgt = new THREE.Vector3(a.x + sx * side * dist - fx * 4, (a.y || 0) + 3.2, a.z + sz * side * dist - fz * 4);
   camera.position.lerp(tgt, 1 - Math.pow(0.03, dt)); C.look.lerp(new THREE.Vector3(a.x + fx * 3, (a.y || 0) + 2.4, a.z + fz * 3), 1 - Math.pow(0.02, dt)); camera.lookAt(C.look);
-  if (Fz.t > 30 && !Fz.faded) { Fz.faded = true; $('fade').classList.add('on'); setTimeout(martinFinaleEnd, 900); }
+  if (Fz.t > 37.5 && !Fz.stopScene) { Fz.stopScene = true; martinViaMorta(); }
   return true;
+}
+/* a revelación: a Mikado párase na vía morta da Barreira ás 21:40 e Iván deixa de ser «o de Renfe» */
+function martinViaMorta() {
+  G.hour = 21.67; envTimer = 0; lastEnvHour = -99;
+  bigMsg('VÍA MORTA DA BARREIRA', '21:40');
+  const horn = () => { const Fz = G.martin.finale; if (Fz && G.sfx && G.sfx.trainHorn) G.sfx.trainHorn({ x: Fz.loco.position.x, z: Fz.loco.position.z, y: 2 }); };
+  setTimeout(() => openDialog([
+    MA('¿La Barreira? Aquí no entra un tren desde... Anxo, esta vía está muerta. Hay una topera ahí delante.', { mood: 'preocupado' }),
+    DA('Xusto aí. Para xusto aí, rapaz. Son as nove e corenta.'),
+    IV('Martín... Toca ti. Dous longos e un curto.'),
+    () => { horn(); setTimeout(horn, 900); setTimeout(horn, 1700); },
+    MA('...', { mood: 'neutro' }),
+    CO('(dende a estrada, en voz baixa) Ese asubío... Ese era o asubío do Nogal. Pasaba por diante da casa vermella e a Elvira saía ao balcón...'),
+    IV('(baixa da cabina e quita a gorra de Renfe) Chámome Iván Nogal Ferreiro. Son neto de Xosé Nogal, o maquinista que despediron por esta noite. E da Elvira, a da casa vermella, que esperou sesenta anos nese balcón a que alguén o dixese en voz alta.'),
+    IV('Eu non vin a Monforte traballar na estación. Vin esperar isto. Vinte anos buscando un papel por arquivos, desguaces e residencias de xubilados. E o papel estaba nunha caixa de chatarra, a dous quilómetros da casa da miña avoa.'),
+    IV('O 14 de xaneiro de 1958, ás nove e corenta, un mercancías sen freos baixou cara á estación. No andén 1 estaba o tren dos emigrantes para Vigo, dez minutos tarde, coma sempre. O meu avó mandou cambiar esta agulla e púxose diante coa súa Mikado.'),
+    MA('(lee el parte en voz alta) «Freno automático a tres kilos. Mínimo, cinco. Reparación denegada». Firmado por el jefe de depósito. Semanas antes.', { mood: 'convencido' }),
+    MA('Esto no es una maniobra no autorizada. Es un hombre que vio venir un tren sin frenos y se puso delante. Con su máquina. Con un chaval de diecisiete años al lado.', { mood: 'enfadado' }),
+    DA('Ese chaval era eu. Tiña dezasete anos. Asinei o informe que me mandaron asinar, porque se non me botaban. Levo sesenta e oito anos calado.'),
+    DA('(cara a toda a xente) Xosé Nogal salvou o tren dos emigrantes. Eu vino. E perdón, Iván. Perdón, Elvira.'),
+    IV('(a Martín, case sen voz) Ti oíches o asubío a primeira noite. Era para ti. Precisaba a alguén que preguntase. Perdoa por non dicircho.'),
+    MA('No me pidas perdón. Llevo una semana corriendo detrás de un fantasma... y resulta que el fantasma era el único que sabía adónde iba.', { mood: 'aliviado' }),
+    IV('Sabes o que dicía a miña avoa? Que as vías mortas non existen. Que só son vías que esperan.'),
+    () => { $('fade').classList.add('on'); setTimeout(martinFinaleEnd, 900); },
+  ]), 1200);
 }
 function martinFinaleEnd() {
   const M = G.martin, tr = world.train, S = save.martin;
@@ -791,11 +874,12 @@ function martinFinaleEnd() {
   if (M.trSaved && tr) { tr.state = 'away'; tr.timer = 20; }
   G.cine = null; $('hud').classList.remove('cine'); if (G.player.ped) G.player.ped.visible = true; camera._init = 0;
   if (M.museo) { const me = G.player.ped; me.x = M.museo.x - 3; me.z = M.museo.z; me.y = groundH(me.x, me.z); }
-  G.hour = 21.0; envTimer = 0; lastEnvHour = -99;
+  G.hour = 23.0; envTimer = 0; lastEnvHour = -99;
   $('fade').classList.remove('on');
   openDialog([
-    DA('Rapaz... corenta anos e nunca a vin tan guapa. Grazas.'),
-    MA('Gracias a usted, Anxo. Hoy he conducido el tren más lento de mi vida. Y el más rápido. No sé explicarlo.', { mood: 'aliviado' }),
+    DA('Rapaz... corenta anos e nunca a vin tan guapa. Nin eu me sentín tan lixeiro. Grazas.'),
+    MA('Gracias a usted, Anxo. Hoy he conducido el tren más lento de mi vida. Y el más importante. No sé explicarlo.', { mood: 'aliviado' }),
+    IV('O lunes vou falar con Adif e co Concello. Unha placa ao carón do mural, pequena. Só o seu nome e a data. A miña avoa querería algo pequeno.'),
     RE('Pois non o expliques. Vai durmir, que mañá é domingo e tes caldo en Vilatán.'),
     () => { $('fade').classList.add('on'); setTimeout(() => { $('fade').classList.remove('on'); }, 900); },
     MA('(suena el móvil) ¿Sí? ... Sí, soy yo. ... ¿Valencia? ¿Jefe de maquinistas del corredor? ... ¿Desde el uno del mes que viene?', { mood: 'sorprendido' }),
@@ -834,7 +918,8 @@ function martinVilatan() {
   openDialog([
     NA('Martiño! Ven, senta, que o caldo xa está. Contoume a túa tía que saíches no Progreso, conducindo unha locomotora antiga!'),
     MA('En la foto salgo con cara de susto, ¿verdad? Es que la Mikado frena cuando ella quiere.', { mood: 'avergonzado' }),
-    NA('Saes guapísimo. E ese señor maior ao teu lado chorando coma un neno.'),
+    NA('Saes guapísimo. E ese señor maior ao teu lado chorando coma un neno. A túa avoa coñecía á Elvira, sabes? Dicía que esa muller esperaba un tren que nunca chegaba.'),
+    MA('Llegó, mamá. Tarde, pero llegó. Lo conduje yo.', { mood: 'orgulloso' }),
     MA('Mamá... me han ofrecido un puesto en Valencia. Jefe de maquinistas. Desde el mes que viene.', { mood: 'preocupado' }),
     NA('... E ti que queres?'),
     MA('Esa es la pregunta. Y llevo toda la semana sin hacérmela.', { mood: 'pensativo', choices: [
@@ -844,7 +929,8 @@ function martinVilatan() {
     () => {
       ov.hidden = true; G.martin.vilatan = false; martinGo('fin', true);
       bigMsg('FIN', S.flags.final === 'ir' ? 'Vía morta · as vías van e volven' : 'Vía morta · a cabina segue aquí');
-      setTimeout(() => toast('Grazas por xogar «Vía morta». Podes seguir paseando por Monforte con Martín (Champions os martes e mércores ás 20:00).', 7), 3500);
+      setTimeout(() => toast('Un mes despois, ao carón do mural da estación, hai unha placa pequena: «Xosé Nogal, maquinista. 14 de xaneiro de 1958». Iván mírala cada mañá antes do rexional das seis.', 8), 3200);
+      setTimeout(() => toast('Grazas por xogar «Vía morta». Podes seguir paseando por Monforte con Martín (Champions os martes e mércores ás 20:00).', 7), 11500);
     },
   ]);
 }
