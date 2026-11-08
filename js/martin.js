@@ -14,13 +14,13 @@
 G.martin = null;
 const MART_STEPS = {
   concha: 'Recolle as chaves do piso no quiosco de Dona Concha (Praza da Estación)',
-  piso: 'Vai á túa casa: a casa vermella de Doutor Casares, 211 (xunto á gasolineira da estación)',
+  piso: 'Vai á túa casa: a Casa Juana, a vermella de Doutor Casares, 211 (xunto á gasolineira)',
   concello: 'Dá de alta a auga no Concello (Campo de San Antonio)',
   amparo: 'Busca a Dona Amparo, a caseira, na Fraternal',
   carreira: 'Leva o contrato ao Concello antes de que Eladio peche!',
   esperar: 'Eladio marchou ao café. Volve ao Concello en canto abra',
-  casa: 'Volve á casa vermella de Doutor Casares e descansa',
-  fin1: 'Durme na casa vermella (Doutor Casares, 211) para empezar o acto 2',
+  casa: 'Volve á Casa Juana (Doutor Casares, 211) e descansa',
+  fin1: 'Durme na Casa Juana (Doutor Casares, 211) para empezar o acto 2',
   a2: 'Reencontros: Valerio (farmacia), Mega Andrés (Fluvial) e Xoán (Malecón)',
   a3_ivan: 'Pregúntalle a Iván Nogal, na estación, polo «tren pantasma»',
   a3_pistas: 'Investiga arredor do Museo do Ferrocarril (Q: ollo de maquinista)',
@@ -79,8 +79,8 @@ function martinActSave(n) {
   const base = { money: 120, day: 0, flags: { eladio: 'record', asubio: true } }, F = base.flags;
   if (n <= 1) return { step: 'concha', money: 120, flags: {}, day: 0 };
   if (n >= 3) Object.assign(F, { valerio: true, andres: true, xoan: true, xoanVisto: true, ivanMural: true });
-  if (n >= 4) Object.assign(F, { p_graxa: true, p_pegadas: true, p_pizarra: true });
-  if (n >= 5) Object.assign(F, { valvulaCarga: true, valvula: true, parte: true, carbon: true, permiso: true, permisoPaso: 'ok' });
+  if (n >= 4) Object.assign(F, { p_graxa: true, p_pegadas: true, p_pizarra: true, p_motor: true });
+  if (n >= 5) Object.assign(F, { valvulaCarga: true, valvula: true, parte: true, parteBusca: true, carbon: true, permiso: true, permisoPaso: 'ok' });
   return { ...base, step: { 2: 'fin1', 3: 'a3_ivan', 4: 'a3_noite', 5: 'a5' }[n], day: { 2: 0, 3: 2, 4: 2, 5: 4 }[n], hour: { 2: 23, 3: 10, 4: 22.8, 5: 20.5 }[n], startAct: n };
 }
 /* ---------- comezo ---------- */
@@ -120,7 +120,7 @@ function martinPlaces() {
   M.andres = typeof AND !== 'undefined' && AND.spot ? AND.spot : (LM.fluvial ? (([x, z]) => ({ x, z }))(LM.fluvial.pt(29.5, -14.6)) : null);
   const iv = typeof NPCS !== 'undefined' && NPCS.find(n => n.id === 'ivan'); M.ivan = iv ? iv.p : null;
   if (LM.station) { const P = ([x, z]) => ({ x, z }); M.museo = P(LM.station.pt(393.6, -138)); M.loco = P(LM.station.pt(392.5, -95));
-    M.pistas = [{ id: 'graxa', ...P(LM.station.pt(392.5, -82.5)) }, { id: 'pegadas', ...P(LM.station.pt(393.4, -121)) }, { id: 'pizarra', ...P(LM.station.pt(393.8, -153)) }]; }
+    M.pistas = [{ id: 'graxa', ...P(LM.station.pt(392.5, -82.5)) }, { id: 'pegadas', ...P(LM.station.pt(393.4, -121)) }, { id: 'pizarra', ...P(LM.station.pt(393.8, -153)) }, { id: 'motor', ...P(LM.station.pt(393.6, -170)) }]; }
   const fe = G.fachadaEdge && G.fachadaEdge.ford; if (fe) M.taller = { x: fe.mx + fe.ox * 2, z: fe.mz + fe.oz * 2 };
   if (LM.malecon && LM.malecon.path) { const Pm = LM.malecon.path, q = Pm.at(Pm.len * 0.45), sd = LM.malecon.side; M.xoan = { x: q.x - q.uz * sd * 4.5, z: q.z + q.ux * sd * 4.5, yaw: Math.atan2(q.ux, q.uz) }; }
   if (LM.castle) { const [x, z] = LM.castle.pt(-112, -160); M.castelo = { x, z }; }
@@ -139,7 +139,7 @@ function martinAfterIntro() {
     ]);
   } else if (S.startAct) {
     const n = S.startAct; delete S.startAct; persist();
-    if (n === 2) { toast('Acto 2 · Durme na casa vermella (Doutor Casares, 211) para comezar o día', 5); martinGo('fin1', true); }
+    if (n === 2) { toast('Acto 2 · Durme na Casa Juana (Doutor Casares, 211) para comezar o día', 5); martinGo('fin1', true); }
     else { bigMsg('ACTO ' + n, { 3: 'A curiosidade', 4: 'A implicación', 5: 'O descubrimento' }[n]); martinGo(S.step); if (n === 4) toast('Son case as 23:00: vai ás cocheiras do Museo do Ferrocarril', 5); }
   } else { martinGo(S.step, true); if (S.step === 'a2') martinSpawnXoan(); toast('Vía morta · ' + (MART_STEPS[S.step] || ''), 5); }
 }
@@ -154,7 +154,7 @@ function martinGo(step, quiet) {
 function martinWaypoint(step) {
   const M = G.martin, S = save.martin, F = S.flags;
   if (step === 'a2') return !F.valerio ? M.farm : !F.andres ? M.andres : !F.xoan ? M.xoan : null;
-  if (step === 'a4') return !F.valvula ? (F.valvulaCarga ? M.museo : M.taller) : !F.carbon ? M.andres : !F.permiso ? (F.permisoPaso === 'concha' || F.permisoPaso === 'agarda' ? M.kiosk : M.conc) : M.museo;
+  if (step === 'a4') return F.parteBusca && !F.parte ? M.flat : !F.valvula ? (F.valvulaCarga ? M.museo : M.taller) : !F.carbon ? M.andres : !F.permiso ? (F.permisoPaso === 'concha' || F.permisoPaso === 'agarda' ? M.kiosk : M.conc) : M.museo;
   return { concha: M.kiosk, piso: M.flat, concello: M.conc, amparo: M.frat, carreira: M.conc, esperar: M.conc, casa: M.flat, fin1: M.flat, a3_ivan: M.ivan, a3_pistas: M.museo, a3_noite: M.museo, a4_fin: M.museo, a5: M.museo, a5_noite: M.ivan }[step] || null;
 }
 function martinInsert(lines) { const D = G.dialog; if (D) D.lines.splice(D.i + 1, 0, ...lines); }
@@ -163,8 +163,8 @@ const martinChampDay = () => { const w = ((save.martin.day || 0) % 7 + 7) % 7; r
 function martinChecklist() {
   const S = save.martin, F = S.flags, ok = (b, t) => `<br><span class="${b ? 'ok' : ''}">${b ? '✔' : '·'} ${t}</span>`;
   if (S.step === 'a2') return ok(F.valerio, 'Valerio · farmacia do Cardeal') + ok(F.andres, 'Mega Andrés · Club Fluvial') + ok(F.xoan, 'Xoán «o Galgo» · Malecón');
-  if (S.step === 'a3_pistas') return ok(F.p_graxa, 'Graxa no carril') + ok(F.p_pegadas, 'Pegadas') + ok(F.p_pizarra, 'Pizarra');
-  if (S.step === 'a4') return ok(F.valvula, 'Válvula · Taller Ford' + (F.valvulaCarga && !F.valvula ? ' (cárgala ata o museo)' : '')) + ok(F.carbon, 'Carbón · Mega Andrés') + ok(F.permiso, 'Permiso · Concello');
+  if (S.step === 'a3_pistas') return ok(F.p_graxa, 'Graxa no carril') + ok(F.p_pegadas, 'Pegadas') + ok(F.p_pizarra, 'Pizarra') + ok(F.p_motor, 'O motor do fondo');
+  if (S.step === 'a4') return ok(F.valvula, 'Válvula · Taller Ford' + (F.valvulaCarga && !F.valvula ? ' (cárgala ata o museo)' : '')) + ok(F.carbon, 'Carbón · Mega Andrés') + ok(F.permiso, 'Permiso · Concello') + (F.parteBusca ? ok(F.parte, 'A carpintaría da Casa Juana') : '');
   return '';
 }
 function updateMartin(dt) {
@@ -271,7 +271,7 @@ function martinChampScene() {
       },
       DV('Ala, as once. Vai durmir, rapaz, que mañá madrugas. E pecha ben o portal, que anda por aí o tren pantasma... ha, ha!'),
       MA('Las once. Hora de dormir: mañana tengo turno. Buenas noches, David. Y no le cuentes lo del Ourense al camarero, que ya se lo sabe.'),
-      () => { if (G.interior) interiorExit(); if (M.flat) setWaypoint(M.flat.x, M.flat.z); toast('Son as 23:00 · Vai durmir á casa vermella (Doutor Casares, 211)', 4.5); },
+      () => { if (G.interior) interiorExit(); if (M.flat) setWaypoint(M.flat.x, M.flat.z); toast('Son as 23:00 · Vai durmir á Casa Juana (Doutor Casares, 211)', 4.5); },
     ]);
   }, 700);
 }
@@ -297,8 +297,9 @@ function martinNear() {
   if (['concello', 'carreira', 'esperar'].includes(S.step) && d(M.conc) < 5) return { id: S.step, label: 'Ventanilla do Concello' };
   if (S.step === 'amparo' && d(M.frat) < 3.4) return { id: 'amparo', label: 'Entrar na Fraternal' };
   const late = MART_ACT[S.step] >= 2 || S.step === 'fin1';
-  if (S.step === 'concha' && nearCasa) return { id: 'pechada', label: 'Casa vermella (pechada)' };
+  if (S.step === 'concha' && nearCasa) return { id: 'pechada', label: 'Casa Juana (pechada)' };
   if (['concello', 'amparo', 'carreira', 'esperar'].includes(S.step) && nearCasa) return { id: 'senauga', label: 'Entrar na casa' };
+  if (S.step === 'a4' && F.parteBusca && !F.parte && nearCasa) return { id: 'carpintaria', label: 'Rexistrar a vella carpintaría' };
   if (late && nearCasa) return (G.hour >= 21.5 || G.hour < 6) ? { id: 'sleep', label: 'Durmir na casa' } : { id: 'casaDia', label: 'Entrar na casa' };
   if (S.step === 'a2') {
     if (!F.valerio && d(M.farm) < 3.4) return { id: 'valerio', label: 'Entrar na farmacia (Valerio)' };
@@ -312,6 +313,7 @@ function martinNear() {
   if (S.step === 'a4') {
     if (!F.valvula && !F.valvulaCarga && d(M.taller) < 4) return { id: 'pepe', label: 'Falar con Pepe do Taller' };
     if (F.valvulaCarga && !F.valvula && d(M.museo) < 4) return { id: 'entregar', label: 'Deixar a válvula nas cocheiras' };
+    if (F.parteBusca && !F.parte && nearCasa) return { id: 'carpintaria', label: 'Rexistrar a vella carpintaría' };
     if (!F.carbon && d(M.andres) < 3.2) return { id: 'carbon', label: 'Falar con Mega Andrés' };
     if (!F.permiso && d(M.conc) < 5 && F.permisoPaso !== 'concha' && F.permisoPaso !== 'agarda') return { id: 'permiso', label: 'Ventanilla do Concello' };
     if (!F.permiso && (F.permisoPaso === 'concha' || F.permisoPaso === 'agarda') && G.kiosk && Math.min(d(M.kiosk), d({ x: G.kiosk.cx, z: G.kiosk.cz })) < 3.6) return { id: 'firmas', label: 'Falar con Dona Concha' };
@@ -326,9 +328,9 @@ function martinInteract() {
   const n = martinNear(); if (!n) return false;
   ({ concha: martinConcha, piso: martinPiso, concello: martinConcello1, amparo: martinAmparo, carreira: martinConcello2, esperar: martinConcello2, casa: martinCasa, sleep: martinSleep,
     valerio: martinValerio, ivanMural: martinIvanMural, andres: martinAndres, xoan: martinXoan, ivan: martinIvan, pista: () => martinPista(n.p), noite: martinNoite,
-    pepe: martinPepe, entregar: martinEntrega, carbon: martinCarbon, permiso: martinPermiso, firmas: martinFirmas, a4fin: martinA4Fin, final: martinFinal, vilatan: martinVilatan, pechada: () => openDialog([MA('Cerrada. Normal: las llaves las tiene Concha, en el quiosco de la plaza de la estación. Primero el quiosco, luego la casa.', { mood: 'esceptico' })]),
+    pepe: martinPepe, entregar: martinEntrega, carpintaria: martinCarpintaria, carbon: martinCarbon, permiso: martinPermiso, firmas: martinFirmas, a4fin: martinA4Fin, final: martinFinal, vilatan: martinVilatan, pechada: () => openDialog([MA('Cerrada. Normal: las llaves las tiene Concha, en el quiosco de la plaza de la estación. Primero el quiosco, luego la casa.', { mood: 'esceptico' })]),
     senauga: () => openDialog([MA('Sin agua y sin luz no hay nada que hacer aquí dentro. Primero, el papeleo. Que Dios me pille confesado.', { mood: 'frustrado' })]),
-    casaDia: () => { martinCasaIn(); openDialog([MA(pick(['Mi casa. Bueno, la de Amparo. Bueno, la de Elvira. Aquí todo tiene varios dueños y un balcón.', 'Café, ducha y a la calle. Monforte no se descubre desde el sofá.', 'Desde el balcón se ve el depósito. Quien eligió esta casa sabía lo que hacía.'])), () => martinCasaOut()]); }, muralCine: martinMuralCine })[n.id]();
+    casaDia: () => { martinCasaIn(); openDialog([MA(pick(['Casa Juana. Más de cien años, varios dueños y un taller atrás con argollas en el techo. Y ahora, un maquinista.', 'Café, ducha y a la calle. Monforte no se descubre desde el sofá.', 'Desde el balcón se ve el depósito. Quien eligió esta casa sabía lo que hacía.'])), () => martinCasaOut()]); }, muralCine: martinMuralCine })[n.id]();
   return true;
 }
 
@@ -341,7 +343,9 @@ function martinConcha() {
     MA('Nunca. Seis temporadas intentándolo. Aún tengo tres Fran repetidos, por si alguien está interesado.'),
     CO('Martiño Pardo! Estás feito un home. E que alto! Na túa casa daban ben de comer.'),
     MA('Caldo de mi madre y kilómetros. Muchos kilómetros.'),
-    CO('A Amparo deixoume as chaves, si. A casa vermella de Doutor Casares, a 211, a do lado da gasolineira. O piso de arriba. Pero ollo, que leva dous anos pechado. Non sei eu se terá auga.'),
+    CO('A Amparo deixoume as chaves, si. A Casa Juana! A vermella de Doutor Casares, a 211, a do lado da gasolineira. Leva moitos anos pechada e agora arranxárona para alugar. Non sei eu se terá auga.'),
+    MA('¿Casa Juana? ¿Quién es Juana?'),
+    CO('A muller do señor Alfredo, o carpinteiro. Aí tiña unha carpintaría que daba gusto: máquinas, motores, correas... Dende o quiosco oíase o serrón. Pregúntalle á Amparo, que lle encanta contalo.'),
     MA('Mientras tenga techo, ya es mejor que algún cuarto de descanso en el que he dormido.'),
     CO('E que fas de volta por aquí? Os mozos marchan, non volven.'),
     MA('Me han destinado al depósito. Maquinista. Alguien tiene que traerle los trenes a los que se quedan.'),
@@ -363,6 +367,7 @@ function martinPiso() {
     () => { $('fade').classList.add('on'); setTimeout(() => { martinCasaIn(); $('fade').classList.remove('on'); }, 700); },
     MA('Vaya. Parqué, cocina blanca, balcón de hierro... Alguien la reformó hace nada. Huele a cerrado y a pintura nueva. Mejor que muchos hoteles de Renfe.'),
     MA('Grifo... nada. Ni una gota. Interruptor... tampoco. Todo nuevo, todo en su sitio y nada funciona: una casa en vía muerta.'),
+    MA('Por la ventana de la cocina se ve la casa de atrás: una nave vieja con vigas de madera y argollas de hierro en el techo, en fila. Como para colgar ejes. Qué raro.', { mood: 'pensativo' }),
     MA('Hay una nota en la nevera: «Para dar de alta a auga, ir ao Concello. Ventanilla 3. Preguntar por Eladio».'),
     MA('«Preguntar por Eladio». No sé por qué, pero esa frase me da miedo.'),
     () => { martinCasaOut(); martinGo('concello'); },
@@ -393,10 +398,12 @@ function martinAmparo() {
   openDialog([
     DV('Eeeh, mira quen entra! Un rapaz novo na Fraternal! Isto non pasaba dende o noventa e oito.'),
     AM('Copas! E arrastro! ... Quen é este mozo tan guapo, David?'),
-    MA('Martín Pardo, su nuevo inquilino. La casa roja de Doctor Casares. Necesito que me firme el contrato, Doña Amparo.'),
-    AM('Ai, o maquinista! Moi ben, moi ben. Ese piso era da miña tía Elvira, que en paz descanse. Tiña un canario que se chamaba Ramón...'),
-    AM('... e o canario cantaba a muiñeira, ou iso dicía ela. Logo veu o meu sobriño, o que estivo en Suíza, e quería poñer alí unha tenda de reloxos, imaxina...'),
-    MA('Doña Amparo, la historia del canario me tiene en vilo, de verdad. Pero Eladio cierra a las dos.'),
+    MA('Martín Pardo, su nuevo inquilino. La Casa Juana, en Doctor Casares. Necesito que me firme el contrato, Doña Amparo.'),
+    AM('Ai, o maquinista! Moi ben, moi ben. Eu lévolles as chaves aos donos, que agora a teñen de apartamento. Sabes de quen foi esa casa? Do señor Alfredo, carpinteiro e industrial, e da súa segunda muller, a Juana. De aí o nome.'),
+    AM('Na nave de atrás tiña unha carpintaría con máquinas que nin en Ourense: un motor Siemens de dez cabalos, unha transmisión de dez metros con sete poleas, outra con seis... Cortaba, cepillaba, torneaba, de todo.'),
+    AM('E no cincuenta e dous vendeuno todo, toda a maquinaria, por trinta mil pesetas. A un enxeñeiro de Camiños e a un contratista! Para que querían eles unha carpintaría enteira? Iso pregúntao ata o meu sobriño, o que estivo en Suíza. Pregúntamo cada semana.'),
+    MA('¿Un ingeniero de Caminos comprando una carpintería entera? Eso o es un misterio o es una boda muy rara.', { mood: 'esceptico' }),
+    MA('Doña Amparo, la historia de la carpintería me tiene en vilo, de verdad. Pero Eladio cierra a las dos.'),
     AM('Eladio! Ese home naceu pechando. Dáme o papel, fillo, dáme.'),
     DV('E ti de que equipo es, rapaz?'),
     MA('Del Dépor. De nacimiento y por cabezonería.'),
@@ -453,7 +460,8 @@ function martinCasa() {
     () => { G.hour = 23.6; envTimer = 0; lastEnvHour = -99; if (G.sfx && G.sfx.trainHorn && world.train) G.sfx.trainHorn(world.train); },
     MA('... ¿Eso ha sido un silbato de vapor?'),
     MA('No puede ser. En el depósito no queda ni una máquina que respire. Las vi en el museo: pintaditas, quietas, con su cartelito de «non tocar».'),
-    MA('Será el cansancio. Ocho horas de cabina, un funcionario con dos ventanillas y un canario que cantaba muiñeiras.'),
+    MA('Será el cansancio. Ocho horas de cabina, un funcionario con dos ventanillas y una carpintería que se vendió entera en 1952.'),
+    MA('Aunque... viene del depósito. Y suena justo hacia aquí. Hacia esta casa.', { mood: 'pensativo' }),
     () => { if (G.sfx && G.sfx.trainHorn && world.train) G.sfx.trainHorn(world.train); },
     MA('... Vale. Mañana me paso por el depósito. Por curiosidad. Solo por curiosidad.'),
     () => { martinCasaOut(); S.flags.asubio = true; martinGo('fin1', true); bigMsg('FIN DO ACTO 1', 'O regreso'); setTimeout(() => toast('Durme no piso (E) para comezar o acto 2 · O reencontro', 6), 3500); },
@@ -461,7 +469,8 @@ function martinCasa() {
 }
 
 /* Iván Nogal (o de Renfe) e o mural de 1954 do vestíbulo: conversa opcional dos actos 1-2.
-   Ollo: Iván é o neto de Xosé Nogal e Elvira (a da casa vermella). Todo o que di aquí é pista para o final. */
+   Ollo: Iván é o neto de Xosé Nogal (aprendiz na carpintaría da Casa Juana antes de entrar en Renfe). Todo o que di aquí é pista para o final.
+   A historia da Casa Juana (Alfredo Fernández Gutiérrez, Juana Rivera, a venda da maquinaria en 1952) é real; Xosé, Elvira, Iván e o parte de 1958 son ficción. */
 function martinMural(on) {
   let el = $('martinMural');
   if (!el) { el = document.createElement('div'); el.id = 'martinMural'; el.style.cssText = 'position:fixed;inset:0;z-index:24;background:#14110d url(img/mural-estacion.jpg) center 38%/contain no-repeat;box-shadow:inset 0 0 160px #000'; document.body.appendChild(el); }
@@ -481,9 +490,9 @@ function martinIvanMural() {
     IV('Eu, cando chega o rexional das seis. Ha! E onde vives, compañeiro?'),
     () => martinMural(false),
     MA('En la casa roja de Doctor Casares. La de al lado de la gasolinera.'),
-    IV('... Bo balcón. Dende el vese o depósito.', { mood: 'neutro' }),
-    MA('¿Has estado dentro?'),
-    IV('Iso díxomo a Amparo, vaia. Aquí todo o mundo sabe todo de todas as casas. Ala, que chega o de Ourense e hai que contar maletas.'),
+    IV('... A Casa Juana. Bo balcón. Dende el vese o depósito. E atrás, a nave do señor Alfredo: motor Siemens de dez cabalos, primeira transmisión de dez metros e sete poleas.', { mood: 'neutro' }),
+    MA('¿Has estado dentro? ¿Cómo sabes lo de las poleas?'),
+    IV('Iso díxomo a Amparo, vaia. Ben... e lin as escrituras no rexistro. Afeccións raras. Aquí todo o mundo sabe todo de todas as casas. Ala, que chega o de Ourense e hai que contar maletas.'),
   ]);
 }
 
@@ -633,6 +642,7 @@ function martinIvan() {
     IV('No museo? Que va. Esas locomotoras están máis quietas ca un xubilado ás tres da tarde. Por que?'),
     MA('Porque por las noches oigo un silbato de vapor. Y yo distingo un silbato de vapor de un pito de árbitro, te lo aseguro. Siempre igual: dos largos y uno corto.'),
     IV('...', { mood: 'neutro' }),
+    MA('Y suena hacia mi casa. La Casa Juana. Como si alguien llamara a la puerta del taller de atrás.'),
     IV('Dous longos e un curto. Iso non é ningunha sinal do regulamento. Será algún graciosiño. Por certo, sabías que en 1958 o rexional das nove e media saía dez minutos tarde todos os días? Dez. Todos.'),
     MA('Me lo apunto para el próximo concurso de la tele. Iván, céntrate.'),
     IV('... O tren pantasma. Ha! Sabía que acabarías preguntando. A Concha di que o oe os xoves. O Tío David di que o oe sempre que perde o Lemos.'),
@@ -645,14 +655,15 @@ function martinIvan() {
 const MART_PISTAS = {
   graxa: [MA('Grasa en el carril de la Mikado. Fresca, brillante, sin polvo. Este carril lleva décadas muerto... y alguien lo está engrasando como si fuera a salir mañana.')],
   pegadas: [MA('Pisadas con carbonilla. Botas de trabajo, de las antiguas. Y unas zapatillas de andar por casa. ¿Quién va a un depósito en zapatillas de casa? Alguien que vive cerca. Y que tiene muchos años.')],
+  motor: [MA('En el fondo de la cochera, bajo una lona: un motor eléctrico viejísimo y una fila de poleas. Placa de latón: «SIEMENS · 10 PS». Y alguien grabó a punta de navaja: «A.F.G.».', { mood: 'sorprendido' }), MA('Motor Siemens de diez caballos... Alfredo Fernández Gutiérrez. El carpintero de mi casa. Así que la carpintería de 1952 acabó aquí, en el depósito. Y alguien la ha estado desmontando pieza a pieza, como buscando algo.', { mood: 'pensativo' })],
   pizarra: [MA('Una pizarra en la puerta. «Presión: 9 kg. Probar inxector. Mércores: tubos». Con una letra preciosa, de las de antes, todas las letras iguales. Esto no es un fantasma: es un plan de mantenimiento. Y el que lo escribe es muy, muy ordenado.')],
 };
 function martinPista(p) {
   const F = save.martin.flags;
   openDialog([...MART_PISTAS[p.id], () => {
     F['p_' + p.id] = true; persist();
-    if (F.p_graxa && F.p_pegadas && F.p_pizarra) setTimeout(() => openDialog([
-      MA('Grasa nueva, carbonilla, un plan de presión... Alguien está despertando a esa máquina. Y lo hace de noche, para que nadie lo vea.'),
+    if (F.p_graxa && F.p_pegadas && F.p_pizarra && F.p_motor) setTimeout(() => openDialog([
+      MA('Grasa nueva, carbonilla, un plan de presión... y las máquinas de la carpintería de mi casa, aquí, desmontadas. Alguien está despertando a esa locomotora. Y busca algo más.'),
       MA('Pues esta noche, a partir de las once, me quedo aquí. Si hay fantasma, que me lo presente.'),
       () => martinGo('a3_noite'),
     ]), 600);
@@ -745,19 +756,36 @@ function martinEntrega() {
   openDialog([
     RE('A válvula! E sen abolladuras! Ti es dos bos, rapaz.'),
     MA('Cuarenta kilos, Remedios. Tengo los brazos como un tren de mercancías: largos y sin fuerza.'),
-    IV('Boas noites... Pasaba por aquí. Vin luz.', { mood: 'neutro' }),
-    MA('¿Iván? ¿A estas horas? Pues mira, ya que pasabas: ayúdame a abrir esta caja, que la tapa está oxidada.'),
-    IV('... Esa é a caixa da válvula.'),
-    MA('Hay un papel dentro. Doblado, amarillo... «Parte de incidencia. 14 de xaneiro de 1958».', { mood: 'sorprendido' }),
-    IV('(sen achegarse) Esa letra...'),
-    MA('Freno automático de los vagones a tres kilos. El mínimo es cinco. Lo midió varias veces, con hora. Y abajo, otra firma: «Reparación denegada. O xefe de depósito».', { mood: 'pensativo' }),
-    MA('Iván, quien escribió esto avisó de que esos vagones no frenaban. Semanas antes de lo que fuera que pasó esa noche.', { mood: 'preocupado' }),
-    IV('Xa o sei, Martín. Levo vinte anos sabéndoo. O que nunca tiven foi o papel.'),
-    MA('¿Cómo que lo sabes? ¿Quién lo escribió? ¿Qué pasó esa noche?', { mood: 'dudoso' }),
-    IV('O sábado. O sábado cóntocho todo, prometido. Gárdao ti, que eu agora non sei se o podería ter na man. Boas noites.'),
-    RE('... Ese rapaz levaba un ano traéndonos as listas de pezas. Agora entendo por que choraba co inxector.'),
-    MA('Vaya. Así que el de la letra bonita era él. Y yo pensando que el fantasma llevaba zapatillas de casa.', { mood: 'esceptico' }),
-    () => { F.valvula = true; F.parte = true; M.carry = false; persist(); martinA4Check(); },
+    MA('Remedios, ese motor Siemens del fondo, con las poleas... es de la carpintería de mi casa, ¿verdad? Lleva las iniciales del carpintero.', { mood: 'dudoso' }),
+    RE('Iso chegou ao depósito hai moitísimo, cando eu era aprendiz. Dicían que viña dunha carpintaría de Doutor Casares. E o rapaz das listas de pezas pasou meses desmontándoo, polea a polea. Buscaba algo.'),
+    MA('¿Buscaba qué?'),
+    RE('Non mo dixo. Só repetía unha frase dunha carta vella: «Deixeino onde se moven as correas, na casa onde aprendín o oficio». E aquí non apareceu nada.'),
+    MA('Donde se mueven las correas... en la casa donde aprendió el oficio.', { mood: 'pensativo' }),
+    MA('Remedios, las correas no se movían aquí. Se movían en la casa donde estuvieron montadas primero. En la nave de atrás de la Casa Juana. En mi casa.', { mood: 'sorprendido' }),
+    () => { F.valvula = true; F.parteBusca = true; M.carry = false; persist(); martinA4Check(); toast('Rexistra a vella carpintaría da Casa Juana (Doutor Casares, 211)', 5); },
+  ]);
+}
+/* a nave de atrás da Casa Juana: na primeira transmisión (dez metros, sete poleas) Xosé Nogal escondeu o parte de 1958 */
+function martinCarpintaria() {
+  const F = save.martin.flags;
+  martinCasaIn();
+  openDialog([
+    MA('La nave de atrás. Huele a serrín viejo y a humedad. Ni una máquina: solo las marcas en el suelo de donde estaban atornilladas.'),
+    MA('Arriba, la viga de la primera transmisión: diez metros, siete soportes para siete poleas. Uno, dos, tres... el séptimo tiene la tapa soldada. Los otros, no.', { mood: 'pensativo' }),
+    MA('Si yo tuviera que esconder algo en un taller de correas, lo escondería donde nadie mete la mano mientras las poleas giran.'),
+    MA('... Una lata de tabaco. Dentro, un papel doblado, amarillo. «Parte de incidencia. 14 de xaneiro de 1958». Y una nota: «Para quen veña buscar. X. N.».', { mood: 'sorprendido' }),
+    MA('Freno automático de los vagones a tres kilos. El mínimo es cinco. Lo midió varias veces, con hora. Y abajo, otra firma: «Reparación denegada. O xefe de depósito».', { mood: 'preocupado' }),
+    MA('Quien escribió esto avisó semanas antes de que esos vagones no frenaban. Y lo escondió en la casa donde aprendió a trabajar con máquinas.'),
+    MA('Iván. Iván tiene que ver esto. (llama por teléfono)'),
+    () => { $('fade').classList.add('on'); setTimeout(() => $('fade').classList.remove('on'), 800); },
+    IV('Vin correndo... ben, en bici. Que atopaches?', { mood: 'neutro' }),
+    MA('Estaba en la séptima polea de la transmisión de la Casa Juana. Llevabas meses buscándolo en el depósito, ¿verdad?'),
+    IV('(colle o papel e non di nada durante un longo intre) Esa letra...'),
+    IV('Vinte anos, Martín. Vinte anos sabendo o que pasou e sen o papel. Arquivos, desguaces, o motor do señor Alfredo peza a peza... E estaba aquí. Na casa onde o meu avó aprendeu o oficio.'),
+    MA('¿Tu abuelo? ¿Quién era tu abuelo, Iván? ¿Qué pasó esa noche?', { mood: 'dudoso' }),
+    IV('O sábado. O sábado cóntocho todo, diante de quen ten que oílo. Prometido. Gárdao ti: eu agora non sei se o podería ter na man.'),
+    MA('Vaya. Así que el de la letra bonita de la pizarra eras tú. Y yo pensando que el fantasma llevaba zapatillas de casa.', { mood: 'esceptico' }),
+    () => { martinCasaOut(); F.parte = true; persist(); martinA4Check(); },
   ]);
 }
 function martinCarbon() {
@@ -796,7 +824,7 @@ function martinPermiso() {
     return;
   }
   openDialog([
-    EL('Vostede outra vez. Que é hoxe? Auga? Luz? Un canario?'),
+    EL('Vostede outra vez. Que é hoxe? Auga? Luz? Unha carpintaría?'),
     MA('Un permiso para que una locomotora de vapor circule el sábado por la vía. Una hora. Con toda la ciudad mirando.'),
     EL('... Iso é o modelo T-14. O último que mo pediu foi un tal Nogal, o mes pasado, para a vía morta da Barreira. Fáltanlle as sinaturas. Precisa a autorización de Adif e... cen sinaturas de veciños empadroados.'),
     MA('¿Cien firmas? ¿En Monforte? Si a las nueve de la noche no hay cien personas en toda la calle.'),
@@ -826,7 +854,7 @@ function martinFirmas() {
 }
 function martinA4Check() {
   const F = save.martin.flags;
-  if (F.valvula && F.carbon && F.permiso) { martinGo('a4_fin'); toast('Todo listo! Volve ás cocheiras do museo', 4); }
+  if (F.valvula && F.carbon && F.permiso && F.parte) { martinGo('a4_fin'); toast('Todo listo! Volve ás cocheiras do museo', 4); }
   else martinGo('a4', true);
 }
 function martinA4Fin() {
@@ -918,15 +946,16 @@ function martinViaMorta() {
     IV('Martín... Toca ti. Dous longos e un curto.'),
     () => { horn(); setTimeout(horn, 900); setTimeout(horn, 1700); },
     MA('...', { mood: 'neutro' }),
-    CO('(dende a estrada, en voz baixa) Ese asubío... Ese era o asubío do Nogal. Pasaba por diante da casa vermella e a Elvira saía ao balcón...'),
-    IV('(baixa da cabina e quita a gorra de Renfe) Chámome Iván Nogal Ferreiro. Son neto de Xosé Nogal, o maquinista que despediron por esta noite. E da Elvira, a da casa vermella, que esperou sesenta anos nese balcón a que alguén o dixese en voz alta.'),
-    IV('Eu non vin a Monforte traballar na estación. Vin esperar isto. Vinte anos buscando un papel por arquivos, desguaces e residencias de xubilados. E o papel estaba nunha caixa de chatarra, a dous quilómetros da casa da miña avoa.'),
+    CO('(dende a estrada, en voz baixa) Ese asubío... Ese era o asubío do Nogal! Pasaba por diante da Casa Juana e asubiaba así, dous longos e un curto, para saudar ao taller onde aprendera. O señor Alfredo saía á porta a responderlle co boné...'),
+    IV('(baixa da cabina e quita a gorra de Renfe) Chámome Iván Nogal Ferreiro. Son neto de Xosé Nogal, o maquinista que despediron por esta noite. Antes de entrar en Renfe foi aprendiz na carpintaría da Casa Juana: alí aprendeu o que era un motor, unha correa, unha polea. A miña avoa Elvira esperou sesenta anos a que alguén o dixese en voz alta.'),
+    IV('Eu non vin a Monforte traballar na estación. Vin esperar isto. Vinte anos buscando un papel. O meu avó deixou escrito que estaba «onde se moven as correas, na casa onde aprendín o oficio». Eu busqueino nas máquinas do señor Alfredo, no depósito, polea a polea. Pero as correas movíanse primeiro na Casa Juana. Atopouno el, o maquinista que vive alí.'),
     IV('O 14 de xaneiro de 1958, ás nove e corenta, un mercancías sen freos baixou cara á estación. No andén 1 estaba o tren dos emigrantes para Vigo, dez minutos tarde, coma sempre. O meu avó mandou cambiar esta agulla e púxose diante coa súa Mikado.'),
     MA('(lee el parte en voz alta) «Freno automático a tres kilos. Mínimo, cinco. Reparación denegada». Firmado por el jefe de depósito. Semanas antes.', { mood: 'convencido' }),
     MA('Esto no es una maniobra no autorizada. Es un hombre que vio venir un tren sin frenos y se puso delante. Con su máquina. Con un chaval de diecisiete años al lado.', { mood: 'enfadado' }),
     DA('Ese chaval era eu. Tiña dezasete anos. Asinei o informe que me mandaron asinar, porque se non me botaban. Levo sesenta e oito anos calado.'),
     DA('(cara a toda a xente) Xosé Nogal salvou o tren dos emigrantes. Eu vino. E perdón, Iván. Perdón, Elvira.'),
-    IV('(a Martín, case sen voz) Ti oíches o asubío a primeira noite. Era para ti. Precisaba a alguén que preguntase. Perdoa por non dicircho.'),
+    MA('Y la carpintería de 1952... las máquinas de Alfredo acabaron en el depósito, y ahí aprendió tu abuelo a mantener una locomotora. Todo pasaba por esa casa.', { mood: 'pensativo' }),
+    IV('(a Martín, case sen voz) Asubiaba cara á Casa Juana cada noite, coma o meu avó, por se alguén alí escoitaba. Ti fuches o primeiro que preguntou. Perdoa por non dicircho antes.'),
     MA('No me pidas perdón. Llevo una semana corriendo detrás de un fantasma... y resulta que el fantasma era el único que sabía adónde iba.', { mood: 'aliviado' }),
     IV('Sabes o que dicía a miña avoa? Que as vías mortas non existen. Que só son vías que esperan.'),
     () => { $('fade').classList.add('on'); setTimeout(martinFinaleEnd, 900); },
