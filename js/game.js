@@ -340,6 +340,7 @@ function readInput() {
   if (IN.tHand) { IN.hand = IN.jump = true; }
   if (G.dialog || G.cine || G.dishes) { IN.mx = IN.my = 0; IN.jump = IN.hand = IN.run = false; }
   if (G.story && G.story.cold) IN.run = false;
+  if (G.martin && G.martin.carry) IN.run = false;
   // mando
   const gp = navigator.getGamepads ? [...navigator.getGamepads()].find(g => g && g.connected) : null;
   if (gp) {

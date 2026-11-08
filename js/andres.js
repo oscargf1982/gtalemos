@@ -191,6 +191,7 @@ function natEnd() {
   } else { txt = `Gañou Mega Andrés (${R.an.done.toFixed(2)} s). Ti: ${tm.toFixed(2)} s`; andMood('celebra', 6); }
   if (!S.best || tm < S.best) { S.best = tm; txt += ' · Récord persoal!'; }
   persist(); natMsg(txt);
+  if (typeof NAT.onEnd === 'function') { const f = NAT.onEnd; NAT.onEnd = null; setTimeout(() => f(won), 2200); }
   const bar = NAT.el.querySelector('.nat-bar'), b = document.createElement('button'); b.className = 'nat-again'; b.textContent = 'Outra carreira'; b.onclick = natStart; bar.appendChild(b);
   setTimeout(() => { if (G.minigame !== 'natacion') return; if (typeof toast === 'function') toast(won ? pick(['Mega Andrés: «Ti adestraches ás miñas costas, eh?»', 'Mega Andrés: «Deixeite gañar... para que disfrutes da vida.»']) : pick(['Mega Andrés: «O tiburón do Cabe nunca falla!»', 'Mega Andrés: «Máis mojito e menos présa, campión.»']), 4); }, 600);
 }
